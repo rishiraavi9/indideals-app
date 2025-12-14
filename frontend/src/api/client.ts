@@ -1,10 +1,5 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
-// Check if we're in demo mode (no backend available)
-const isDemoMode = () => {
-  return import.meta.env.VITE_DEMO_MODE === 'true' || !import.meta.env.VITE_API_URL;
-};
-
 class ApiClient {
   private baseUrl: string;
   private token: string | null = null;
