@@ -48,6 +48,18 @@ export type Deal = {
   category?: Category | null;
   score?: number;
   userVote?: number; // -1, 0, 1
+  festive?: boolean; // For demo mode
+  trending?: boolean; // For demo mode
+  verified?: boolean; // For demo mode
+  merchantUrl?: string; // For demo mode
+  productUrl?: string; // For demo mode
+  categoryName?: string; // For demo mode
+  username?: string; // For demo mode
+  userReputation?: number; // For demo mode
+  votes?: number; // For demo mode
+  clickCount?: number; // For demo mode
+  expiresAt?: string; // For demo mode
+  updatedAt?: string; // For demo mode
 };
 
 export type DealWithDerived = Deal & {
