@@ -1,5 +1,5 @@
 import { Capacitor } from '@capacitor/core';
-import { PushNotifications } from '@capacitor/push-notifications';
+// import { PushNotifications } from '@capacitor/push-notifications'; // Disabled - requires Firebase
 import { Share } from '@capacitor/share';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { StatusBar, Style } from '@capacitor/status-bar';
@@ -37,8 +37,8 @@ export const initializeCapacitor = async () => {
   // Initialize splash screen
   await initSplashScreen();
 
-  // Initialize push notifications
-  await initPushNotifications();
+  // Skip push notifications - requires Firebase setup
+  // await initPushNotifications();
 
   // Initialize app state listeners
   initAppStateListeners();
@@ -75,8 +75,9 @@ const initSplashScreen = async () => {
 
 /**
  * Initialize push notifications
+ * Disabled - requires Firebase setup
  */
-const initPushNotifications = async () => {
+/* const initPushNotifications = async () => {
   try {
     // Request permission
     const permission = await PushNotifications.requestPermissions();
@@ -116,12 +117,13 @@ const initPushNotifications = async () => {
   } catch (error) {
     console.error('Error initializing push notifications:', error);
   }
-};
+}; */
 
 /**
  * Send push token to backend
+ * Disabled - requires Firebase setup
  */
-const sendPushTokenToBackend = async (token: string) => {
+/* const sendPushTokenToBackend = async (token: string) => {
   try {
     const response = await fetch(`${import.meta.env.VITE_API_URL}/api/push/subscribe`, {
       method: 'POST',
@@ -141,20 +143,22 @@ const sendPushTokenToBackend = async (token: string) => {
   } catch (error) {
     console.error('Error sending push token:', error);
   }
-};
+}; */
 
 /**
  * Show in-app notification (custom implementation)
+ * Disabled - requires Firebase setup
  */
-const showInAppNotification = (notification: any) => {
+/* const showInAppNotification = (notification: any) => {
   // TODO: Implement custom in-app notification UI
   console.log('Showing in-app notification:', notification);
-};
+}; */
 
 /**
  * Handle push notification action
+ * Disabled - requires Firebase setup
  */
-const handlePushNotificationAction = (notification: any) => {
+/* const handlePushNotificationAction = (notification: any) => {
   // TODO: Navigate to relevant screen based on notification.data
   console.log('Handling push notification action:', notification);
 
@@ -162,7 +166,7 @@ const handlePushNotificationAction = (notification: any) => {
   if (notification.data?.dealId) {
     window.location.href = `/deal/${notification.data.dealId}`;
   }
-};
+}; */
 
 /**
  * Initialize app state listeners (pause/resume)
