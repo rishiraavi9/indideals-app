@@ -1,4 +1,4 @@
-# Deals App - Slickdeals for India
+# Deals App 
 
 A full-stack deals aggregation platform built for the Indian market, similar to Slickdeals.
 
