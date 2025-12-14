@@ -19,26 +19,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const loadUser = async () => {
-      // Check for OAuth token in URL
-      const urlParams = new URLSearchParams(window.location.search);
-      const token = urlParams.get('token');
+      try {
+        // Check for OAuth token in URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
 
-      if (token) {
-        // Store the token and clear URL
-        localStorage.setItem('token', token);
-        window.history.replaceState({}, document.title, window.location.pathname);
-      }
-
-      if (authApi.isAuthenticated()) {
-        try {
-          const { user } = await authApi.getMe();
-          setUser(user);
-        } catch (error) {
-          console.error('Failed to load user:', error);
-          authApi.logout();
+        if (token) {
+          // Store the token and clear URL
+          localStorage.setItem('token', token);
+          window.history.replaceState({}, document.title, window.location.pathname);
         }
+
+        if (authApi.isAuthenticated()) {
+          try {
+            const { user } = await authApi.getMe();
+            setUser(user);
+          } catch (error) {
+            console.error('Failed to load user:', error);
+            authApi.logout();
+          }
+        }
+      } catch (error) {
+        console.error('Error during auth initialization:', error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     loadUser();
