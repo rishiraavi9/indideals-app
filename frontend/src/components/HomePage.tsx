@@ -2,6 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 // import Layout from './Layout'; // TODO: Refactor to use Layout component
 import CompactDealCard from './CompactDealCard';
+import MobileDealCard from './MobileDealCard';
+import MobileHeader from './MobileHeader';
+import MobileBottomNav from './MobileBottomNav';
 import PostDealModal from './PostDealModal';
 import AuthModal from './AuthModal';
 import AffiliateAnalytics from './AffiliateAnalytics';
@@ -34,8 +37,17 @@ export default function HomePage() {
   const [autocompleteSuggestions, setAutocompleteSuggestions] = useState<Array<{title: string; merchant: string; categoryName: string}>>([]);
   const [showAutocomplete, setShowAutocomplete] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [bottomNavItem, setBottomNavItem] = useState('home');
 
   const { user, isAuthenticated, logout } = useAuth();
+
+  // Detect mobile viewport
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     loadCategories();
@@ -285,6 +297,95 @@ export default function HomePage() {
     );
   }
 
+  // Mobile Layout
+  if (isMobile) {
+    const displayDeals = activeTab === 'For You' ? personalizedDeals : deals;
+
+    return (
+      <div
+        style={{
+          minHeight: '100vh',
+          background: '#0a0a0a',
+          paddingBottom: '70px', // Space for bottom nav
+        }}
+      >
+        <MobileHeader
+          activeTab={activeTab}
+          onTabChange={(tab) => {
+            setActiveTab(tab);
+            setBottomNavItem('home');
+          }}
+          onSearchClick={() => setIsSearchActive(true)}
+          isAuthenticated={isAuthenticated}
+          onPostClick={handleCreateDeal}
+        />
+
+        {/* Mobile Deals List */}
+        <div>
+          {loading ? (
+            <div
+              style={{
+                padding: '40px 20px',
+                textAlign: 'center',
+                color: '#888',
+              }}
+            >
+              Loading deals...
+            </div>
+          ) : displayDeals.length === 0 ? (
+            <div
+              style={{
+                padding: '40px 20px',
+                textAlign: 'center',
+                color: '#888',
+              }}
+            >
+              <p style={{ margin: 0, fontSize: 16 }}>No deals found</p>
+              <p style={{ margin: '8px 0 0', fontSize: 14 }}>Be the first to post one!</p>
+            </div>
+          ) : (
+            displayDeals.map((deal) => (
+              <MobileDealCard
+                key={deal.id}
+                deal={deal}
+                onUpvote={() => handleVote(deal.id, deal.userVote === 1 ? 0 : 1)}
+                onDownvote={() => handleVote(deal.id, deal.userVote === -1 ? 0 : -1)}
+                onView={() => handleDealView(deal.id)}
+              />
+            ))
+          )}
+        </div>
+
+        <MobileBottomNav
+          activeItem={bottomNavItem}
+          onNavigate={(item) => {
+            setBottomNavItem(item);
+            if (item === 'search') {
+              setIsSearchActive(true);
+            } else if (item === 'post') {
+              handleCreateDeal();
+            } else if (item === 'home') {
+              setIsSearchActive(false);
+              setSearchQuery('');
+            }
+          }}
+          isAuthenticated={isAuthenticated}
+        />
+
+        {isPostOpen && (
+          <PostDealModal
+            onClose={() => setIsPostOpen(false)}
+            onCreate={handleDealCreated}
+            categories={categories}
+          />
+        )}
+
+        {isAuthOpen && <AuthModal onClose={() => setIsAuthOpen(false)} />}
+      </div>
+    );
+  }
+
+  // Desktop Layout
   return (
     <div
       style={{

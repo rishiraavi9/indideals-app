@@ -1,4 +1,4 @@
-export type Tab = "Frontpage" | "Popular" | "New";
+export type Tab = "For You" | "Frontpage" | "Popular" | "New";
 
 export type User = {
   id: string;
