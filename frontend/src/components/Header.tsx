@@ -1,0 +1,345 @@
+import { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { searchApi } from '../api/search';
+
+interface HeaderProps {
+  onPostDealClick?: () => void;
+  onAnalyticsClick?: () => void;
+  onProfileClick?: () => void;
+  onLoginClick?: () => void;
+}
+
+export default function Header({
+  onPostDealClick,
+  onAnalyticsClick,
+  onProfileClick,
+  onLoginClick
+}: HeaderProps) {
+  const navigate = useNavigate();
+  const { user, isAuthenticated, logout } = useAuth();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [autocompleteSuggestions, setAutocompleteSuggestions] = useState<Array<{title: string; merchant: string; categoryName: string}>>([]);
+  const [showAutocomplete, setShowAutocomplete] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Autocomplete functionality
+  useEffect(() => {
+    const fetchAutocomplete = async () => {
+      if (searchQuery.trim().length >= 2) {
+        try {
+          const suggestions = await searchApi.autocomplete(searchQuery, 8);
+          setAutocompleteSuggestions(suggestions);
+          setShowAutocomplete(true);
+        } catch (error) {
+          console.error('Failed to fetch autocomplete:', error);
+          setAutocompleteSuggestions([]);
+        }
+      } else {
+        setAutocompleteSuggestions([]);
+        setShowAutocomplete(false);
+      }
+    };
+
+    const debounceTimer = setTimeout(fetchAutocomplete, 200);
+    return () => clearTimeout(debounceTimer);
+  }, [searchQuery]);
+
+  // Close autocomplete when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchInputRef.current && !searchInputRef.current.contains(event.target as Node)) {
+        setShowAutocomplete(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleSearch = () => {
+    if (searchQuery.trim()) {
+      navigate(`/?q=${encodeURIComponent(searchQuery)}`);
+      setShowAutocomplete(false);
+    }
+  };
+
+  const handleLogoClick = () => {
+    navigate('/');
+  };
+
+  return (
+    <div style={{
+      background: '#ffffff',
+      borderBottom: '1px solid #e5e7eb',
+      padding: '16px 24px',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+    }}>
+      <div style={{
+        maxWidth: '1400px',
+        margin: '0 auto',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 16,
+      }}>
+        {/* Logo */}
+        <h1
+          onClick={handleLogoClick}
+          style={{
+            margin: 0,
+            fontSize: 28,
+            letterSpacing: -0.5,
+            color: '#1a1a1a',
+            whiteSpace: 'nowrap',
+            cursor: 'pointer',
+            transition: 'opacity 0.2s',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.opacity = '0.7';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.opacity = '1';
+          }}
+        >
+          🔥 <span style={{ fontWeight: 900 }}>IndiaDeals</span>
+        </h1>
+
+        {/* Search bar */}
+        <div style={{ position: 'relative', flex: 1, minWidth: 200 }} ref={searchInputRef}>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && searchQuery.trim()) {
+                handleSearch();
+              } else if (e.key === 'Escape') {
+                setShowAutocomplete(false);
+              }
+            }}
+            onFocus={() => {
+              if (searchQuery.trim().length >= 2 && autocompleteSuggestions.length > 0) {
+                setShowAutocomplete(true);
+              }
+            }}
+            placeholder="Search for deals, products, or merchants..."
+            style={{
+              width: '100%',
+              padding: '12px 110px 12px 16px',
+              borderRadius: 8,
+              border: '1px solid #d1d5db',
+              background: '#ffffff',
+              color: '#1a1a1a',
+              outline: 'none',
+              fontSize: 15,
+              boxSizing: 'border-box',
+              boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+            }}
+          />
+          <button
+            onClick={handleSearch}
+            style={{
+              position: 'absolute',
+              right: 6,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              padding: '8px 18px',
+              borderRadius: 6,
+              border: 'none',
+              background: searchQuery.trim() ? '#2563eb' : '#9ca3af',
+              color: 'white',
+              cursor: searchQuery.trim() ? 'pointer' : 'not-allowed',
+              fontSize: 14,
+              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+            }}
+            disabled={!searchQuery.trim()}
+          >
+            <span>🔍</span>
+            <span>Search</span>
+          </button>
+
+          {/* Autocomplete Suggestions */}
+          {showAutocomplete && autocompleteSuggestions.length > 0 && (
+            <div
+              style={{
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                right: 0,
+                marginTop: 4,
+                background: '#ffffff',
+                border: '1px solid #d1d5db',
+                borderRadius: 8,
+                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                zIndex: 100,
+                maxHeight: '400px',
+                overflowY: 'auto',
+              }}
+            >
+              {autocompleteSuggestions.map((suggestion, index) => (
+                <div
+                  key={index}
+                  onClick={() => {
+                    setSearchQuery(suggestion.title);
+                    setShowAutocomplete(false);
+                    navigate(`/?q=${encodeURIComponent(suggestion.title)}`);
+                  }}
+                  style={{
+                    padding: '12px 16px',
+                    cursor: 'pointer',
+                    borderBottom: index < autocompleteSuggestions.length - 1 ? '1px solid #f3f4f6' : 'none',
+                    transition: 'background 0.15s',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#f9fafb';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = '#ffffff';
+                  }}
+                >
+                  <div style={{
+                    fontSize: 14,
+                    fontWeight: 500,
+                    color: '#1a1a1a',
+                    marginBottom: 4,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}>
+                    🔍 {suggestion.title}
+                  </div>
+                  <div style={{
+                    fontSize: 12,
+                    color: '#6b7280',
+                    display: 'flex',
+                    gap: 8,
+                  }}>
+                    {suggestion.merchant && (
+                      <span>at <strong>{suggestion.merchant}</strong></span>
+                    )}
+                    {suggestion.categoryName && (
+                      <span>• {suggestion.categoryName}</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* User actions */}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
+          {isAuthenticated && user ? (
+            <>
+              <div
+                onClick={onProfileClick}
+                style={{
+                  fontSize: 13,
+                  color: '#374151',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  cursor: 'pointer',
+                  padding: '6px 10px',
+                  borderRadius: 8,
+                  transition: 'background 0.2s',
+                  background: '#f9fafb',
+                  whiteSpace: 'nowrap',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#e5e7eb';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = '#f9fafb';
+                }}
+              >
+                <span style={{ fontWeight: 600 }}>{user.username}</span>
+                <span
+                  style={{
+                    padding: '2px 6px',
+                    borderRadius: 999,
+                    background: '#10b981',
+                    color: 'white',
+                    fontSize: 10,
+                    fontWeight: 700,
+                  }}
+                >
+                  {user.reputation}
+                </span>
+              </div>
+              <button
+                onClick={onAnalyticsClick}
+                style={{
+                  padding: '8px 12px',
+                  borderRadius: 8,
+                  border: '1px solid #d1d5db',
+                  background: '#ffffff',
+                  color: '#374151',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontSize: 13,
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                📊
+              </button>
+              <button
+                onClick={logout}
+                style={{
+                  padding: '8px 14px',
+                  borderRadius: 8,
+                  border: '1px solid #d1d5db',
+                  background: '#ffffff',
+                  color: '#374151',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontSize: 13,
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={onLoginClick}
+              style={{
+                padding: '10px 16px',
+                borderRadius: 8,
+                border: 'none',
+                background: '#2563eb',
+                color: '#fff',
+                fontWeight: 600,
+                cursor: 'pointer',
+                fontSize: 14,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              Login
+            </button>
+          )}
+
+          <button
+            onClick={onPostDealClick}
+            style={{
+              padding: '10px 16px',
+              borderRadius: 8,
+              border: 'none',
+              background: '#f97316',
+              color: '#fff',
+              fontWeight: 600,
+              cursor: 'pointer',
+              fontSize: 14,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            + Post Deal
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

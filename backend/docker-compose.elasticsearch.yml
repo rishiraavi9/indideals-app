@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: deals-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=true
+      - ELASTIC_PASSWORD=207c871a467b5936fbd0b1237eb65839e1b7a134474a512993ef6ef086a8c211
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - deals-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    container_name: deals-kibana
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    depends_on:
+      - elasticsearch
+    networks:
+      - deals-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: deals-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - deals-network
+    command: redis-server --appendonly yes --requirepass c475709cfe6bda2e1c2343cb4de86ca622138309d239f4aca55b7c7b25541f55
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  elasticsearch_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  deals-network:
+    driver: bridge

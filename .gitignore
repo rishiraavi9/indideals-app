@@ -1,0 +1,84 @@
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Build outputs
+dist/
+build/
+*/dist/
+*/build/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+*.env
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Redis
+dump.rdb
+
+# Testing
+coverage/
+
+# Android
+*.apk
+*.aab
+*.ap_
+*.dex
+.gradle/
+local.properties
+captures/
+*.jks
+*.keystore
+
+# iOS
+*.ipa
+Pods/
+*.xcworkspace
+!default.xcworkspace
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+xcuserdata/
+*.moved-aside
+DerivedData/
+*.hmap
+*.ipa
+*.xcuserstate
+
+# Capacitor
+ios/App/Pods/
+ios/App/public/
+android/app/src/main/assets/public/
+
+# Temporary files
+tmp/
+temp/
