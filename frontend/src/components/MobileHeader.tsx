@@ -4,16 +4,12 @@ interface MobileHeaderProps {
   activeTab: Tab;
   onTabChange: (tab: Tab) => void;
   onSearchClick: () => void;
-  isAuthenticated: boolean;
-  onPostClick: () => void;
 }
 
 export default function MobileHeader({
   activeTab,
   onTabChange,
   onSearchClick,
-  isAuthenticated,
-  onPostClick,
 }: MobileHeaderProps) {
   const tabs: Tab[] = ['For You', 'Frontpage', 'Popular', 'New'];
 

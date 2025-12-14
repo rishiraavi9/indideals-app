@@ -316,8 +316,6 @@ export default function HomePage() {
             setBottomNavItem('home');
           }}
           onSearchClick={() => setIsSearchActive(true)}
-          isAuthenticated={isAuthenticated}
-          onPostClick={handleCreateDeal}
         />
 
         {/* Mobile Deals List */}
@@ -369,7 +367,6 @@ export default function HomePage() {
               setSearchQuery('');
             }
           }}
-          isAuthenticated={isAuthenticated}
         />
 
         {isPostOpen && (

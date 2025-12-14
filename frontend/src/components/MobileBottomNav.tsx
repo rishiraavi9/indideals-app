@@ -1,13 +1,11 @@
 interface MobileBottomNavProps {
   activeItem: string;
   onNavigate: (item: string) => void;
-  isAuthenticated: boolean;
 }
 
 export default function MobileBottomNav({
   activeItem,
   onNavigate,
-  isAuthenticated,
 }: MobileBottomNavProps) {
   const navItems = [
     { id: 'home', label: 'Home', icon: '🏠' },
