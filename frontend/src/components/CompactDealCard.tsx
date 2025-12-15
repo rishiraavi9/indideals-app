@@ -94,22 +94,43 @@ export default function CompactDealCard({
       <div
         style={{
           width: '100%',
-          height: 85,
-          background: deal.imageUrl
-            ? `url(${deal.imageUrl}) center/cover`
-            : 'linear-gradient(135deg, #f3f4f6, #e5e7eb)',
+          height: 180,
+          background: '#f9fafb',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
+          overflow: 'hidden',
           position: 'relative',
           borderBottom: '1px solid #f3f4f6',
         }}
       >
-        {!deal.imageUrl && (
-          <div style={{ fontSize: 48, opacity: 0.2 }}>
-            {deal.category?.icon || '🏷️'}
-          </div>
-        )}
+        {deal.imageUrl ? (
+          <img
+            src={deal.imageUrl}
+            alt={deal.title}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'contain',
+              padding: 8,
+            }}
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+              const fallback = e.currentTarget.parentElement?.querySelector('.fallback-icon') as HTMLElement;
+              if (fallback) fallback.style.display = 'block';
+            }}
+          />
+        ) : null}
+        <div
+          className="fallback-icon"
+          style={{
+            fontSize: 48,
+            opacity: 0.2,
+            display: deal.imageUrl ? 'none' : 'block',
+          }}
+        >
+          {deal.category?.icon || '🏷️'}
+        </div>
 
         {/* Discount badge */}
         {deal.discountPercentage && (
