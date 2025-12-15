@@ -272,46 +272,224 @@ export default function CategoryPage() {
               </div>
             </div>
 
-            {/* Deals Grid */}
-            <div>
-        {deals.length === 0 ? (
-          <div
-            style={{
-              background: '#ffffff',
-              borderRadius: 12,
-              border: '1px solid #e5e7eb',
-              padding: '60px 24px',
-              textAlign: 'center',
-            }}
-          >
-            <div style={{ fontSize: 48, marginBottom: 16 }}>🔍</div>
-            <div style={{ fontSize: 18, fontWeight: 600, color: '#1a1a1a', marginBottom: 8 }}>
-              No deals found in {category.name}
-            </div>
-            <div style={{ fontSize: 14, color: '#6b7280' }}>
-              Check back later for new deals!
-            </div>
-          </div>
-        ) : (
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(6, 1fr)',
-              gap: 16,
-            }}
-          >
-            {deals.map((deal) => (
-              <CompactDealCard
-                key={deal.id}
-                deal={deal}
-                onUpvote={() => handleUpvote(deal.id)}
-                onDownvote={() => handleDownvote(deal.id)}
-                onView={() => navigate(`/deal/${deal.id}`)}
-                onUserClick={(userId) => console.log('User clicked:', userId)}
-              />
-            ))}
-          </div>
-        )}
+            {/* Main Content with Deals and Right Ads */}
+            <div style={{ display: 'flex', gap: 20 }}>
+              {/* Deals Grid */}
+              <div style={{ flex: 1 }}>
+                {deals.length === 0 ? (
+                  <div
+                    style={{
+                      background: '#ffffff',
+                      borderRadius: 12,
+                      border: '1px solid #e5e7eb',
+                      padding: '60px 24px',
+                      textAlign: 'center',
+                    }}
+                  >
+                    <div style={{ fontSize: 48, marginBottom: 16 }}>🔍</div>
+                    <div style={{ fontSize: 18, fontWeight: 600, color: '#1a1a1a', marginBottom: 8 }}>
+                      No deals found in {category.name}
+                    </div>
+                    <div style={{ fontSize: 14, color: '#6b7280' }}>
+                      Check back later for new deals!
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    {/* Render deals in rows with ads every 2 rows */}
+                    {Array.from({ length: Math.ceil(deals.length / 5) }).map((_, rowIndex) => {
+                      const rowDeals = deals.slice(rowIndex * 5, (rowIndex + 1) * 5);
+                      const showAdAfterRow = (rowIndex + 1) % 2 === 0;
+
+                      return (
+                        <div key={rowIndex}>
+                          <div
+                            style={{
+                              display: 'grid',
+                              gridTemplateColumns: 'repeat(5, 1fr)',
+                              gap: 16,
+                              marginBottom: 16,
+                            }}
+                          >
+                            {rowDeals.map((deal) => (
+                              <CompactDealCard
+                                key={deal.id}
+                                deal={deal}
+                                onUpvote={() => handleUpvote(deal.id)}
+                                onDownvote={() => handleDownvote(deal.id)}
+                                onView={() => navigate(`/deal/${deal.id}`)}
+                                onUserClick={(userId) => console.log('User clicked:', userId)}
+                              />
+                            ))}
+                          </div>
+
+                          {/* Ad Banner every 2 rows */}
+                          {showAdAfterRow && (
+                            <div
+                              style={{
+                                background: 'linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%)',
+                                borderRadius: 12,
+                                padding: '24px',
+                                color: '#ffffff',
+                                textAlign: 'center',
+                                marginBottom: 16,
+                                minHeight: '120px',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}
+                            >
+                              <div style={{ fontSize: 32, marginBottom: 8 }}>🎁</div>
+                              <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>
+                                Sponsored Deal
+                              </div>
+                              <div style={{ fontSize: 13, opacity: 0.95 }}>
+                                Feature your seasonal offers in this premium spot
+                              </div>
+                              <button
+                                style={{
+                                  background: '#ffffff',
+                                  color: '#8fd3f4',
+                                  border: 'none',
+                                  borderRadius: 8,
+                                  padding: '8px 16px',
+                                  fontSize: 13,
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                  marginTop: 12,
+                                }}
+                              >
+                                Get Started
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Right Sidebar - Ads */}
+              <div style={{ width: 300, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 20 }}>
+                {/* Ad 1 */}
+                <div
+                  style={{
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    borderRadius: 12,
+                    padding: '24px',
+                    color: '#ffffff',
+                    textAlign: 'center',
+                    boxShadow: '0 4px 16px rgba(102, 126, 234, 0.3)',
+                    minHeight: '250px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <div style={{ fontSize: 48, marginBottom: 16 }}>📢</div>
+                  <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 8, lineHeight: 1.2 }}>
+                    Your Ad Here
+                  </div>
+                  <div style={{ fontSize: 13, opacity: 0.95, lineHeight: 1.5, marginBottom: 16 }}>
+                    Promote your deals to thousands of shoppers daily
+                  </div>
+                  <button
+                    style={{
+                      background: '#ffffff',
+                      color: '#667eea',
+                      border: 'none',
+                      borderRadius: 8,
+                      padding: '10px 20px',
+                      fontSize: 14,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Learn More
+                  </button>
+                </div>
+
+                {/* Ad 2 */}
+                <div
+                  style={{
+                    background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                    borderRadius: 12,
+                    padding: '24px',
+                    color: '#ffffff',
+                    textAlign: 'center',
+                    boxShadow: '0 4px 16px rgba(245, 87, 108, 0.3)',
+                    minHeight: '250px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <div style={{ fontSize: 48, marginBottom: 16 }}>🎁</div>
+                  <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 8, lineHeight: 1.2 }}>
+                    Sponsored Deal
+                  </div>
+                  <div style={{ fontSize: 13, opacity: 0.95, lineHeight: 1.5, marginBottom: 16 }}>
+                    Feature your seasonal offers in this premium spot
+                  </div>
+                  <button
+                    style={{
+                      background: '#ffffff',
+                      color: '#f5576c',
+                      border: 'none',
+                      borderRadius: 8,
+                      padding: '10px 20px',
+                      fontSize: 14,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Get Started
+                  </button>
+                </div>
+
+                {/* Ad 3 */}
+                <div
+                  style={{
+                    background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+                    borderRadius: 12,
+                    padding: '24px',
+                    color: '#ffffff',
+                    textAlign: 'center',
+                    boxShadow: '0 4px 16px rgba(250, 112, 154, 0.3)',
+                    minHeight: '250px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <div style={{ fontSize: 48, marginBottom: 16 }}>⭐</div>
+                  <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 8, lineHeight: 1.2 }}>
+                    Premium Listing
+                  </div>
+                  <div style={{ fontSize: 13, opacity: 0.95, lineHeight: 1.5, marginBottom: 16 }}>
+                    Boost your visibility and reach more customers
+                  </div>
+                  <button
+                    style={{
+                      background: '#ffffff',
+                      color: '#fa709a',
+                      border: 'none',
+                      borderRadius: 8,
+                      padding: '10px 20px',
+                      fontSize: 14,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Upgrade Now
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
