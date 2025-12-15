@@ -112,41 +112,168 @@ export default function CategoryPage() {
               )}
             </div>
           </div>
-
-          {/* Controls Row */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 20 }}>
-            <div style={{ fontSize: 14, color: '#6b7280' }}>
-              {deals.length} deal{deals.length !== 1 ? 's' : ''} found
-            </div>
-
-            {/* Sort Controls */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span style={{ fontSize: 14, color: '#6b7280', fontWeight: 600 }}>Sort by</span>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as 'best' | 'newest')}
-                style={{
-                  padding: '8px 32px 8px 12px',
-                  borderRadius: 8,
-                  border: '1px solid #d1d5db',
-                  background: '#ffffff',
-                  color: '#374151',
-                  fontSize: 14,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  outline: 'none',
-                }}
-              >
-                <option value="best">Best New Deals</option>
-                <option value="newest">Newest First</option>
-              </select>
-            </div>
-          </div>
         </div>
       </div>
 
-      {/* Deals Grid */}
+      {/* Main Content Area with Sidebar */}
       <div style={{ maxWidth: 1400, margin: '0 auto', padding: '32px 24px' }}>
+        <div style={{ display: 'flex', gap: 24 }}>
+          {/* Left Sidebar - Filters */}
+          <div style={{ width: 280, flexShrink: 0 }}>
+            {/* Filter Header */}
+            <div style={{
+              background: '#ffffff',
+              borderRadius: 12,
+              border: '1px solid #e5e7eb',
+              padding: '20px',
+              marginBottom: 16
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#1a1a1a' }}>
+                  Show Results For
+                </h3>
+                <button style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#2563eb',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}>
+                  Reset All
+                </button>
+              </div>
+
+              {/* Rating Filter */}
+              <div style={{ marginBottom: 20 }}>
+                <button
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    background: 'none',
+                    border: 'none',
+                    padding: '12px 0',
+                    fontSize: 15,
+                    fontWeight: 600,
+                    color: '#1a1a1a',
+                    cursor: 'pointer',
+                    borderBottom: '1px solid #e5e7eb'
+                  }}
+                >
+                  <span>Rating</span>
+                  <span>▼</span>
+                </button>
+                <div style={{ marginTop: 12 }}>
+                  {[
+                    { label: 'Frontpage Deals', value: 'frontpage' },
+                    { label: 'Popular Deals', value: 'popular' },
+                    { label: '5+ Thumbs', value: '5plus' },
+                    { label: '4+ Thumbs', value: '4plus' },
+                    { label: '3+ Thumbs', value: '3plus' },
+                    { label: '2+ Thumbs', value: '2plus' },
+                    { label: '1+ Thumbs', value: '1plus' },
+                    { label: '0+ Thumbs', value: '0plus' },
+                  ].map((option) => (
+                    <label
+                      key={option.value}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        padding: '8px 0',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <input
+                        type="radio"
+                        name="rating"
+                        value={option.value}
+                        style={{ marginRight: 10 }}
+                      />
+                      <span style={{ fontSize: 14, color: '#374151' }}>{option.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Merchants Filter */}
+              <div>
+                <button
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    background: 'none',
+                    border: 'none',
+                    padding: '12px 0',
+                    fontSize: 15,
+                    fontWeight: 600,
+                    color: '#1a1a1a',
+                    cursor: 'pointer',
+                    borderBottom: '1px solid #e5e7eb'
+                  }}
+                >
+                  <span>Stores</span>
+                  <span>▼</span>
+                </button>
+                <div style={{ marginTop: 12 }}>
+                  {['Amazon', 'Flipkart', 'Myntra', 'Reliance Digital'].map((store) => (
+                    <label
+                      key={store}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        padding: '8px 0',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        style={{ marginRight: 10 }}
+                      />
+                      <span style={{ fontSize: 14, color: '#374151' }}>{store}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Content - Deals */}
+          <div style={{ flex: 1 }}>
+            {/* Sort Controls */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <div style={{ fontSize: 14, color: '#6b7280' }}>
+                {deals.length} deal{deals.length !== 1 ? 's' : ''} found
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span style={{ fontSize: 14, color: '#6b7280', fontWeight: 600 }}>Sort by</span>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as 'best' | 'newest')}
+                  style={{
+                    padding: '8px 32px 8px 12px',
+                    borderRadius: 8,
+                    border: '1px solid #d1d5db',
+                    background: '#ffffff',
+                    color: '#374151',
+                    fontSize: 14,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    outline: 'none',
+                  }}
+                >
+                  <option value="best">Best New Deals</option>
+                  <option value="newest">Newest First</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Deals Grid */}
+            <div>
         {deals.length === 0 ? (
           <div
             style={{
@@ -185,6 +312,9 @@ export default function CategoryPage() {
             ))}
           </div>
         )}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
     </Layout>
