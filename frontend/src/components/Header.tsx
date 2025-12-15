@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { searchApi } from '../api/search';
+import { categoriesApi } from '../api/categories';
+import type { Category } from '../types';
 
 interface HeaderProps {
   onPostDealClick?: () => void;
@@ -22,6 +24,24 @@ export default function Header({
   const [autocompleteSuggestions, setAutocompleteSuggestions] = useState<Array<{title: string; merchant: string; categoryName: string}>>([]);
   const [showAutocomplete, setShowAutocomplete] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Categories dropdown state
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [showCategoriesDropdown, setShowCategoriesDropdown] = useState(false);
+  const categoriesRef = useRef<HTMLDivElement>(null);
+
+  // Load categories
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const cats = await categoriesApi.getCategories();
+        setCategories(cats);
+      } catch (error) {
+        console.error('Failed to load categories:', error);
+      }
+    };
+    loadCategories();
+  }, []);
 
   // Autocomplete functionality
   useEffect(() => {
@@ -45,11 +65,14 @@ export default function Header({
     return () => clearTimeout(debounceTimer);
   }, [searchQuery]);
 
-  // Close autocomplete when clicking outside
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (searchInputRef.current && !searchInputRef.current.contains(event.target as Node)) {
         setShowAutocomplete(false);
+      }
+      if (categoriesRef.current && !categoriesRef.current.contains(event.target as Node)) {
+        setShowCategoriesDropdown(false);
       }
     };
 
@@ -103,6 +126,112 @@ export default function Header({
         >
           🔥 <span style={{ fontWeight: 900 }}>IndiaDeals</span>
         </h1>
+
+        {/* Categories Dropdown */}
+        <div style={{ position: 'relative' }} ref={categoriesRef}>
+          <button
+            onClick={() => setShowCategoriesDropdown(!showCategoriesDropdown)}
+            style={{
+              padding: '10px 16px',
+              borderRadius: 8,
+              border: '1px solid #d1d5db',
+              background: showCategoriesDropdown ? '#f3f4f6' : '#ffffff',
+              color: '#374151',
+              fontWeight: 600,
+              cursor: 'pointer',
+              fontSize: 14,
+              whiteSpace: 'nowrap',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              if (!showCategoriesDropdown) e.currentTarget.style.background = '#f9fafb';
+            }}
+            onMouseLeave={(e) => {
+              if (!showCategoriesDropdown) e.currentTarget.style.background = '#ffffff';
+            }}
+          >
+            <span>Categories</span>
+            <span style={{ fontSize: 12, transition: 'transform 0.2s', transform: showCategoriesDropdown ? 'rotate(180deg)' : 'rotate(0)' }}>▼</span>
+          </button>
+
+          {/* Dropdown Menu */}
+          {showCategoriesDropdown && (
+            <div
+              style={{
+                position: 'absolute',
+                top: 'calc(100% + 8px)',
+                left: 0,
+                background: '#ffffff',
+                border: '1px solid #d1d5db',
+                borderRadius: 8,
+                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                zIndex: 100,
+                minWidth: 250,
+                maxHeight: '70vh',
+                overflowY: 'auto',
+              }}
+            >
+              {/* Popular Deals Option */}
+              <div
+                onClick={() => {
+                  navigate('/deals');
+                  setShowCategoriesDropdown(false);
+                }}
+                style={{
+                  padding: '12px 16px',
+                  cursor: 'pointer',
+                  borderBottom: '1px solid #e5e7eb',
+                  fontSize: 14,
+                  fontWeight: 600,
+                  color: '#2563eb',
+                  transition: 'background 0.15s',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#eff6ff';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = '#ffffff';
+                }}
+              >
+                🔥 Popular Deals
+              </div>
+
+              {/* Category List */}
+              {categories.map((category) => (
+                <div
+                  key={category.id}
+                  onClick={() => {
+                    navigate(`/deals/${category.slug}`);
+                    setShowCategoriesDropdown(false);
+                  }}
+                  style={{
+                    padding: '12px 16px',
+                    cursor: 'pointer',
+                    borderBottom: '1px solid #f3f4f6',
+                    fontSize: 14,
+                    color: '#374151',
+                    transition: 'background 0.15s',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#f9fafb';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = '#ffffff';
+                  }}
+                >
+                  <span style={{ fontSize: 18 }}>{category.icon}</span>
+                  <span style={{ fontWeight: 500 }}>{category.name}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
         {/* Search bar */}
         <div style={{ position: 'relative', flex: 1, minWidth: 200 }} ref={searchInputRef}>

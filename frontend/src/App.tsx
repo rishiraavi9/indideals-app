@@ -2,6 +2,8 @@ import { useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import HomePage from './components/HomePage';
 import DealPage from './components/DealPage';
+import PopularDealsPage from './pages/PopularDealsPage';
+import CategoryPage from './pages/CategoryPage';
 import { initializeCapacitor } from './utils/capacitor';
 
 export default function App() {
@@ -16,6 +18,8 @@ export default function App() {
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/deal/:dealId" element={<DealPage />} />
+      <Route path="/deals" element={<PopularDealsPage />} />
+      <Route path="/deals/:categorySlug" element={<CategoryPage />} />
     </Routes>
   );
 }
