@@ -29,9 +29,10 @@ export default function CategoryPage() {
       if (foundCategory) {
         // Load deals for this category
         const response = await dealsApi.getDeals({
-          tab: sortBy === 'newest' ? 'frontpage' : 'popular',
+          tab: 'frontpage', // Always use frontpage to get all deals
           category: foundCategory.id,
           limit: 100,
+          sort: sortBy === 'newest' ? 'newest' : 'popular', // Use sort parameter instead
         });
         setDeals(response.deals);
       }
