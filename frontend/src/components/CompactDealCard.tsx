@@ -94,7 +94,7 @@ export default function CompactDealCard({
       <div
         style={{
           width: '100%',
-          height: 140,
+          height: 85,
           background: deal.imageUrl
             ? `url(${deal.imageUrl}) center/cover`
             : 'linear-gradient(135deg, #f3f4f6, #e5e7eb)',
@@ -173,30 +173,30 @@ export default function CompactDealCard({
       </div>
 
       {/* Content Section */}
-      <div style={{ padding: 14, flex: 1, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ padding: 8, flex: 1, display: 'flex', flexDirection: 'column' }}>
         {/* Title */}
         <div
           style={{
-            fontSize: 14,
+            fontSize: 12,
             fontWeight: 600,
-            lineHeight: 1.4,
-            marginBottom: 8,
+            lineHeight: 1.2,
+            marginBottom: 4,
             color: '#1a1a1a',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             display: '-webkit-box',
             WebkitLineClamp: 2,
             WebkitBoxOrient: 'vertical',
-            minHeight: 40,
+            minHeight: 29,
           }}
         >
           {deal.title}
         </div>
 
         {/* Price Section */}
-        <div style={{ marginBottom: 8 }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 20, fontWeight: 700, color: '#10b981' }}>
+        <div style={{ marginBottom: 4 }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 16, fontWeight: 700, color: '#10b981' }}>
               ₹{deal.price.toLocaleString('en-IN')}
             </span>
             {deal.originalPrice && (

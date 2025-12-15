@@ -8,7 +8,7 @@ export interface BrowsingHistoryItem {
   dealId: string;
   categoryId: string | null;
   timestamp: number;
-  activityType: 'view' | 'click';
+  activityType: 'view' | 'click' | 'upvote' | 'save';
 }
 
 // Get or create anonymous user ID
@@ -28,7 +28,7 @@ export function getAnonymousUserId(): string {
 export function trackBrowsingActivity(
   dealId: string,
   categoryId: string | null,
-  activityType: 'view' | 'click'
+  activityType: 'view' | 'click' | 'upvote' | 'save'
 ): void {
   try {
     const history = getBrowsingHistory();
@@ -71,16 +71,33 @@ export function getBrowsingHistory(): BrowsingHistoryItem[] {
 export function getPreferredCategories(): string[] {
   const history = getBrowsingHistory();
 
-  // Count category views
+  // Count category interactions with weighted scoring
   const categoryCounts: Record<string, number> = {};
 
   history.forEach(item => {
     if (item.categoryId) {
-      categoryCounts[item.categoryId] = (categoryCounts[item.categoryId] || 0) + 1;
+      // Weight different activity types
+      let weight = 1;
+      switch (item.activityType) {
+        case 'upvote':
+          weight = 3; // Strong signal of interest
+          break;
+        case 'save':
+          weight = 2.5; // Strong signal of interest
+          break;
+        case 'click':
+          weight = 2; // Medium signal
+          break;
+        case 'view':
+          weight = 1; // Base signal
+          break;
+      }
+
+      categoryCounts[item.categoryId] = (categoryCounts[item.categoryId] || 0) + weight;
     }
   });
 
-  // Sort by count and return top 5 categories
+  // Sort by weighted score and return top 5 categories
   return Object.entries(categoryCounts)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)

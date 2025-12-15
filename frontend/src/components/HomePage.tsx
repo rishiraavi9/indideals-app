@@ -10,16 +10,18 @@ import AuthModal from './AuthModal';
 import AffiliateAnalytics from './AffiliateAnalytics';
 import UserProfile from './UserProfile';
 import SearchResultsPage from './SearchResultsPage';
+import PreferencesModal from './PreferencesModal';
 import { useAuth } from '../context/AuthContext';
 import { dealsApi } from '../api/deals';
 import { categoriesApi } from '../api/categories';
 import { searchApi } from '../api/search';
 import type { Deal, Tab, Category } from '../types';
 import { trackBrowsingActivity, getPreferredCategories } from '../utils/anonymousTracking';
+import { getFrontpageFilters, hasPreferences } from '../utils/userPreferences';
 
 export default function HomePage() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<Tab>('Frontpage');
+  const [activeTab, setActiveTab] = useState<Tab>('All');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [deals, setDeals] = useState<Deal[]>([]);
   const [personalizedDeals, setPersonalizedDeals] = useState<Deal[]>([]);
@@ -39,6 +41,7 @@ export default function HomePage() {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [bottomNavItem, setBottomNavItem] = useState('home');
+  const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
 
   const { user, isAuthenticated, logout } = useAuth();
 
@@ -75,14 +78,76 @@ export default function HomePage() {
   const loadDeals = async () => {
     setLoading(true);
     try {
-      const tab = activeTab.toLowerCase() as 'frontpage' | 'popular' | 'new';
-      const response = await dealsApi.getDeals({
-        tab,
-        category: selectedCategory || undefined,
-        search: searchQuery || undefined,
-        limit: 40,
-      });
-      setDeals(response.deals);
+      // Handle "All" tab - shows all deals without tab filtering
+      if (activeTab === 'All') {
+        const response = await dealsApi.getDeals({
+          category: selectedCategory || undefined,
+          search: searchQuery || undefined,
+          limit: 100,
+        });
+        setDeals(response.deals);
+      } else {
+        const tab = activeTab.toLowerCase() as 'frontpage' | 'popular' | 'new';
+
+        // For Frontpage tab, apply user preferences
+        let response;
+        if (tab === 'frontpage' && hasPreferences()) {
+          const filters = getFrontpageFilters();
+          response = await dealsApi.getDeals({
+            tab,
+            category: selectedCategory || undefined,
+            search: searchQuery || undefined,
+            limit: 100, // Fetch more to filter client-side
+          });
+
+          // Client-side filtering based on preferences
+          let filteredDeals = response.deals;
+
+          // Filter by liked/disliked categories
+          if (filters.likedCategories.length > 0) {
+            // Show only liked categories (or deals without category)
+            filteredDeals = filteredDeals.filter(
+              (deal) =>
+                !deal.categoryId ||
+                filters.likedCategories.includes(deal.categoryId) ||
+                (filters.showFireDealsOnly && deal.trending) // Always show fire deals if enabled
+            );
+          } else if (filters.dislikedCategories.length > 0) {
+            // Hide disliked categories
+            filteredDeals = filteredDeals.filter(
+              (deal) =>
+                !deal.categoryId ||
+                !filters.dislikedCategories.includes(deal.categoryId) ||
+                (filters.showFireDealsOnly && deal.trending)
+            );
+          }
+
+          // Filter expired deals if enabled
+          if (filters.hideExpired) {
+            const now = new Date();
+            filteredDeals = filteredDeals.filter(
+              (deal) =>
+                !deal.expiresAt || new Date(deal.expiresAt) > now
+            );
+          }
+
+          // Filter fire deals only if enabled
+          if (filters.showFireDealsOnly) {
+            filteredDeals = filteredDeals.filter((deal) => deal.trending || deal.verified);
+          }
+
+          setDeals(filteredDeals.slice(0, 40));
+        } else {
+          // For Popular/New tabs or Frontpage without preferences, use normal loading
+          response = await dealsApi.getDeals({
+            tab,
+            category: selectedCategory || undefined,
+            search: searchQuery || undefined,
+            limit: 40,
+          });
+          setDeals(response.deals);
+        }
+      }
     } catch (error) {
       console.error('Failed to load deals:', error);
     } finally {
@@ -94,6 +159,7 @@ export default function HomePage() {
     try {
       const preferredCategories = getPreferredCategories();
 
+      // For authenticated users or users with browsing history
       if (isAuthenticated || preferredCategories.length > 0) {
         const response = await dealsApi.getDeals({
           tab: 'personalized',
@@ -102,7 +168,12 @@ export default function HomePage() {
         });
         setPersonalizedDeals(response.deals);
       } else {
-        setPersonalizedDeals([]);
+        // For new/first-time visitors, show trending deals as fallback
+        const response = await dealsApi.getDeals({
+          tab: 'popular',
+          limit: 20,
+        });
+        setPersonalizedDeals(response.deals);
       }
     } catch (error) {
       console.error('Failed to load personalized deals:', error);
@@ -113,10 +184,14 @@ export default function HomePage() {
   const loadFestiveDeals = async () => {
     try {
       const response = await dealsApi.getDeals({
-        festive: true,
-        limit: 8,
+        limit: 100,
       });
-      setFestiveDeals(response.deals);
+      // Filter deals that have festiveTags or seasonalTag
+      const festive = response.deals.filter(deal =>
+        (deal.festiveTags && deal.festiveTags.length > 0) ||
+        deal.seasonalTag
+      ).slice(0, 8);
+      setFestiveDeals(festive);
     } catch (error) {
       console.error('Failed to load festive deals:', error);
       setFestiveDeals([]);
@@ -130,6 +205,14 @@ export default function HomePage() {
     }
 
     try {
+      // Track upvote for anonymous personalization
+      if (voteType === 1) {
+        const deal = [...deals, ...personalizedDeals, ...festiveDeals].find(d => d.id === dealId);
+        if (deal) {
+          trackBrowsingActivity(dealId, deal.categoryId || null, 'upvote');
+        }
+      }
+
       const result = await dealsApi.voteDeal(dealId, voteType);
       const updateDeal = (d: Deal) =>
         d.id === dealId
@@ -178,13 +261,13 @@ export default function HomePage() {
 
   const handlePersonalizedPrev = () => {
     setPersonalizedCarouselIndex((prev) =>
-      prev <= 0 ? Math.max(0, personalizedDeals.length - 7) : prev - 1
+      prev <= 0 ? Math.max(0, personalizedDeals.length - 6) : prev - 1
     );
   };
 
   const handlePersonalizedNext = () => {
     setPersonalizedCarouselIndex((prev) =>
-      prev >= personalizedDeals.length - 7 ? 0 : prev + 1
+      prev >= personalizedDeals.length - 6 ? 0 : prev + 1
     );
   };
 
@@ -695,36 +778,39 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Main Content Container */}
-        <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '24px' }}>
-          {/* Search Results */}
-          {isSearchActive && searchQuery ? (
-            <SearchResultsPage
-              initialQuery={searchQuery}
-              onClose={() => {
-                setIsSearchActive(false);
-                setSearchQuery('');
-              }}
-              onDealClick={(dealId) => {
-                navigate(`/deal/${dealId}`);
-                setIsSearchActive(false);
-              }}
-              onUserClick={(userId) => {
-                setSelectedUserId(userId);
-                setShowProfile(true);
-                setIsSearchActive(false);
-              }}
-              onVote={handleVote}
-            />
-          ) : (
-            <>
+        {/* Main Content Container - Two Column Layout */}
+        <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '12px 24px' }}>
+          <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
+            {/* Main Content Area */}
+            <div style={{ flex: '1 1 auto', minWidth: 0 }}>
+              {/* Search Results */}
+              {isSearchActive && searchQuery ? (
+                <SearchResultsPage
+                  initialQuery={searchQuery}
+                  onClose={() => {
+                    setIsSearchActive(false);
+                    setSearchQuery('');
+                  }}
+                  onDealClick={(dealId) => {
+                    navigate(`/deal/${dealId}`);
+                    setIsSearchActive(false);
+                  }}
+                  onUserClick={(userId) => {
+                    setSelectedUserId(userId);
+                    setShowProfile(true);
+                    setIsSearchActive(false);
+                  }}
+                  onVote={handleVote}
+                />
+              ) : (
+                <>
           {/* Just For You Section */}
           {personalizedDeals.length > 0 && !searchQuery && (
             <div style={{
-              marginBottom: 32,
+              marginBottom: 8,
               background: '#ffffff',
               borderRadius: 12,
-              padding: '24px',
+              padding: '10px',
               boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
             }}>
               <div
@@ -732,11 +818,11 @@ export default function HomePage() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  marginBottom: 20,
+                  marginBottom: 6,
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: '#1a1a1a' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#1a1a1a' }}>
                     ✨ Just For You
                   </h2>
                   <span
@@ -749,11 +835,15 @@ export default function HomePage() {
                       fontWeight: 500,
                     }}
                   >
-                    {isAuthenticated ? 'Based on your browsing' : 'Personalized for you'}
+                    {isAuthenticated
+                      ? 'Based on your activity'
+                      : getPreferredCategories().length > 0
+                        ? 'Based on your browsing'
+                        : 'Popular deals'}
                   </span>
                 </div>
 
-                {personalizedDeals.length > 7 && (
+                {personalizedDeals.length > 6 && (
                   <div style={{ display: 'flex', gap: 8 }}>
                     <button
                       onClick={handlePersonalizedPrev}
@@ -825,14 +915,14 @@ export default function HomePage() {
                   display: 'flex',
                   gap: 10,
                   transition: 'transform 0.5s ease-in-out',
-                  transform: `translateX(calc(-${personalizedCarouselIndex} * (100% / 7 + 10px)))`,
+                  transform: `translateX(calc(-${personalizedCarouselIndex} * (calc(100% / 6) + 10px)))`,
                 }}
               >
                 {personalizedDeals.map((deal) => (
                   <div
                     key={deal.id}
                     style={{
-                      flex: '0 0 calc((100% - 60px) / 7)',
+                      flex: '0 0 calc((100% - 50px) / 6)',
                       minWidth: 0,
                     }}
                   >
@@ -856,21 +946,21 @@ export default function HomePage() {
           {/* Festive Deals Section */}
           {festiveDeals.length > 0 && !searchQuery && (
             <div style={{
-              marginBottom: 32,
+              marginBottom: 8,
               background: '#ffffff',
               borderRadius: 12,
-              padding: '24px',
+              padding: '10px',
               boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
             }}>
               <div
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 12,
-                  marginBottom: 20,
+                  gap: 8,
+                  marginBottom: 6,
                 }}
               >
-                <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: '#1a1a1a' }}>
+                <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#1a1a1a' }}>
                   🎉 Festive & Seasonal Deals
                 </h2>
                 <span
@@ -889,13 +979,12 @@ export default function HomePage() {
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                gridTemplateColumns: 'repeat(6, 1fr)',
                 gap: 10,
                 width: '100%',
-                boxSizing: 'border-box',
               }}
             >
-              {festiveDeals.map((deal) => (
+              {festiveDeals.slice(0, 6).map((deal) => (
                 <CompactDealCard
                   key={deal.id}
                   deal={deal}
@@ -912,81 +1001,93 @@ export default function HomePage() {
             </div>
           )}
 
-          {/* Categories */}
-          {categories.length > 0 && (
-            <div
-              style={{
-                display: 'flex',
-                gap: 10,
-                marginBottom: 20,
-                overflowX: 'auto',
-                paddingBottom: 8,
-              }}
-            >
-              <button
-                onClick={() => setSelectedCategory(null)}
-                style={{
-                  padding: '10px 18px',
-                  borderRadius: 8,
-                  border: !selectedCategory ? 'none' : '1px solid #d1d5db',
-                  background: !selectedCategory ? '#2563eb' : '#ffffff',
-                  color: !selectedCategory ? '#ffffff' : '#374151',
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                  fontSize: 14,
-                  whiteSpace: 'nowrap',
-                  boxShadow: !selectedCategory ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
-                }}
-              >
-                All
-              </button>
-              {categories.map((cat) => (
-                <button
-                  key={cat.id}
-                  onClick={() => setSelectedCategory(cat.id)}
+          {/* Category Dropdown + Tabs on One Line */}
+          <div style={{ display: 'flex', gap: 12, marginBottom: 20, alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+              {/* Category Dropdown */}
+              {categories.length > 0 && (
+                <select
+                  value={selectedCategory || ''}
+                  onChange={(e) => setSelectedCategory(e.target.value || null)}
                   style={{
-                    padding: '10px 18px',
+                    padding: '10px 14px',
                     borderRadius: 8,
-                    border: selectedCategory === cat.id ? 'none' : '1px solid #d1d5db',
-                    background: selectedCategory === cat.id ? '#2563eb' : '#ffffff',
-                    color: selectedCategory === cat.id ? '#ffffff' : '#374151',
+                    border: '1px solid #d1d5db',
+                    background: '#ffffff',
+                    color: '#374151',
                     cursor: 'pointer',
                     fontWeight: 600,
                     fontSize: 14,
-                    whiteSpace: 'nowrap',
-                    boxShadow: selectedCategory === cat.id ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
+                    minWidth: '180px',
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                    outline: 'none',
                   }}
                 >
-                  {cat.icon} {cat.name}
-                </button>
-              ))}
-            </div>
-          )}
+                  <option value="">📂 All Categories</option>
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.icon} {cat.name}
+                    </option>
+                  ))}
+                </select>
+              )}
 
-          {/* Tabs */}
-          <div style={{ display: 'flex', gap: 10, marginBottom: 24 }}>
-            {(['Frontpage', 'Popular', 'New'] as Tab[]).map((tab) => {
-              const active = activeTab === tab;
-              return (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  style={{
-                    padding: '10px 20px',
-                    borderRadius: 8,
-                    border: active ? 'none' : '1px solid #d1d5db',
-                    background: active ? '#2563eb' : '#ffffff',
-                    color: active ? '#ffffff' : '#374151',
-                    cursor: 'pointer',
-                    fontWeight: 600,
-                    fontSize: 14,
-                    boxShadow: active ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
-                  }}
-                >
-                  {tab}
-                </button>
-              );
-            })}
+              {/* Vertical Divider */}
+              <div style={{
+                width: 1,
+                height: 32,
+                background: '#d1d5db',
+              }} />
+
+              {/* Tabs */}
+              <div style={{ display: 'flex', gap: 10 }}>
+                {(['All', 'Frontpage', 'Popular', 'New'] as Tab[]).map((tab) => {
+                  const active = activeTab === tab;
+                  return (
+                    <button
+                      key={tab}
+                      onClick={() => setActiveTab(tab)}
+                      style={{
+                        padding: '10px 20px',
+                        borderRadius: 8,
+                        border: active ? 'none' : '1px solid #d1d5db',
+                        background: active ? '#2563eb' : '#ffffff',
+                        color: active ? '#ffffff' : '#374151',
+                        cursor: 'pointer',
+                        fontWeight: 600,
+                        fontSize: 14,
+                        boxShadow: active ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
+                      }}
+                    >
+                      {tab}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Personalize Frontpage Button - Right Corner */}
+            <button
+              onClick={() => setIsPreferencesOpen(true)}
+              style={{
+                padding: '10px 16px',
+                borderRadius: 8,
+                border: '1px solid #d1d5db',
+                background: '#ffffff',
+                color: '#374151',
+                cursor: 'pointer',
+                fontWeight: 600,
+                fontSize: 14,
+                whiteSpace: 'nowrap',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+              }}
+              title="Customize what appears on your Frontpage"
+            >
+              <span style={{ fontSize: 16 }}>⚙️</span>
+              <span>Personalize Frontpage</span>
+            </button>
           </div>
 
           {/* Deals Grid */}
@@ -1016,31 +1117,189 @@ export default function HomePage() {
               <p style={{ margin: '8px 0 0', fontSize: 14 }}>Be the first to post one!</p>
             </div>
           ) : (
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-                gap: 16,
-                marginBottom: 40,
-              }}
-            >
-            {deals.map((deal) => (
-              <CompactDealCard
-                key={deal.id}
-                deal={deal}
-                onUpvote={() => handleVote(deal.id, deal.userVote === 1 ? 0 : 1)}
-                onDownvote={() => handleVote(deal.id, deal.userVote === -1 ? 0 : -1)}
-                onView={() => handleDealView(deal.id)}
-                onUserClick={(userId) => {
-                  setSelectedUserId(userId);
-                  setShowProfile(true);
-                }}
-              />
-            ))}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20, marginBottom: 40 }}>
+              {/* Render deals in groups of 12 (2 rows × 6 columns) with ads in between */}
+              {Array.from({ length: Math.ceil(deals.length / 12) }).map((_, groupIndex) => {
+                const startIdx = groupIndex * 12;
+                const endIdx = Math.min(startIdx + 12, deals.length);
+                const groupDeals = deals.slice(startIdx, endIdx);
+
+                return (
+                  <div key={`group-${groupIndex}`}>
+                    {/* Deals Grid - 6 columns */}
+                    <div
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(6, 1fr)',
+                        gap: 16,
+                        marginBottom: groupIndex < Math.ceil(deals.length / 12) - 1 ? 20 : 0,
+                      }}
+                    >
+                      {groupDeals.map((deal) => (
+                        <CompactDealCard
+                          key={deal.id}
+                          deal={deal}
+                          onUpvote={() => handleVote(deal.id, deal.userVote === 1 ? 0 : 1)}
+                          onDownvote={() => handleVote(deal.id, deal.userVote === -1 ? 0 : -1)}
+                          onView={() => handleDealView(deal.id)}
+                          onUserClick={(userId) => {
+                            setSelectedUserId(userId);
+                            setShowProfile(true);
+                          }}
+                        />
+                      ))}
+                    </div>
+
+                    {/* Horizontal Ad Banner after every 2 rows (except the last group) */}
+                    {groupIndex < Math.ceil(deals.length / 12) - 1 && (
+                      <div
+                        style={{
+                          background: 'linear-gradient(135deg, #ffa726 0%, #fb8c00 100%)',
+                          borderRadius: 12,
+                          padding: '32px',
+                          textAlign: 'center',
+                          color: '#ffffff',
+                          marginTop: 20,
+                          boxShadow: '0 4px 16px rgba(251, 140, 0, 0.3)',
+                        }}
+                      >
+                        <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 8 }}>
+                          🎯 Sponsored Deals
+                        </div>
+                        <div style={{ fontSize: 14, opacity: 0.95 }}>
+                          Your advertisement could be here - Reach thousands of deal hunters daily
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
             </>
           )}
+            </div>
+
+            {/* Ad Sidebar */}
+            <div style={{ flex: '0 0 300px', display: 'flex', flexDirection: 'column', gap: 16, position: 'sticky', top: 20 }}>
+              {/* Ad 1 - General Promotion */}
+              <div
+                style={{
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  borderRadius: 12,
+                  padding: '24px',
+                  color: '#ffffff',
+                  textAlign: 'center',
+                  boxShadow: '0 4px 16px rgba(102, 126, 234, 0.3)',
+                  minHeight: '250px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <div style={{ fontSize: 48, marginBottom: 16 }}>📢</div>
+                <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 8, lineHeight: 1.2 }}>
+                  Your Ad Here
+                </div>
+                <div style={{ fontSize: 13, opacity: 0.95, lineHeight: 1.5, marginBottom: 16 }}>
+                  Promote your deals to thousands of shoppers daily
+                </div>
+                <button
+                  style={{
+                    background: '#ffffff',
+                    color: '#667eea',
+                    border: 'none',
+                    borderRadius: 8,
+                    padding: '10px 20px',
+                    fontSize: 14,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Learn More
+                </button>
+              </div>
+
+              {/* Ad 2 - Sponsored Deal */}
+              <div
+                style={{
+                  background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                  borderRadius: 12,
+                  padding: '24px',
+                  color: '#ffffff',
+                  textAlign: 'center',
+                  boxShadow: '0 4px 16px rgba(245, 87, 108, 0.3)',
+                  minHeight: '250px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <div style={{ fontSize: 48, marginBottom: 16 }}>🎁</div>
+                <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 8, lineHeight: 1.2 }}>
+                  Sponsored Deal
+                </div>
+                <div style={{ fontSize: 13, opacity: 0.95, lineHeight: 1.5, marginBottom: 16 }}>
+                  Feature your seasonal offers in this premium spot
+                </div>
+                <button
+                  style={{
+                    background: '#ffffff',
+                    color: '#f5576c',
+                    border: 'none',
+                    borderRadius: 8,
+                    padding: '10px 20px',
+                    fontSize: 14,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Get Started
+                </button>
+              </div>
+
+              {/* Ad 3 - Brand Spotlight */}
+              <div
+                style={{
+                  background: 'linear-gradient(135deg, #ffa500 0%, #ff6347 100%)',
+                  borderRadius: 12,
+                  padding: '24px',
+                  color: '#ffffff',
+                  textAlign: 'center',
+                  boxShadow: '0 4px 16px rgba(255, 165, 0, 0.3)',
+                  minHeight: '250px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <div style={{ fontSize: 48, marginBottom: 16 }}>⭐</div>
+                <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 8, lineHeight: 1.2 }}>
+                  Brand Spotlight
+                </div>
+                <div style={{ fontSize: 13, opacity: 0.95, lineHeight: 1.5, marginBottom: 16 }}>
+                  Showcase your brand to engaged deal hunters
+                </div>
+                <button
+                  style={{
+                    background: '#ffffff',
+                    color: '#ff6347',
+                    border: 'none',
+                    borderRadius: 8,
+                    padding: '10px 20px',
+                    fontSize: 14,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Advertise Now
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1053,6 +1312,13 @@ export default function HomePage() {
       )}
 
       {isAuthOpen && <AuthModal onClose={() => setIsAuthOpen(false)} />}
+
+      {isPreferencesOpen && (
+        <PreferencesModal
+          onClose={() => setIsPreferencesOpen(false)}
+          categories={categories}
+        />
+      )}
 
       {showProfile && (
         <UserProfile

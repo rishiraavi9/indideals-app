@@ -10,7 +10,6 @@ export const categoriesApi = {
       return mockCategories.map(c => ({
         ...c,
         description: null,
-        icon: null,
         createdAt: new Date().toISOString(),
       }));
     }

@@ -291,6 +291,14 @@ interface LayoutProps {
 - Web Share API with clipboard fallback
 - Affiliate link tracking before redirect
 - Login requirement for voting
+- Anonymous tracking on view/upvote 🎯 NEW
+
+**Ad Sidebar Component** 🎯 NEW
+- Three 300px-wide ad slots (sticky positioning)
+- Gradient backgrounds (purple, pink, orange)
+- CTA buttons for engagement
+- Persistent visibility while scrolling
+- Easy to integrate with ad networks (Google AdSense, etc.)
 
 ### Routing Strategy
 
@@ -584,7 +592,60 @@ Browser → POST /api/alerts
      "🔥 Deal Alert: Sony WH-1000XM5 - ₹19,999"
 ```
 
-### 5. GDPR Data Export Flow
+### 5. Anonymous Personalization Flow 🎯 NEW
+
+```
+User Action (view/click/upvote)
+              ↓
+     trackBrowsingActivity()
+     (Client-side, no server call)
+              ↓
+     localStorage.getItem('indiaDeals_browsingHistory')
+              ↓
+     Add new activity item:
+     {
+       dealId: "abc123",
+       categoryId: "electronics",
+       timestamp: 1734192000000,
+       activityType: "upvote"  // or view/click/save
+     }
+              ↓
+     Keep last 50 items (rolling window)
+              ↓
+     Filter items > 30 days old
+              ↓
+     localStorage.setItem('indiaDeals_browsingHistory', updated)
+              ↓
+     Next page load:
+     ├─ getPreferredCategories()
+     ├─ Calculate weighted scores:
+     │  ├─ upvote: 3x weight
+     │  ├─ save: 2.5x weight
+     │  ├─ click: 2x weight
+     │  └─ view: 1x weight
+     ├─ Sort by score
+     └─ Return top 5 categories
+              ↓
+     Load personalized deals:
+     ├─ Has browsing history? → GET /api/deals?tab=personalized&categories=electronics,fashion
+     └─ No history? → GET /api/deals?tab=popular (fallback)
+              ↓
+     Display "Just For You" with smart badge:
+     ├─ Logged in: "Based on your activity"
+     ├─ Anonymous with history: "Based on your browsing"
+     └─ New user: "Popular deals"
+```
+
+**Privacy Features**:
+- ✅ All data stored in localStorage (client-side only)
+- ✅ Auto-expires data > 30 days
+- ✅ No server tracking for anonymous users
+- ✅ User can clear anytime via browser storage
+- ✅ Anonymous ID format: `anon_timestamp_randomstring`
+
+---
+
+### 6. GDPR Data Export Flow
 
 ```
 Browser → GET /api/gdpr/export
@@ -1002,9 +1063,68 @@ logs/combined.log    - All logs
 
 ---
 
-## Recent Changes (v2.1.0) 🎨
+## Recent Changes
 
-### Frontend Architecture Refactor (December 14, 2025)
+### v2.2.0 - Ad Sidebar & Anonymous Personalization (December 14, 2025) 🎯
+
+**1. Two-Column Layout with Dedicated Ad Sidebar**
+- ✅ Refactored main content to use flexbox two-column layout
+- ✅ Main content area: `flex: 1 1 auto` (responsive width)
+- ✅ Ad sidebar: `flex: 0 0 300px` (fixed 300px, sticky positioning)
+- ✅ 20px gap between content and ads for visual separation
+
+**2. Ad Sidebar Implementation**
+- ✅ Three vertically-stacked ad slots (300px wide each)
+- ✅ Sticky positioning (`position: sticky, top: 20px`) - stays visible on scroll
+- ✅ Ad Slot 1: Purple gradient - "Your Ad Here" (general promotion)
+- ✅ Ad Slot 2: Pink gradient - "Sponsored Deal" (seasonal offers)
+- ✅ Ad Slot 3: Orange gradient - "Brand Spotlight" (brand promotion)
+- ✅ Each ad has CTA button for engagement tracking
+- ✅ Professional gradient backgrounds with box shadows
+
+**3. Content Layout Updates**
+- ✅ "Just For You" section: 6 cards in carousel (previously had inline ad)
+- ✅ "Festive & Seasonal Deals": 6 cards in grid (previously had inline ad)
+- ✅ All other content sections use full width of content area
+- ✅ Removed inline ads to eliminate visual clutter
+
+**4. Anonymous Personalization System** 🎯 NEW
+- ✅ Client-side tracking system using localStorage
+- ✅ Works without login (Instagram/Facebook-style)
+- ✅ Smart fallback: New users see popular deals, returning users see personalized
+- ✅ Tracks 4 activity types with weighted scoring:
+  - Views (1x weight) - Basic signal
+  - Clicks (2x weight) - Medium signal
+  - Upvotes (3x weight) - Strong signal
+  - Saves (2.5x weight) - Strong signal
+- ✅ Analyzes top 5 preferred categories from last 50 activities
+- ✅ Auto-expires data older than 30 days for privacy
+- ✅ Dynamic badge text: "Popular deals" → "Based on your browsing" → "Based on your activity"
+
+**5. New Utility Module**
+- ✅ Created `/frontend/src/utils/anonymousTracking.ts`
+- ✅ Functions:
+  - `getAnonymousUserId()` - Generate/retrieve anonymous ID
+  - `trackBrowsingActivity()` - Track user interactions
+  - `getBrowsingHistory()` - Retrieve activity history
+  - `getPreferredCategories()` - Calculate category preferences
+  - `clearBrowsingHistory()` - Privacy-friendly data clearing
+
+**6. Enhanced Vote Tracking**
+- ✅ Upvotes now tracked for personalization (even for logged-in users)
+- ✅ Improves recommendation quality based on engagement
+
+**Benefits**:
+- 📈 Better monetization with dedicated, persistent ad sidebar
+- 🎯 Improved personalization without requiring login
+- 🔄 More ad inventory (3 vertical slots vs 2 inline)
+- ✨ Cleaner UI with separated content and ads
+- 📱 Privacy-friendly (client-side only, auto-expiring data)
+- 🚀 Progressive enhancement (better experience as user engages)
+
+---
+
+### v2.1.0 - Frontend Architecture Refactor (December 14, 2025) 🎨
 
 **1. Component Reusability (DRY Principle)**
 - ✅ Created `Layout.tsx` wrapper component
@@ -1205,7 +1325,7 @@ When a feature is disabled, API endpoints return `503 Service Unavailable` with 
 
 ---
 
-**Architecture Version**: 2.1.0
+**Architecture Version**: 2.2.0
 **Last Updated**: December 14, 2025
-**Status**: ✅ Production Ready (95% complete - HomePage refactor pending)
+**Status**: ✅ Production Ready (with Ad Sidebar & Anonymous Personalization)
 **Next Review**: Q1 2026
