@@ -78,9 +78,10 @@ export default function HomePage() {
   const loadDeals = async () => {
     setLoading(true);
     try {
-      // Handle "All" tab - shows all deals without tab filtering
+      // Handle "All" tab - shows all deals without specific tab filtering
       if (activeTab === 'All') {
         const response = await dealsApi.getDeals({
+          tab: 'frontpage', // Use frontpage as base, but get more deals
           category: selectedCategory || undefined,
           search: searchQuery || undefined,
           limit: 100,

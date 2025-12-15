@@ -683,9 +683,66 @@ export const mockDeals: Deal[] = [
 ];
 
 export const mockCategories = [
-  { id: 'electronics', name: 'Electronics', slug: 'electronics', icon: '📱' },
-  { id: 'fashion', name: 'Fashion', slug: 'fashion', icon: '👕' },
-  { id: 'home', name: 'Home & Kitchen', slug: 'home', icon: '🏠' },
-  { id: 'books', name: 'Books', slug: 'books', icon: '📚' },
-  { id: 'sports', name: 'Sports', slug: 'sports', icon: '⚽' },
+  // Technology & Electronics
+  { id: 'apple', name: 'Apple', slug: 'apple', icon: '🍎', description: 'Apple products - iPhones, iPads, MacBooks, AirPods' },
+  { id: 'computers', name: 'Computers & Laptops', slug: 'computers', icon: '💻', description: 'Laptops, desktops, monitors, and computer accessories' },
+  { id: 'tech-electronics', name: 'Tech & Electronics', slug: 'tech-electronics', icon: '🔌', description: 'Consumer electronics, gadgets, and tech accessories' },
+  { id: 'phones', name: 'Phones & Tablets', slug: 'phones', icon: '📱', description: 'Smartphones, tablets, and mobile accessories' },
+  { id: 'video-games', name: 'Video Games', slug: 'video-games', icon: '🎮', description: 'Gaming consoles, video games, and gaming accessories' },
+  { id: 'tv', name: 'TV & Home Theater', slug: 'tv', icon: '📺', description: 'Televisions, streaming devices, soundbars' },
+  { id: 'cameras', name: 'Cameras & Photography', slug: 'cameras', icon: '📷', description: 'DSLR, mirrorless, action cameras' },
+
+  // Fashion & Accessories
+  { id: 'clothing-accessories', name: 'Clothing & Accessories', slug: 'clothing-accessories', icon: '👕', description: 'Mens, womens, and kids fashion' },
+  { id: 'shoes', name: 'Shoes', slug: 'shoes', icon: '👟', description: 'Footwear for men, women, and children' },
+  { id: 'bags-luggage', name: 'Bags & Luggage', slug: 'bags-luggage', icon: '🎒', description: 'Backpacks, handbags, suitcases' },
+  { id: 'watches-jewelry', name: 'Watches & Jewelry', slug: 'watches-jewelry', icon: '⌚', description: 'Watches and jewelry' },
+
+  // Home & Living
+  { id: 'home-improvement', name: 'Home & Home Improvement', slug: 'home-improvement', icon: '🏠', description: 'Tools, hardware, furniture' },
+  { id: 'grocery', name: 'Grocery & Household', slug: 'grocery', icon: '🛒', description: 'Groceries and household essentials' },
+  { id: 'kitchen-dining', name: 'Kitchen & Dining', slug: 'kitchen-dining', icon: '🍳', description: 'Cookware, appliances, utensils' },
+  { id: 'furniture-decor', name: 'Furniture & Decor', slug: 'furniture-decor', icon: '🛋️', description: 'Home furniture and decor' },
+  { id: 'garden-outdoor', name: 'Garden & Outdoor', slug: 'garden-outdoor', icon: '🌱', description: 'Gardening and outdoor items' },
+
+  // Health & Wellness
+  { id: 'health-beauty', name: 'Health & Beauty', slug: 'health-beauty', icon: '💄', description: 'Skincare, makeup, wellness' },
+  { id: 'fitness-sports', name: 'Fitness & Sports', slug: 'fitness-sports', icon: '🏋️', description: 'Exercise equipment and sportswear' },
+  { id: 'medical-pharmacy', name: 'Medical & Pharmacy', slug: 'medical-pharmacy', icon: '💊', description: 'Healthcare and medical products' },
+
+  // Entertainment & Leisure
+  { id: 'entertainment', name: 'Entertainment & Events', slug: 'entertainment', icon: '🎭', description: 'Movies, music, events' },
+  { id: 'movies-streaming', name: 'Movies & Streaming', slug: 'movies-streaming', icon: '🎬', description: 'Streaming subscriptions' },
+  { id: 'books-magazines', name: 'Books & Magazines', slug: 'books-magazines', icon: '📚', description: 'Books and magazines' },
+  { id: 'music-audio', name: 'Music & Audio', slug: 'music-audio', icon: '🎧', description: 'Headphones, speakers, instruments' },
+
+  // Automotive
+  { id: 'autos', name: 'Autos & Vehicles', slug: 'autos', icon: '🚗', description: 'Car accessories and parts' },
+  { id: 'auto-parts', name: 'Auto Parts & Accessories', slug: 'auto-parts', icon: '🔧', description: 'Vehicle parts and accessories' },
+
+  // Services & Experiences
+  { id: 'travel-vacations', name: 'Travel & Vacations', slug: 'travel-vacations', icon: '✈️', description: 'Travel and vacation deals' },
+  { id: 'restaurants', name: 'Restaurants & Dining', slug: 'restaurants', icon: '🍽️', description: 'Restaurant and food deals' },
+  { id: 'services', name: 'Services', slug: 'services', icon: '⚙️', description: 'Professional services' },
+
+  // Family & Kids
+  { id: 'babies-kids', name: 'Babies & Kids', slug: 'babies-kids', icon: '👶', description: 'Baby and kids products' },
+  { id: 'toys-games', name: 'Toys & Games', slug: 'toys-games', icon: '🧸', description: 'Toys and games' },
+  { id: 'education', name: 'Education & Learning', slug: 'education', icon: '🎓', description: 'Educational materials' },
+
+  // Pets
+  { id: 'pets', name: 'Pets & Animals', slug: 'pets', icon: '🐾', description: 'Pet products and care' },
+
+  // Office & Business
+  { id: 'office-school', name: 'Office & School Supplies', slug: 'office-school', icon: '✏️', description: 'Office and school supplies' },
+
+  // Special Categories
+  { id: 'flowers-gifts', name: 'Flowers & Gifts', slug: 'flowers-gifts', icon: '🎁', description: 'Gifts and flowers' },
+  { id: 'freebies', name: 'Freebies & Samples', slug: 'freebies', icon: '🆓', description: 'Free products and samples' },
+  { id: 'occasions', name: 'Occasions & Events', slug: 'occasions', icon: '🎉', description: 'Festival and seasonal deals' },
+
+  // Specialty
+  { id: 'sporting-goods', name: 'Sporting Goods', slug: 'sporting-goods', icon: '⚽', description: 'Sports equipment' },
+  { id: 'finance', name: 'Finance & Insurance', slug: 'finance', icon: '💰', description: 'Financial services' },
+  { id: 'other', name: 'Other', slug: 'other', icon: '❓', description: 'Miscellaneous deals' },
 ];
