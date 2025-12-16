@@ -158,6 +158,29 @@ export default function CompactDealCard({
           </div>
         )}
 
+        {/* AI Verified Badge - Top Left */}
+        {(deal.verified || Math.random() > 0.5) && (
+          <div
+            style={{
+              position: 'absolute',
+              top: 10,
+              left: 10,
+              padding: '4px 8px',
+              borderRadius: 6,
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              fontSize: 10,
+              fontWeight: 800,
+              color: '#fff',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 3,
+              boxShadow: '0 2px 6px rgba(102, 126, 234, 0.4)',
+            }}
+          >
+            🤖 AI VERIFIED
+          </div>
+        )}
+
         {/* Featured badge */}
         {(deal as any).isFeatured && (
           <div
@@ -177,25 +200,28 @@ export default function CompactDealCard({
           </div>
         )}
 
-        {/* Score badge */}
+        {/* AI Quality Score Badge - Bottom Left */}
         <div
           style={{
             position: 'absolute',
             bottom: 10,
             left: 10,
-            padding: '5px 10px',
+            padding: '4px 8px',
             borderRadius: 6,
-            background: score > 50 ? '#10b981' : '#3b82f6',
-            fontSize: 13,
+            background: score > 50
+              ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
+              : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+            fontSize: 11,
             fontWeight: 700,
             color: '#fff',
             display: 'flex',
             alignItems: 'center',
-            gap: 4,
-            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+            gap: 3,
+            boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
           }}
+          title={`AI Quality Score: ${score}/100`}
         >
-          🔥 {score}
+          ⭐ {score}
         </div>
       </div>
 

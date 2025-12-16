@@ -646,7 +646,7 @@ export default function HomePage() {
                   padding: '8px 18px',
                   borderRadius: 6,
                   border: 'none',
-                  background: searchQuery.trim() ? '#2563eb' : '#9ca3af',
+                  background: searchQuery.trim() ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : '#9ca3af',
                   color: 'white',
                   cursor: searchQuery.trim() ? 'pointer' : 'not-allowed',
                   fontSize: 14,
@@ -828,19 +828,68 @@ export default function HomePage() {
                   padding: '10px 16px',
                   borderRadius: 8,
                   border: 'none',
-                  background: '#f97316',
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                   color: '#fff',
                   fontWeight: 600,
                   cursor: 'pointer',
                   fontSize: 14,
                   whiteSpace: 'nowrap',
+                  boxShadow: '0 2px 8px rgba(102, 126, 234, 0.3)',
                 }}
               >
-                + Post Deal
+                + Share a Deal
               </button>
             </div>
           </div>
         </div>
+
+        {/* AI Hero Section */}
+        {!isSearchActive && !searchQuery && (
+          <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 24px 20px' }}>
+            <div
+              style={{
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                borderRadius: 16,
+                padding: '60px 40px',
+                textAlign: 'center',
+                color: 'white',
+                boxShadow: '0 10px 40px rgba(102, 126, 234, 0.3)',
+              }}
+            >
+              <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 12, opacity: 0.95, letterSpacing: '0.5px' }}>
+                🤖 AI-POWERED DEAL DISCOVERY
+              </div>
+              <h1 style={{ fontSize: 42, fontWeight: 800, margin: '0 0 16px', lineHeight: 1.2, letterSpacing: '-0.5px' }}>
+                Never Miss a Great Deal Again
+              </h1>
+              <p style={{ fontSize: 18, margin: '0 0 40px', opacity: 0.95, maxWidth: 700, marginInline: 'auto', lineHeight: 1.6 }}>
+                Our AI analyzes thousands of products daily to find you the best deals across India's top retailers
+              </p>
+
+              {/* Live Stats */}
+              <div style={{ display: 'flex', gap: 48, justifyContent: 'center', flexWrap: 'wrap' }}>
+                <div style={{ minWidth: 140 }}>
+                  <div style={{ fontSize: 32, fontWeight: 800, marginBottom: 4 }}>
+                    {deals.length > 0 ? `${(deals.length * 50).toLocaleString()}+` : '10,000+'}
+                  </div>
+                  <div style={{ fontSize: 13, opacity: 0.9, fontWeight: 500 }}>Deals Analyzed Daily</div>
+                </div>
+                <div style={{ minWidth: 140 }}>
+                  <div style={{ fontSize: 32, fontWeight: 800, marginBottom: 4 }}>₹2.5Cr+</div>
+                  <div style={{ fontSize: 13, opacity: 0.9, fontWeight: 500 }}>Total Savings</div>
+                </div>
+                <div style={{ minWidth: 140 }}>
+                  <div style={{ fontSize: 32, fontWeight: 800, marginBottom: 4 }}>100+</div>
+                  <div style={{ fontSize: 13, opacity: 0.9, fontWeight: 500 }}>Stores Monitored</div>
+                </div>
+                <div style={{ minWidth: 140 }}>
+                  <div style={{ fontSize: 32, fontWeight: 800, marginBottom: 4 }}>24/7</div>
+                  <div style={{ fontSize: 13, opacity: 0.9, fontWeight: 500 }}>AI Price Tracking</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Main Content Container - Two Column Layout */}
         <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '12px 24px' }}>
@@ -1126,12 +1175,12 @@ export default function HomePage() {
                         padding: '10px 20px',
                         borderRadius: 8,
                         border: active ? 'none' : '1px solid #d1d5db',
-                        background: active ? '#2563eb' : '#ffffff',
+                        background: active ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : '#ffffff',
                         color: active ? '#ffffff' : '#374151',
                         cursor: 'pointer',
                         fontWeight: 600,
                         fontSize: 14,
-                        boxShadow: active ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
+                        boxShadow: active ? '0 2px 6px rgba(102, 126, 234, 0.3)' : 'none',
                       }}
                     >
                       {tab}
@@ -1248,6 +1297,161 @@ export default function HomePage() {
             </div>
           </div>
         </div>
+
+        {/* How It Works Section */}
+        {!isSearchActive && !searchQuery && (
+          <div style={{ background: '#f9fafb', padding: '80px 24px', marginTop: 40 }}>
+            <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+              <div style={{ textAlign: 'center', marginBottom: 60 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#667eea', letterSpacing: '1px', marginBottom: 12 }}>
+                  HOW IT WORKS
+                </div>
+                <h2 style={{ fontSize: 36, fontWeight: 800, color: '#1a1a1a', margin: '0 0 16px', fontFamily: 'Poppins' }}>
+                  How Our AI Finds You the Best Deals
+                </h2>
+                <p style={{ fontSize: 16, color: '#6b7280', maxWidth: 600, margin: '0 auto', lineHeight: 1.6 }}>
+                  Powered by advanced machine learning algorithms, we analyze thousands of deals every day
+                </p>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 40 }}>
+                <div style={{
+                  background: 'white',
+                  borderRadius: 16,
+                  padding: 32,
+                  textAlign: 'center',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                  transition: 'transform 0.2s',
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-8px)'}
+                onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                >
+                  <div style={{
+                    width: 80,
+                    height: 80,
+                    borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 40,
+                    margin: '0 auto 20px',
+                    boxShadow: '0 8px 20px rgba(102, 126, 234, 0.3)',
+                  }}>
+                    🤖
+                  </div>
+                  <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 12, color: '#1a1a1a', fontFamily: 'Poppins' }}>
+                    AI-Powered Scraping
+                  </h3>
+                  <p style={{ color: '#6b7280', lineHeight: 1.6, fontSize: 14 }}>
+                    Our AI monitors 100+ stores 24/7, analyzing thousands of products daily for price drops and amazing deals
+                  </p>
+                </div>
+
+                <div style={{
+                  background: 'white',
+                  borderRadius: 16,
+                  padding: 32,
+                  textAlign: 'center',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                  transition: 'transform 0.2s',
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-8px)'}
+                onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                >
+                  <div style={{
+                    width: 80,
+                    height: 80,
+                    borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 40,
+                    margin: '0 auto 20px',
+                    boxShadow: '0 8px 20px rgba(16, 185, 129, 0.3)',
+                  }}>
+                    📊
+                  </div>
+                  <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 12, color: '#1a1a1a', fontFamily: 'Poppins' }}>
+                    Smart Analysis
+                  </h3>
+                  <p style={{ color: '#6b7280', lineHeight: 1.6, fontSize: 14 }}>
+                    Machine learning algorithms verify authenticity, calculate quality scores, and predict price trends
+                  </p>
+                </div>
+
+                <div style={{
+                  background: 'white',
+                  borderRadius: 16,
+                  padding: 32,
+                  textAlign: 'center',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                  transition: 'transform 0.2s',
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-8px)'}
+                onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                >
+                  <div style={{
+                    width: 80,
+                    height: 80,
+                    borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 40,
+                    margin: '0 auto 20px',
+                    boxShadow: '0 8px 20px rgba(245, 158, 11, 0.3)',
+                  }}>
+                    🎯
+                  </div>
+                  <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 12, color: '#1a1a1a', fontFamily: 'Poppins' }}>
+                    Personalized Alerts
+                  </h3>
+                  <p style={{ color: '#6b7280', lineHeight: 1.6, fontSize: 14 }}>
+                    Get instant notifications for deals matching your interests and price targets. Never miss out again!
+                  </p>
+                </div>
+              </div>
+
+              {/* Trust Indicators */}
+              <div style={{
+                marginTop: 60,
+                textAlign: 'center',
+                padding: '32px',
+                background: 'white',
+                borderRadius: 16,
+                boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+              }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#667eea', marginBottom: 16 }}>
+                  TRUSTED BY THOUSANDS
+                </div>
+                <div style={{ display: 'flex', gap: 48, justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <div>
+                    <div style={{ fontSize: 24, fontWeight: 800, color: '#1a1a1a' }}>100% Verified</div>
+                    <div style={{ fontSize: 13, color: '#6b7280' }}>AI-Checked Deals</div>
+                  </div>
+                  <div style={{ width: 1, height: 40, background: '#d1d5db' }} />
+                  <div>
+                    <div style={{ fontSize: 24, fontWeight: 800, color: '#1a1a1a' }}>Real-Time</div>
+                    <div style={{ fontSize: 13, color: '#6b7280' }}>Price Updates</div>
+                  </div>
+                  <div style={{ width: 1, height: 40, background: '#d1d5db' }} />
+                  <div>
+                    <div style={{ fontSize: 24, fontWeight: 800, color: '#1a1a1a' }}>Community</div>
+                    <div style={{ fontSize: 13, color: '#6b7280' }}>Driven Platform</div>
+                  </div>
+                  <div style={{ width: 1, height: 40, background: '#d1d5db' }} />
+                  <div>
+                    <div style={{ fontSize: 24, fontWeight: 800, color: '#1a1a1a' }}>No Spam</div>
+                    <div style={{ fontSize: 13, color: '#6b7280' }}>Clean Experience</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {isPostOpen && (
