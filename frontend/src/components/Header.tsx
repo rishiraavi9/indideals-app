@@ -106,10 +106,14 @@ export default function Header({
             margin: 0,
             fontSize: 28,
             letterSpacing: -0.5,
-            color: '#1a1a1a',
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
             whiteSpace: 'nowrap',
             cursor: 'pointer',
             transition: 'opacity 0.2s',
+            fontFamily: 'Poppins',
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.opacity = '0.7';
@@ -118,7 +122,7 @@ export default function Header({
             e.currentTarget.style.opacity = '1';
           }}
         >
-          🔥 <span style={{ fontWeight: 900 }}>IndiaDeals</span>
+          🤖 <span style={{ fontWeight: 900 }}>IndiaDeals</span>
         </h1>
 
         {/* Categories Dropdown */}
@@ -269,7 +273,7 @@ export default function Header({
               padding: '8px 18px',
               borderRadius: 6,
               border: 'none',
-              background: searchQuery.trim() ? '#2563eb' : '#9ca3af',
+              background: searchQuery.trim() ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : '#9ca3af',
               color: 'white',
               cursor: searchQuery.trim() ? 'pointer' : 'not-allowed',
               fontSize: 14,
@@ -435,15 +439,16 @@ export default function Header({
               padding: '10px 16px',
               borderRadius: 8,
               border: 'none',
-              background: '#f97316',
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
               color: '#fff',
               fontWeight: 600,
               cursor: 'pointer',
               fontSize: 14,
               whiteSpace: 'nowrap',
+              boxShadow: '0 2px 8px rgba(102, 126, 234, 0.3)',
             }}
           >
-            + Post Deal
+            + Share a Deal
           </button>
         </div>
       </div>
