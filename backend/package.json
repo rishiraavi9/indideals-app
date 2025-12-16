@@ -14,7 +14,8 @@
     "seed:merchants": "tsx src/scripts/seed-merchants.ts",
     "setup:scheduler": "tsx src/scripts/setup-scheduler.ts",
     "clear:scheduler": "tsx src/scripts/setup-scheduler.ts clear",
-    "test:scraper": "tsx src/scripts/test-scraper.ts"
+    "test:scraper": "tsx src/scripts/test-scraper.ts",
+    "create:demo-deals": "tsx src/scripts/create-demo-ai-deals.ts"
   },
   "dependencies": {
     "@bull-board/api": "^6.15.0",
