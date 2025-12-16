@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from './Layout';
+import AdBlock from './AdBlock';
 import { dealsApi } from '../api/deals';
 import { commentsApi } from '../api/comments';
 import type { Deal, Comment } from '../types';
@@ -758,41 +759,11 @@ export default function DealPage() {
         {/* Right Sidebar - Ad Zones */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           {/* Ad Zone 1 - Top Banner */}
-          <div style={{
-            background: '#ffffff',
-            borderRadius: 12,
-            padding: 24,
-            boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-            minHeight: 250,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            border: '2px dashed #d1d5db',
-          }}>
-            <div style={{ textAlign: 'center', color: '#6b7280' }}>
-              <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>📢 Advertisement</p>
-              <p style={{ margin: '8px 0 0', fontSize: 12 }}>300 x 250</p>
-            </div>
-          </div>
+          <AdBlock type="rectangle" />
 
           {/* Ad Zone 2 - Sticky Ad */}
-          <div style={{
-            background: '#ffffff',
-            borderRadius: 12,
-            padding: 24,
-            boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-            minHeight: 600,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            border: '2px dashed #d1d5db',
-            position: 'sticky',
-            top: 100,
-          }}>
-            <div style={{ textAlign: 'center', color: '#6b7280' }}>
-              <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>📢 Advertisement</p>
-              <p style={{ margin: '8px 0 0', fontSize: 12 }}>300 x 600 (Sticky)</p>
-            </div>
+          <div style={{ position: 'sticky', top: 100 }}>
+            <AdBlock type="sidebar" />
           </div>
         </div>
       </div>
