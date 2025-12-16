@@ -4,6 +4,9 @@ import HomePage from './components/HomePage';
 import DealPage from './components/DealPage';
 import PopularDealsPage from './pages/PopularDealsPage';
 import CategoryPage from './pages/CategoryPage';
+import LoginPage from './pages/LoginPage';
+import SignUpPage from './pages/SignUpPage';
+import ProfilePage from './pages/ProfilePage';
 import { initializeCapacitor } from './utils/capacitor';
 
 export default function App() {
@@ -20,6 +23,9 @@ export default function App() {
       <Route path="/deal/:dealId" element={<DealPage />} />
       <Route path="/deals" element={<PopularDealsPage />} />
       <Route path="/deals/:categorySlug" element={<CategoryPage />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/signup" element={<SignUpPage />} />
+      <Route path="/profile" element={<ProfilePage />} />
     </Routes>
   );
 }

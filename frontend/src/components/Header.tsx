@@ -7,16 +7,10 @@ import type { Category } from '../types';
 
 interface HeaderProps {
   onPostDealClick?: () => void;
-  onAnalyticsClick?: () => void;
-  onProfileClick?: () => void;
-  onLoginClick?: () => void;
 }
 
 export default function Header({
   onPostDealClick,
-  onAnalyticsClick,
-  onProfileClick,
-  onLoginClick
 }: HeaderProps) {
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuth();
@@ -364,7 +358,7 @@ export default function Header({
           {isAuthenticated && user ? (
             <>
               <div
-                onClick={onProfileClick}
+                onClick={() => navigate('/profile')}
                 style={{
                   fontSize: 13,
                   color: '#374151',
@@ -400,22 +394,6 @@ export default function Header({
                 </span>
               </div>
               <button
-                onClick={onAnalyticsClick}
-                style={{
-                  padding: '8px 12px',
-                  borderRadius: 8,
-                  border: '1px solid #d1d5db',
-                  background: '#ffffff',
-                  color: '#374151',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  fontSize: 13,
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                📊
-              </button>
-              <button
                 onClick={logout}
                 style={{
                   padding: '8px 14px',
@@ -434,7 +412,7 @@ export default function Header({
             </>
           ) : (
             <button
-              onClick={onLoginClick}
+              onClick={() => navigate('/login')}
               style={{
                 padding: '10px 16px',
                 borderRadius: 8,

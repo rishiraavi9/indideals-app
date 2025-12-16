@@ -6,11 +6,9 @@ import MobileDealCard from './MobileDealCard';
 import MobileHeader from './MobileHeader';
 import MobileBottomNav from './MobileBottomNav';
 import PostDealModal from './PostDealModal';
-import AuthModal from './AuthModal';
-import AffiliateAnalytics from './AffiliateAnalytics';
-import UserProfile from './UserProfile';
 import SearchResultsPage from './SearchResultsPage';
 import PreferencesModal from './PreferencesModal';
+import AdBlock from './AdBlock';
 import { useAuth } from '../context/AuthContext';
 import { dealsApi } from '../api/deals';
 import { categoriesApi } from '../api/categories';
@@ -29,13 +27,10 @@ export default function HomePage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [isPostOpen, setIsPostOpen] = useState(false);
-  const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchActive, setIsSearchActive] = useState(false);
   const [personalizedCarouselIndex, setPersonalizedCarouselIndex] = useState(0);
-  const [showAnalytics, setShowAnalytics] = useState(false);
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [showProfile, setShowProfile] = useState(false);
+  const [festiveCarouselIndex, setFestiveCarouselIndex] = useState(0);
   const [autocompleteSuggestions, setAutocompleteSuggestions] = useState<Array<{title: string; merchant: string; categoryName: string}>>([]);
   const [showAutocomplete, setShowAutocomplete] = useState(false);
   const [showCategoriesDropdown, setShowCategoriesDropdown] = useState(false);
@@ -203,7 +198,7 @@ export default function HomePage() {
 
   const handleVote = async (dealId: string, voteType: number) => {
     if (!isAuthenticated) {
-      setIsAuthOpen(true);
+      navigate('/login');
       return;
     }
 
@@ -262,6 +257,19 @@ export default function HomePage() {
     return () => clearInterval(interval);
   }, [personalizedDeals.length]);
 
+  // Auto-rotate festive deals carousel
+  useEffect(() => {
+    if (festiveDeals.length <= 7) return;
+
+    const interval = setInterval(() => {
+      setFestiveCarouselIndex((prev) =>
+        prev >= festiveDeals.length - 7 ? 0 : prev + 1
+      );
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [festiveDeals.length]);
+
   const handlePersonalizedPrev = () => {
     setPersonalizedCarouselIndex((prev) =>
       prev <= 0 ? Math.max(0, personalizedDeals.length - 6) : prev - 1
@@ -271,6 +279,18 @@ export default function HomePage() {
   const handlePersonalizedNext = () => {
     setPersonalizedCarouselIndex((prev) =>
       prev >= personalizedDeals.length - 6 ? 0 : prev + 1
+    );
+  };
+
+  const handleFestivePrev = () => {
+    setFestiveCarouselIndex((prev) =>
+      prev <= 0 ? Math.max(0, festiveDeals.length - 6) : prev - 1
+    );
+  };
+
+  const handleFestiveNext = () => {
+    setFestiveCarouselIndex((prev) =>
+      prev >= festiveDeals.length - 6 ? 0 : prev + 1
     );
   };
 
@@ -313,7 +333,7 @@ export default function HomePage() {
 
   const handleCreateDeal = () => {
     if (!isAuthenticated) {
-      setIsAuthOpen(true);
+      navigate('/login');
       return;
     }
     setIsPostOpen(true);
@@ -324,67 +344,6 @@ export default function HomePage() {
     setActiveTab('New');
     loadDeals();
   };
-
-  // If showing analytics, render the analytics view
-  if (showAnalytics) {
-    return (
-      <div
-        style={{
-          minHeight: '100vh',
-          padding: 0,
-          margin: 0,
-          background: '#f5f7fa',
-          color: '#1a1a1a',
-          boxSizing: 'border-box',
-        }}
-      >
-        <div
-          style={{
-            width: '100%',
-            maxWidth: '100%',
-            margin: 0,
-            padding: '8px',
-            boxSizing: 'border-box',
-          }}
-        >
-          {/* Header */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 12,
-              marginBottom: 24,
-              flexWrap: 'wrap',
-            }}
-          >
-            <h1 style={{ margin: 0, fontSize: 36, letterSpacing: -1 }}>
-              🔥 <span style={{ fontWeight: 900 }}>IndiaDeals</span>
-            </h1>
-
-            <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-              <button
-                onClick={() => setShowAnalytics(false)}
-                style={{
-                  padding: '10px 14px',
-                  borderRadius: 12,
-                  border: '1px solid rgba(255,255,255,0.18)',
-                  background: 'rgba(38, 118, 255, 0.65)',
-                  color: '#fff',
-                  fontWeight: 800,
-                  cursor: 'pointer',
-                }}
-              >
-                ← Back to Deals
-              </button>
-            </div>
-          </div>
-
-          <AffiliateAnalytics />
-        </div>
-      </div>
-    );
-  }
 
   // Mobile Layout
   if (isMobile) {
@@ -465,8 +424,6 @@ export default function HomePage() {
             categories={categories}
           />
         )}
-
-        {isAuthOpen && <AuthModal onClose={() => setIsAuthOpen(false)} />}
       </div>
     );
   }
@@ -778,10 +735,7 @@ export default function HomePage() {
               {isAuthenticated && user ? (
                 <>
                   <div
-                    onClick={() => {
-                      setSelectedUserId(null);
-                      setShowProfile(true);
-                    }}
+                    onClick={() => navigate("/profile")}
                     style={{
                       fontSize: 13,
                       color: '#374151',
@@ -817,7 +771,7 @@ export default function HomePage() {
                     </span>
                   </div>
                   <button
-                    onClick={() => setShowAnalytics(true)}
+                    onClick={() => navigate("/profile")}
                     style={{
                       padding: '8px 12px',
                       borderRadius: 8,
@@ -851,7 +805,7 @@ export default function HomePage() {
                 </>
               ) : (
                 <button
-                  onClick={() => setIsAuthOpen(true)}
+                  onClick={() => navigate('/login')}
                   style={{
                     padding: '10px 16px',
                     borderRadius: 8,
@@ -907,7 +861,7 @@ export default function HomePage() {
                   }}
                   onUserClick={(userId) => {
                     setSelectedUserId(userId);
-                    setShowProfile(true);
+                    navigate("/profile");
                     setIsSearchActive(false);
                   }}
                   onVote={handleVote}
@@ -958,62 +912,32 @@ export default function HomePage() {
                     <button
                       onClick={handlePersonalizedPrev}
                       style={{
-                        width: 40,
-                        height: 40,
-                        borderRadius: '50%',
+                        padding: '8px 12px',
+                        borderRadius: 8,
                         border: '1px solid #d1d5db',
                         background: '#ffffff',
                         color: '#374151',
                         cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: 20,
-                        fontWeight: 700,
-                        boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = '#f9fafb';
-                        e.currentTarget.style.borderColor = '#2563eb';
-                        e.currentTarget.style.color = '#2563eb';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = '#ffffff';
-                        e.currentTarget.style.borderColor = '#d1d5db';
-                        e.currentTarget.style.color = '#374151';
+                        fontWeight: 600,
+                        fontSize: 16,
                       }}
                     >
-                      ‹
+                      ←
                     </button>
                     <button
                       onClick={handlePersonalizedNext}
                       style={{
-                        width: 40,
-                        height: 40,
-                        borderRadius: '50%',
+                        padding: '8px 12px',
+                        borderRadius: 8,
                         border: '1px solid #d1d5db',
                         background: '#ffffff',
                         color: '#374151',
                         cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: 20,
-                        fontWeight: 700,
-                        boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = '#f9fafb';
-                        e.currentTarget.style.borderColor = '#2563eb';
-                        e.currentTarget.style.color = '#2563eb';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = '#ffffff';
-                        e.currentTarget.style.borderColor = '#d1d5db';
-                        e.currentTarget.style.color = '#374151';
+                        fontWeight: 600,
+                        fontSize: 16,
                       }}
                     >
-                      ›
+                      →
                     </button>
                   </div>
                 )}
@@ -1041,10 +965,7 @@ export default function HomePage() {
                       onUpvote={() => handleVote(deal.id, deal.userVote === 1 ? 0 : 1)}
                       onDownvote={() => handleVote(deal.id, deal.userVote === -1 ? 0 : -1)}
                       onView={() => handleDealView(deal.id)}
-                      onUserClick={(userId) => {
-                        setSelectedUserId(userId);
-                        setShowProfile(true);
-                      }}
+                      
                     />
                   </div>
                 ))}
@@ -1066,47 +987,91 @@ export default function HomePage() {
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 8,
-                  marginBottom: 6,
+                  justifyContent: 'space-between',
+                  marginBottom: 12,
                 }}
               >
-                <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#1a1a1a' }}>
-                  🎉 Festive & Seasonal Deals
-                </h2>
-                <span
-                  style={{
-                    fontSize: 13,
-                    color: '#6b7280',
-                    padding: '4px 10px',
-                    background: '#fef3c7',
-                    borderRadius: 6,
-                    fontWeight: 500,
-                  }}
-                >
-                  Special offers for the season
-                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#1a1a1a' }}>
+                    🎉 Festive & Seasonal Deals
+                  </h2>
+                  <span
+                    style={{
+                      fontSize: 13,
+                      color: '#6b7280',
+                      padding: '4px 10px',
+                      background: '#fef3c7',
+                      borderRadius: 6,
+                      fontWeight: 500,
+                    }}
+                  >
+                    Special offers for the season
+                  </span>
+                </div>
+
+                {/* Navigation arrows */}
+                {festiveDeals.length > 6 && (
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button
+                      onClick={handleFestivePrev}
+                      style={{
+                        padding: '8px 12px',
+                        borderRadius: 8,
+                        border: '1px solid #d1d5db',
+                        background: '#ffffff',
+                        color: '#374151',
+                        cursor: 'pointer',
+                        fontWeight: 600,
+                        fontSize: 16,
+                      }}
+                    >
+                      ←
+                    </button>
+                    <button
+                      onClick={handleFestiveNext}
+                      style={{
+                        padding: '8px 12px',
+                        borderRadius: 8,
+                        border: '1px solid #d1d5db',
+                        background: '#ffffff',
+                        color: '#374151',
+                        cursor: 'pointer',
+                        fontWeight: 600,
+                        fontSize: 16,
+                      }}
+                    >
+                      →
+                    </button>
+                  </div>
+                )}
               </div>
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(6, 1fr)',
-                gap: 10,
-                width: '100%',
-              }}
-            >
-              {festiveDeals.slice(0, 6).map((deal) => (
-                <CompactDealCard
-                  key={deal.id}
-                  deal={deal}
-                  onUpvote={() => handleVote(deal.id, deal.userVote === 1 ? 0 : 1)}
-                  onDownvote={() => handleVote(deal.id, deal.userVote === -1 ? 0 : -1)}
-                  onView={() => handleDealView(deal.id)}
-                  onUserClick={(userId) => {
-                    setSelectedUserId(userId);
-                    setShowProfile(true);
-                  }}
-                />
-              ))}
+            <div style={{ position: 'relative', overflow: 'hidden', width: '100%' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  gap: 10,
+                  transition: 'transform 0.5s ease-in-out',
+                  transform: `translateX(calc(-${festiveCarouselIndex} * (calc(100% / 6) + 10px)))`,
+                }}
+              >
+                {festiveDeals.map((deal) => (
+                  <div
+                    key={deal.id}
+                    style={{
+                      flex: '0 0 calc((100% - 50px) / 6)',
+                      minWidth: 0,
+                    }}
+                  >
+                    <CompactDealCard
+                      deal={deal}
+                      onUpvote={() => handleVote(deal.id, deal.userVote === 1 ? 0 : 1)}
+                      onDownvote={() => handleVote(deal.id, deal.userVote === -1 ? 0 : -1)}
+                      onView={() => handleDealView(deal.id)}
+
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
             </div>
           )}
@@ -1214,17 +1179,21 @@ export default function HomePage() {
               Loading deals...
             </div>
           ) : deals.length === 0 ? (
-            <div
-              style={{
-                background: '#ffffff',
-                borderRadius: 12,
-                padding: '60px 24px',
-                textAlign: 'center',
-                color: '#6b7280',
-              }}
-            >
-              <p style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>No deals found</p>
-              <p style={{ margin: '8px 0 0', fontSize: 14 }}>Be the first to post one!</p>
+            <div>
+              <div
+                style={{
+                  background: '#ffffff',
+                  borderRadius: 12,
+                  padding: '60px 24px',
+                  textAlign: 'center',
+                  color: '#6b7280',
+                  marginBottom: 16,
+                }}
+              >
+                <p style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>No deals found</p>
+                <p style={{ margin: '8px 0 0', fontSize: 14 }}>Be the first to post one!</p>
+              </div>
+              <AdBlock type="banner" />
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20, marginBottom: 40 }}>
@@ -1235,14 +1204,13 @@ export default function HomePage() {
                 const groupDeals = deals.slice(startIdx, endIdx);
 
                 return (
-                  <div key={`group-${groupIndex}`}>
+                  <div key={`group-${groupIndex}`} style={{ marginBottom: 20 }}>
                     {/* Deals Grid - 6 columns */}
                     <div
                       style={{
                         display: 'grid',
                         gridTemplateColumns: 'repeat(6, 1fr)',
                         gap: 16,
-                        marginBottom: groupIndex < Math.ceil(deals.length / 12) - 1 ? 20 : 0,
                       }}
                     >
                       {groupDeals.map((deal) => (
@@ -1252,33 +1220,15 @@ export default function HomePage() {
                           onUpvote={() => handleVote(deal.id, deal.userVote === 1 ? 0 : 1)}
                           onDownvote={() => handleVote(deal.id, deal.userVote === -1 ? 0 : -1)}
                           onView={() => handleDealView(deal.id)}
-                          onUserClick={(userId) => {
-                            setSelectedUserId(userId);
-                            setShowProfile(true);
-                          }}
+
                         />
                       ))}
                     </div>
 
                     {/* Horizontal Ad Banner after every 2 rows (except the last group) */}
                     {groupIndex < Math.ceil(deals.length / 12) - 1 && (
-                      <div
-                        style={{
-                          background: 'linear-gradient(135deg, #ffa726 0%, #fb8c00 100%)',
-                          borderRadius: 12,
-                          padding: '32px',
-                          textAlign: 'center',
-                          color: '#ffffff',
-                          marginTop: 20,
-                          boxShadow: '0 4px 16px rgba(251, 140, 0, 0.3)',
-                        }}
-                      >
-                        <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 8 }}>
-                          🎯 Sponsored Deals
-                        </div>
-                        <div style={{ fontSize: 14, opacity: 0.95 }}>
-                          Your advertisement could be here - Reach thousands of deal hunters daily
-                        </div>
+                      <div style={{ marginTop: 20 }}>
+                        <AdBlock type="banner" />
                       </div>
                     )}
                   </div>
@@ -1292,122 +1242,9 @@ export default function HomePage() {
 
             {/* Ad Sidebar */}
             <div style={{ flex: '0 0 300px', display: 'flex', flexDirection: 'column', gap: 16, position: 'sticky', top: 20 }}>
-              {/* Ad 1 - General Promotion */}
-              <div
-                style={{
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  borderRadius: 12,
-                  padding: '24px',
-                  color: '#ffffff',
-                  textAlign: 'center',
-                  boxShadow: '0 4px 16px rgba(102, 126, 234, 0.3)',
-                  minHeight: '250px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <div style={{ fontSize: 48, marginBottom: 16 }}>📢</div>
-                <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 8, lineHeight: 1.2 }}>
-                  Your Ad Here
-                </div>
-                <div style={{ fontSize: 13, opacity: 0.95, lineHeight: 1.5, marginBottom: 16 }}>
-                  Promote your deals to thousands of shoppers daily
-                </div>
-                <button
-                  style={{
-                    background: '#ffffff',
-                    color: '#667eea',
-                    border: 'none',
-                    borderRadius: 8,
-                    padding: '10px 20px',
-                    fontSize: 14,
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                  }}
-                >
-                  Learn More
-                </button>
-              </div>
-
-              {/* Ad 2 - Sponsored Deal */}
-              <div
-                style={{
-                  background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-                  borderRadius: 12,
-                  padding: '24px',
-                  color: '#ffffff',
-                  textAlign: 'center',
-                  boxShadow: '0 4px 16px rgba(245, 87, 108, 0.3)',
-                  minHeight: '250px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <div style={{ fontSize: 48, marginBottom: 16 }}>🎁</div>
-                <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 8, lineHeight: 1.2 }}>
-                  Sponsored Deal
-                </div>
-                <div style={{ fontSize: 13, opacity: 0.95, lineHeight: 1.5, marginBottom: 16 }}>
-                  Feature your seasonal offers in this premium spot
-                </div>
-                <button
-                  style={{
-                    background: '#ffffff',
-                    color: '#f5576c',
-                    border: 'none',
-                    borderRadius: 8,
-                    padding: '10px 20px',
-                    fontSize: 14,
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                  }}
-                >
-                  Get Started
-                </button>
-              </div>
-
-              {/* Ad 3 - Brand Spotlight */}
-              <div
-                style={{
-                  background: 'linear-gradient(135deg, #ffa500 0%, #ff6347 100%)',
-                  borderRadius: 12,
-                  padding: '24px',
-                  color: '#ffffff',
-                  textAlign: 'center',
-                  boxShadow: '0 4px 16px rgba(255, 165, 0, 0.3)',
-                  minHeight: '250px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <div style={{ fontSize: 48, marginBottom: 16 }}>⭐</div>
-                <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 8, lineHeight: 1.2 }}>
-                  Brand Spotlight
-                </div>
-                <div style={{ fontSize: 13, opacity: 0.95, lineHeight: 1.5, marginBottom: 16 }}>
-                  Showcase your brand to engaged deal hunters
-                </div>
-                <button
-                  style={{
-                    background: '#ffffff',
-                    color: '#ff6347',
-                    border: 'none',
-                    borderRadius: 8,
-                    padding: '10px 20px',
-                    fontSize: 14,
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                  }}
-                >
-                  Advertise Now
-                </button>
-              </div>
+              <AdBlock type="rectangle" />
+              <AdBlock type="rectangle" />
+              <AdBlock type="rectangle" />
             </div>
           </div>
         </div>
@@ -1421,22 +1258,10 @@ export default function HomePage() {
         />
       )}
 
-      {isAuthOpen && <AuthModal onClose={() => setIsAuthOpen(false)} />}
-
       {isPreferencesOpen && (
         <PreferencesModal
           onClose={() => setIsPreferencesOpen(false)}
           categories={categories}
-        />
-      )}
-
-      {showProfile && (
-        <UserProfile
-          userId={selectedUserId || undefined}
-          onClose={() => {
-            setShowProfile(false);
-            setSelectedUserId(null);
-          }}
         />
       )}
     </div>

@@ -1,8 +1,5 @@
 import { apiClient } from './client';
 import type { Deal } from '../types';
-import { mockDeals } from '../data/mockDeals';
-
-const isDemoMode = import.meta.env.VITE_DEMO_MODE === 'true';
 
 export type GetDealsParams = {
   tab?: 'frontpage' | 'popular' | 'new' | 'personalized';
@@ -27,31 +24,6 @@ export type GetDealsResponse = {
 
 export const dealsApi = {
   getDeals: async (params: GetDealsParams = {}): Promise<GetDealsResponse> => {
-    // Demo mode - return mock data
-    if (isDemoMode) {
-      let filteredDeals = [...mockDeals];
-
-      if (params.category) {
-        filteredDeals = filteredDeals.filter(d => d.categoryId === params.category);
-      }
-      if (params.festive) {
-        filteredDeals = filteredDeals.filter(d => d.festive);
-      }
-      if (params.merchant) {
-        filteredDeals = filteredDeals.filter(d => d.merchant === params.merchant);
-      }
-
-      return {
-        deals: filteredDeals,
-        pagination: {
-          limit: params.limit || 20,
-          offset: params.offset || 0,
-          hasMore: false,
-        },
-      };
-    }
-
-    // Real API mode
     const queryParams = new URLSearchParams();
 
     if (params.tab) queryParams.append('tab', params.tab);
@@ -69,11 +41,6 @@ export const dealsApi = {
   },
 
   getDeal: async (id: string): Promise<Deal> => {
-    if (isDemoMode) {
-      const deal = mockDeals.find(d => d.id === id);
-      if (!deal) throw new Error('Deal not found');
-      return deal;
-    }
     return apiClient.get<Deal>(`/deals/${id}`);
   },
 
@@ -88,9 +55,6 @@ export const dealsApi = {
     categoryId?: string;
     expiresAt?: string;
   }): Promise<Deal> => {
-    if (isDemoMode) {
-      throw new Error('Demo mode: Cannot create deals');
-    }
     return apiClient.post<Deal>('/deals', deal);
   },
 
@@ -98,10 +62,6 @@ export const dealsApi = {
     id: string,
     voteType: number
   ): Promise<{ upvotes: number; downvotes: number; score: number; userVote: number }> => {
-    if (isDemoMode) {
-      // Simulate voting in demo mode
-      return { upvotes: 100, downvotes: 5, score: 95, userVote: voteType };
-    }
     return apiClient.post(`/deals/${id}/vote`, { voteType });
   },
 
@@ -109,9 +69,6 @@ export const dealsApi = {
     id: string,
     activityType: 'view' | 'click' | 'vote' | 'comment'
   ): Promise<{ success: boolean }> => {
-    if (isDemoMode) {
-      return { success: true };
-    }
     return apiClient.post(`/deals/${id}/activity`, { activityType });
   },
 };

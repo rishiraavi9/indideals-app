@@ -246,7 +246,7 @@ export default function SearchResultsPage({
           </div>
 
           {/* Categories */}
-          <FilterSection title="Categories">
+          <FilterSection title="Categories" defaultExpanded={false}>
             {categories.map(cat => (
               <FilterCheckbox
                 key={cat.id}
@@ -361,7 +361,7 @@ export default function SearchResultsPage({
           ) : (
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+              gridTemplateColumns: 'repeat(4, 1fr)',
               gap: 16,
             }}>
               {deals.map(deal => (
@@ -382,8 +382,8 @@ export default function SearchResultsPage({
   );
 }
 
-function FilterSection({ title, children }: { title: string; children: React.ReactNode }) {
-  const [expanded, setExpanded] = useState(true);
+function FilterSection({ title, children, defaultExpanded = true }: { title: string; children: React.ReactNode; defaultExpanded?: boolean }) {
+  const [expanded, setExpanded] = useState(defaultExpanded);
 
   return (
     <div style={{ marginBottom: 24 }}>

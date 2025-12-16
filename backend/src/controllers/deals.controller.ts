@@ -110,6 +110,24 @@ export const createDeal = async (req: AuthRequest, res: Response) => {
         .catch((err) => {
           console.error('Failed to import alert matcher service:', err);
         });
+
+      // Trigger automated deal verification
+      import('../services/queue.service.js')
+        .then(({ addJob, dealVerifierQueue }) => {
+          addJob(dealVerifierQueue, 'verify-single-deal', {
+            type: 'verify-single-deal',
+            dealId: dealWithUser.id,
+            verificationType: 'initial',
+          }, {
+            delay: 5000, // Wait 5 seconds before verification
+            priority: 1, // High priority for new deals
+          }).catch((err) => {
+            console.error('Failed to queue deal verification:', err);
+          });
+        })
+        .catch((err) => {
+          console.error('Failed to import queue service:', err);
+        });
     }
 
     res.status(201).json(dealWithUser);

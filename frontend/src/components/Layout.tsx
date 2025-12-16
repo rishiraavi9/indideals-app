@@ -5,17 +5,11 @@ import Footer from './Footer';
 interface LayoutProps {
   children: ReactNode;
   onPostDealClick?: () => void;
-  onAnalyticsClick?: () => void;
-  onProfileClick?: () => void;
-  onLoginClick?: () => void;
 }
 
 export default function Layout({
   children,
   onPostDealClick,
-  onAnalyticsClick,
-  onProfileClick,
-  onLoginClick,
 }: LayoutProps) {
   return (
     <div style={{
@@ -26,9 +20,6 @@ export default function Layout({
     }}>
       <Header
         onPostDealClick={onPostDealClick}
-        onAnalyticsClick={onAnalyticsClick}
-        onProfileClick={onProfileClick}
-        onLoginClick={onLoginClick}
       />
 
       <main style={{ flex: 1 }}>

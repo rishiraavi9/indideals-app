@@ -65,9 +65,6 @@ export class ErrorBoundary extends Component<Props, State> {
               <strong>Debug Info:</strong>
             </p>
             <p style={{ fontSize: '11px', color: '#999', fontFamily: 'monospace' }}>
-              Demo Mode: {import.meta.env.VITE_DEMO_MODE}
-            </p>
-            <p style={{ fontSize: '11px', color: '#999', fontFamily: 'monospace' }}>
               API URL: {import.meta.env.VITE_API_URL || 'not set'}
             </p>
             <p style={{ fontSize: '11px', color: '#999', fontFamily: 'monospace', wordBreak: 'break-all' }}>

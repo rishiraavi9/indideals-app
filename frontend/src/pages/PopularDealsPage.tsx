@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { dealsApi } from '../api/deals';
+import AdBlock from '../components/AdBlock';
 import type { Deal } from '../types';
 
 export default function PopularDealsPage() {
@@ -76,17 +77,23 @@ export default function PopularDealsPage() {
         </div>
       </div>
 
-      {/* Deals Table */}
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '24px' }}>
-        {loading ? (
-          <div style={{ textAlign: 'center', padding: '60px 0', fontSize: 16, color: '#6b7280' }}>
-            Loading deals...
-          </div>
-        ) : deals.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px 0', fontSize: 16, color: '#6b7280' }}>
-            No deals found
-          </div>
-        ) : (
+      {/* Main Content with Sidebar */}
+      <div style={{ maxWidth: 1400, margin: '0 auto', padding: '24px' }}>
+        <div style={{ display: 'flex', gap: 24 }}>
+          {/* Deals Table */}
+          <div style={{ flex: 1 }}>
+            {loading ? (
+              <div style={{ textAlign: 'center', padding: '60px 0', fontSize: 16, color: '#6b7280' }}>
+                Loading deals...
+              </div>
+            ) : deals.length === 0 ? (
+              <div>
+                <div style={{ textAlign: 'center', padding: '60px 0', fontSize: 16, color: '#6b7280', marginBottom: 16, background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb' }}>
+                  No deals found
+                </div>
+                <AdBlock type="banner" />
+              </div>
+            ) : (
           <div style={{ background: '#ffffff', borderRadius: 12, border: '1px solid #e5e7eb', overflow: 'hidden' }}>
             {/* Table Header */}
             <div
@@ -112,12 +119,14 @@ export default function PopularDealsPage() {
             </div>
 
             {/* Table Rows */}
-            {deals.map((deal) => {
+            {deals.map((deal, index) => {
               const score = deal.score ?? deal.upvotes - deal.downvotes;
               const savings = calculateSavings(deal.price, deal.originalPrice);
+              const showAdAfter = (index + 1) % 10 === 0 && index < deals.length - 1;
 
               return (
-                <div
+                <>
+                  <div
                   key={deal.id}
                   onClick={() => navigate(`/deal/${deal.id}`)}
                   style={{
@@ -241,10 +250,27 @@ export default function PopularDealsPage() {
                     </div>
                   </div>
                 </div>
+
+                {/* Ad Banner every 10 rows */}
+                {showAdAfter && (
+                  <div style={{ padding: 16, borderBottom: '1px solid #f3f4f6' }}>
+                    <AdBlock type="banner" />
+                  </div>
+                )}
+              </>
               );
             })}
           </div>
-        )}
+            )}
+          </div>
+
+          {/* Right Sidebar - Ads */}
+          <div style={{ width: 300, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <AdBlock type="rectangle" />
+            <AdBlock type="rectangle" />
+            <AdBlock type="rectangle" />
+          </div>
+        </div>
       </div>
     </div>
     </Layout>

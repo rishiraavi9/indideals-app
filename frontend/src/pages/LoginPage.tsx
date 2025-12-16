@@ -1,22 +1,15 @@
 import { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-type AuthMode = 'login' | 'signup';
-
-type Props = {
-  onClose: () => void;
-  initialMode?: AuthMode;
-};
-
-export default function AuthModal({ onClose, initialMode = 'login' }: Props) {
-  const [mode, setMode] = useState<AuthMode>(initialMode);
+export default function LoginPage() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
-  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const { login, signup } = useAuth();
+  const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,12 +17,8 @@ export default function AuthModal({ onClose, initialMode = 'login' }: Props) {
     setLoading(true);
 
     try {
-      if (mode === 'login') {
-        await login(email, password);
-      } else {
-        await signup(email, username, password);
-      }
-      onClose();
+      await login(email, password);
+      navigate('/');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Authentication failed');
     } finally {
@@ -47,20 +36,16 @@ export default function AuthModal({ onClose, initialMode = 'login' }: Props) {
 
   return (
     <div
-      onClick={onClose}
       style={{
-        position: 'fixed',
-        inset: 0,
-        background: 'rgba(0,0,0,0.72)',
+        minHeight: '100vh',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        zIndex: 2000,
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
         padding: 16,
       }}
     >
       <div
-        onClick={(e) => e.stopPropagation()}
         style={{
           width: 420,
           maxWidth: '100%',
@@ -69,35 +54,28 @@ export default function AuthModal({ onClose, initialMode = 'login' }: Props) {
           background:
             'linear-gradient(180deg, rgba(14, 46, 110, 0.45), rgba(2, 6, 16, 0.85))',
           boxShadow: '0 24px 70px rgba(0,0,0,0.6)',
-          padding: 24,
+          padding: 32,
           color: '#eaf2ff',
         }}
       >
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: 20,
-          }}
-        >
-          <h2 style={{ margin: 0, fontSize: 24 }}>
-            {mode === 'login' ? 'Login' : 'Sign Up'}
-          </h2>
-          <button
-            onClick={onClose}
+        {/* Header */}
+        <div style={{ marginBottom: 24, textAlign: 'center' }}>
+          <h1
+            onClick={() => navigate('/')}
             style={{
-              padding: '6px 10px',
-              borderRadius: 10,
-              border: '1px solid rgba(255,255,255,0.16)',
-              background: 'rgba(0,0,0,0.25)',
-              color: '#eaf2ff',
+              margin: 0,
+              fontSize: 32,
+              letterSpacing: -0.5,
               cursor: 'pointer',
-              fontWeight: 800,
+              marginBottom: 8,
             }}
           >
-            ✕
-          </button>
+            🔥 <span style={{ fontWeight: 900 }}>IndiaDeals</span>
+          </h1>
+          <h2 style={{ margin: 0, fontSize: 24, fontWeight: 600 }}>Login</h2>
+          <p style={{ margin: '8px 0 0 0', fontSize: 14, opacity: 0.7 }}>
+            Welcome back! Please login to your account.
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 14 }}>
@@ -116,32 +94,10 @@ export default function AuthModal({ onClose, initialMode = 'login' }: Props) {
                 background: 'rgba(0,0,0,0.25)',
                 color: '#eaf2ff',
                 outline: 'none',
+                fontSize: 15,
               }}
             />
           </label>
-
-          {mode === 'signup' && (
-            <label style={{ display: 'grid', gap: 6 }}>
-              <span style={{ fontSize: 12, opacity: 0.85 }}>Username</span>
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="cooluser123"
-                required={mode === 'signup'}
-                minLength={3}
-                maxLength={50}
-                style={{
-                  padding: '10px 12px',
-                  borderRadius: 12,
-                  border: '1px solid rgba(255,255,255,0.14)',
-                  background: 'rgba(0,0,0,0.25)',
-                  color: '#eaf2ff',
-                  outline: 'none',
-                }}
-              />
-            </label>
-          )}
 
           <label style={{ display: 'grid', gap: 6 }}>
             <span style={{ fontSize: 12, opacity: 0.85 }}>Password</span>
@@ -159,6 +115,7 @@ export default function AuthModal({ onClose, initialMode = 'login' }: Props) {
                 background: 'rgba(0,0,0,0.25)',
                 color: '#eaf2ff',
                 outline: 'none',
+                fontSize: 15,
               }}
             />
           </label>
@@ -195,7 +152,7 @@ export default function AuthModal({ onClose, initialMode = 'login' }: Props) {
               fontSize: 16,
             }}
           >
-            {loading ? 'Please wait...' : mode === 'login' ? 'Login' : 'Sign Up'}
+            {loading ? 'Please wait...' : 'Login'}
           </button>
         </form>
 
@@ -280,42 +237,18 @@ export default function AuthModal({ onClose, initialMode = 'login' }: Props) {
           </button>
         </div>
 
-        <div style={{ marginTop: 16, textAlign: 'center', fontSize: 14 }}>
-          {mode === 'login' ? (
-            <>
-              Don't have an account?{' '}
-              <button
-                onClick={() => setMode('signup')}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#78aaff',
-                  cursor: 'pointer',
-                  fontWeight: 800,
-                  textDecoration: 'underline',
-                }}
-              >
-                Sign Up
-              </button>
-            </>
-          ) : (
-            <>
-              Already have an account?{' '}
-              <button
-                onClick={() => setMode('login')}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#78aaff',
-                  cursor: 'pointer',
-                  fontWeight: 800,
-                  textDecoration: 'underline',
-                }}
-              >
-                Login
-              </button>
-            </>
-          )}
+        <div style={{ marginTop: 20, textAlign: 'center', fontSize: 14 }}>
+          Don't have an account?{' '}
+          <Link
+            to="/signup"
+            style={{
+              color: '#78aaff',
+              fontWeight: 800,
+              textDecoration: 'underline',
+            }}
+          >
+            Sign Up
+          </Link>
         </div>
 
         <div style={{ marginTop: 12, fontSize: 12, opacity: 0.7, textAlign: 'center' }}>

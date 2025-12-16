@@ -50,6 +50,17 @@ export const deals = pgTable('deals', {
   seasonalTag: varchar('seasonal_tag', { length: 50 }), // e.g., 'winter', 'summer', 'monsoon'
   isFeatured: boolean('is_featured').default(false).notNull(),
 
+  // Verification fields
+  verificationStatus: varchar('verification_status', { length: 20 }).default('pending').notNull(), // 'pending', 'verified', 'failed', 'flagged'
+  verified: boolean('verified').default(false).notNull(), // Quick boolean check
+  verifiedAt: timestamp('verified_at'),
+  lastVerifiedAt: timestamp('last_verified_at'),
+  verificationAttempts: integer('verification_attempts').default(0).notNull(),
+  urlAccessible: boolean('url_accessible'),
+  priceMatch: boolean('price_match'),
+  autoFlagged: boolean('auto_flagged').default(false).notNull(),
+  flagReason: text('flag_reason'),
+
   // Foreign keys
   userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
   categoryId: uuid('category_id').references(() => categories.id, { onDelete: 'set null' }),
@@ -68,6 +79,8 @@ export const deals = pgTable('deals', {
   createdAtIdx: index('deals_created_at_idx').on(table.createdAt),
   merchantIdx: index('deals_merchant_idx').on(table.merchant),
   isFeaturedIdx: index('deals_is_featured_idx').on(table.isFeatured),
+  verificationStatusIdx: index('deals_verification_status_idx').on(table.verificationStatus),
+  verifiedIdx: index('deals_verified_idx').on(table.verified),
 }));
 
 // Votes table (tracks individual user votes)
@@ -454,4 +467,25 @@ export const pushSubscriptions = pgTable('push_subscriptions', {
 }, (table) => ({
   userIdIdx: index('push_subscriptions_user_id_idx').on(table.userId),
   endpointIdx: index('push_subscriptions_endpoint_idx').on(table.endpoint),
+}));
+
+// Deal Verification Logs - Track all verification attempts
+export const dealVerificationLogs = pgTable('deal_verification_logs', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  dealId: uuid('deal_id').notNull().references(() => deals.id, { onDelete: 'cascade' }),
+  verificationType: varchar('verification_type', { length: 30 }).notNull(), // 'url_check', 'price_scrape', 'periodic_check'
+  status: varchar('status', { length: 20 }).notNull(), // 'success', 'failed', 'warning'
+  urlAccessible: boolean('url_accessible'),
+  statusCode: integer('status_code'),
+  scrapedPrice: integer('scraped_price'),
+  scrapedOriginalPrice: integer('scraped_original_price'),
+  priceMatch: boolean('price_match'),
+  priceDifference: integer('price_difference'),
+  errorMessage: text('error_message'),
+  metadata: jsonb('metadata'), // Additional data (response time, headers, etc.)
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+}, (table) => ({
+  dealIdIdx: index('verification_logs_deal_id_idx').on(table.dealId),
+  createdAtIdx: index('verification_logs_created_at_idx').on(table.createdAt),
+  statusIdx: index('verification_logs_status_idx').on(table.status),
 }));

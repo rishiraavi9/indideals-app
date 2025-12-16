@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { Deal } from '../types';
 import { affiliateApi } from '../api/affiliate';
 
@@ -7,17 +8,22 @@ export default function CompactDealCard({
   onUpvote,
   onDownvote,
   onView,
-  onUserClick,
 }: {
   deal: Deal;
   onUpvote: () => void;
   onDownvote: () => void;
   onView?: () => void;
-  onUserClick?: (userId: string) => void;
 }) {
+  const navigate = useNavigate();
   const score = deal.score ?? deal.upvotes - deal.downvotes;
   const [isVoteHovered, setIsVoteHovered] = useState(false);
   const savings = deal.originalPrice ? deal.originalPrice - deal.price : null;
+
+  // Calculate discount percentage if not provided
+  const discountPercentage = deal.discountPercentage ||
+    (deal.originalPrice && deal.originalPrice > deal.price
+      ? Math.round(((deal.originalPrice - deal.price) / deal.originalPrice) * 100)
+      : null);
 
   const handleCardClick = () => {
     if (onView) onView();
@@ -133,7 +139,7 @@ export default function CompactDealCard({
         </div>
 
         {/* Discount badge */}
-        {deal.discountPercentage && (
+        {discountPercentage && (
           <div
             style={{
               position: 'absolute',
@@ -148,7 +154,7 @@ export default function CompactDealCard({
               boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
             }}
           >
-            -{deal.discountPercentage}%
+            -{discountPercentage}%
           </div>
         )}
 
@@ -257,7 +263,7 @@ export default function CompactDealCard({
               <span
                 onClick={(e) => {
                   e.stopPropagation();
-                  onUserClick && onUserClick(deal.userId);
+                  navigate('/profile');
                 }}
                 style={{
                   cursor: 'pointer',
