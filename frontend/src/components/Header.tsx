@@ -421,7 +421,7 @@ export default function Header({
                 padding: '10px 16px',
                 borderRadius: 8,
                 border: 'none',
-                background: '#2563eb',
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                 color: '#fff',
                 fontWeight: 600,
                 cursor: 'pointer',

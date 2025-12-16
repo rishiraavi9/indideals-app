@@ -161,7 +161,7 @@ export default function DealPage() {
                 padding: '12px 24px',
                 borderRadius: 8,
                 border: 'none',
-                background: '#2563eb',
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                 color: '#fff',
                 fontWeight: 600,
                 cursor: 'pointer',

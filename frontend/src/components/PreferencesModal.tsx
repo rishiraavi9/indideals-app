@@ -431,7 +431,7 @@ export default function PreferencesModal({
                 padding: '10px 24px',
                 borderRadius: 8,
                 border: 'none',
-                background: '#2563eb',
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                 color: '#ffffff',
                 cursor: 'pointer',
                 fontWeight: 600,
