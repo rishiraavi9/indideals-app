@@ -10,7 +10,11 @@
     "start": "node dist/index.js",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "seed:merchants": "tsx src/scripts/seed-merchants.ts",
+    "setup:scheduler": "tsx src/scripts/setup-scheduler.ts",
+    "clear:scheduler": "tsx src/scripts/setup-scheduler.ts clear",
+    "test:scraper": "tsx src/scripts/test-scraper.ts"
   },
   "dependencies": {
     "@bull-board/api": "^6.15.0",
@@ -38,6 +42,7 @@
     "passport-facebook": "^3.0.0",
     "passport-google-oauth20": "^2.0.0",
     "postgres": "^3.4.4",
+    "puppeteer": "^24.33.0",
     "zod": "^3.22.4"
   },
   "devDependencies": {
