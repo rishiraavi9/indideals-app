@@ -22,6 +22,7 @@ import alertsRoutes from './routes/alerts.routes.js';
 import wishlistRoutes from './routes/wishlist.routes.js';
 import priceHistoryRoutes from './routes/price-history.routes.js';
 import couponsRoutes from './routes/coupons.routes.js';
+import aiRoutes from './routes/ai.routes.js';
 
 // Job queue
 import { bullBoardRouter, shutdownQueues } from './services/queue.service.js';
@@ -156,6 +157,9 @@ app.use('/api/alerts', alertsRoutes);
 app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/price-history', priceHistoryRoutes);
 app.use('/api/coupons', couponsRoutes);
+
+// Phase 2 routes - AI features
+app.use('/api/ai', aiRoutes);
 
 // 404 handler
 app.use((req, res) => {
