@@ -125,17 +125,15 @@ async function seedMerchants() {
   console.log('✅ Merchant seeding complete!');
 }
 
-// Run seed if called directly
-if (require.main === module) {
-  seedMerchants()
-    .then(() => {
-      console.log('Done!');
-      process.exit(0);
-    })
-    .catch((error) => {
-      console.error('Error seeding merchants:', error);
-      process.exit(1);
-    });
-}
-
 export { seedMerchants };
+
+// Run seed if called directly
+seedMerchants()
+  .then(() => {
+    console.log('Done!');
+    process.exit(0);
+  })
+  .catch((error) => {
+    console.error('Error seeding merchants:', error);
+    process.exit(1);
+  });

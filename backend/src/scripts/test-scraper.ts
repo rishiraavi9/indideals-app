@@ -108,17 +108,15 @@ async function testScrapers() {
   await amazonService.closeBrowser();
 }
 
-// Run test if called directly
-if (require.main === module) {
-  testScrapers()
-    .then(() => {
-      logger.info('\nDone!');
-      process.exit(0);
-    })
-    .catch((error) => {
-      logger.error('Test failed:', error);
-      process.exit(1);
-    });
-}
-
 export { testScrapers };
+
+// Run test if called directly
+testScrapers()
+  .then(() => {
+    logger.info('\nDone!');
+    process.exit(0);
+  })
+  .catch((error) => {
+    logger.error('Test failed:', error);
+    process.exit(1);
+  });

@@ -173,31 +173,29 @@ async function clearAllSchedulers() {
   }
 }
 
-// Run if called directly
-if (require.main === module) {
-  const action = process.argv[2];
-
-  if (action === 'clear') {
-    clearAllSchedulers()
-      .then(() => {
-        logger.info('Done!');
-        process.exit(0);
-      })
-      .catch((error) => {
-        logger.error('Error:', error);
-        process.exit(1);
-      });
-  } else {
-    setupScheduler()
-      .then(() => {
-        logger.info('Done! Schedulers are now active.');
-        process.exit(0);
-      })
-      .catch((error) => {
-        logger.error('Error:', error);
-        process.exit(1);
-      });
-  }
-}
-
 export { setupScheduler, clearAllSchedulers };
+
+// Run if called directly
+const action = process.argv[2];
+
+if (action === 'clear') {
+  clearAllSchedulers()
+    .then(() => {
+      logger.info('Done!');
+      process.exit(0);
+    })
+    .catch((error) => {
+      logger.error('Error:', error);
+      process.exit(1);
+    });
+} else {
+  setupScheduler()
+    .then(() => {
+      logger.info('Done! Schedulers are now active.');
+      process.exit(0);
+    })
+    .catch((error) => {
+      logger.error('Error:', error);
+      process.exit(1);
+    });
+}
