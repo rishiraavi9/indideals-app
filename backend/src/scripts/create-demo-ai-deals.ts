@@ -38,7 +38,7 @@ async function createDemoAIDeals() {
     // Demo deals data
     const demoDealData = [
       {
-        title: 'Samsung Galaxy S24 Ultra 256GB (Titanium Gray)',
+        title: 'Samsung Galaxy S24 Ultra 512GB [AI Edition]',
         description: 'Latest flagship with AI camera, S Pen, 200MP camera, Snapdragon 8 Gen 3',
         price: 119999,
         originalPrice: 134999,

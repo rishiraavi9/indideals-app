@@ -1,4 +1,7 @@
+import { useState } from 'react';
 import type { Deal } from '../types';
+import AIQualityBadgeInline from './AIQualityBadgeInline';
+import AIQualityBadge from './AIQualityBadge';
 
 interface MobileDealCardProps {
   deal: Deal;
@@ -13,6 +16,8 @@ export default function MobileDealCard({
   onDownvote,
   onView,
 }: MobileDealCardProps) {
+  const [showAIModal, setShowAIModal] = useState(false);
+
   const discount = deal.originalPrice
     ? Math.round(((deal.originalPrice - deal.price) / deal.originalPrice) * 100)
     : 0;
@@ -25,11 +30,11 @@ export default function MobileDealCard({
     <div
       onClick={onView}
       style={{
-        background: '#1a1a1a',
+        background: '#ffffff',
         borderRadius: 0,
         overflow: 'hidden',
         cursor: 'pointer',
-        borderBottom: '8px solid #0a0a0a',
+        borderBottom: '8px solid #f3f4f6',
         padding: '16px',
       }}
     >
@@ -47,6 +52,7 @@ export default function MobileDealCard({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              position: 'relative',
             }}
           >
             <img
@@ -61,6 +67,22 @@ export default function MobileDealCard({
                 (e.target as HTMLImageElement).style.display = 'none';
               }}
             />
+
+            {/* AI Quality Badge - Scaled for mobile */}
+            <div
+              style={{
+                position: 'absolute',
+                top: 4,
+                left: 4,
+                transform: 'scale(0.8)',
+                transformOrigin: 'top left',
+              }}
+            >
+              <AIQualityBadgeInline
+                dealId={deal.id}
+                onClick={() => setShowAIModal(true)}
+              />
+            </div>
           </div>
         )}
 
@@ -72,7 +94,7 @@ export default function MobileDealCard({
               margin: '0 0 8px 0',
               fontSize: 15,
               fontWeight: 600,
-              color: '#fff',
+              color: '#1a1a1a',
               lineHeight: 1.3,
               display: '-webkit-box',
               WebkitLineClamp: 2,
@@ -99,7 +121,7 @@ export default function MobileDealCard({
                 <span
                   style={{
                     fontSize: 14,
-                    color: '#888',
+                    color: '#9ca3af',
                     textDecoration: 'line-through',
                   }}
                 >
@@ -119,8 +141,8 @@ export default function MobileDealCard({
           </div>
 
           {/* Merchant */}
-          <div style={{ fontSize: 13, color: '#aaa', marginBottom: 12 }}>
-            at <strong style={{ color: '#fff' }}>{deal.merchant}</strong>
+          <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 12 }}>
+            at <strong style={{ color: '#374151' }}>{deal.merchant}</strong>
           </div>
 
           {/* Interaction Bar */}
@@ -146,11 +168,11 @@ export default function MobileDealCard({
                   onUpvote();
                 }}
                 style={{
-                  background: deal.userVote === 1 ? '#10b981' : '#333',
+                  background: deal.userVote === 1 ? '#10b981' : '#f3f4f6',
                   border: 'none',
                   borderRadius: 6,
                   padding: '6px 10px',
-                  color: deal.userVote === 1 ? '#fff' : '#aaa',
+                  color: deal.userVote === 1 ? '#fff' : '#6b7280',
                   cursor: 'pointer',
                   fontSize: 16,
                   display: 'flex',
@@ -159,7 +181,7 @@ export default function MobileDealCard({
               >
                 👍
               </button>
-              <span style={{ fontSize: 15, fontWeight: 700, color: '#fff', minWidth: 30, textAlign: 'center' }}>
+              <span style={{ fontSize: 15, fontWeight: 700, color: '#1a1a1a', minWidth: 30, textAlign: 'center' }}>
                 {deal.upvotes}
               </span>
               <button
@@ -168,11 +190,11 @@ export default function MobileDealCard({
                   onDownvote();
                 }}
                 style={{
-                  background: deal.userVote === -1 ? '#ef4444' : '#333',
+                  background: deal.userVote === -1 ? '#ef4444' : '#f3f4f6',
                   border: 'none',
                   borderRadius: 6,
                   padding: '6px 10px',
-                  color: deal.userVote === -1 ? '#fff' : '#aaa',
+                  color: deal.userVote === -1 ? '#fff' : '#6b7280',
                   cursor: 'pointer',
                   fontSize: 16,
                   display: 'flex',
@@ -191,7 +213,7 @@ export default function MobileDealCard({
                   alignItems: 'center',
                   gap: 6,
                   fontSize: 13,
-                  color: '#aaa',
+                  color: '#6b7280',
                 }}
               >
                 <span>💬</span>
@@ -200,7 +222,7 @@ export default function MobileDealCard({
             )}
 
             {/* Time */}
-            <div style={{ marginLeft: 'auto', fontSize: 11, color: '#666' }}>
+            <div style={{ marginLeft: 'auto', fontSize: 11, color: '#9ca3af' }}>
               {new Date(deal.createdAt).toLocaleDateString('en-IN', {
                 month: 'short',
                 day: 'numeric',
@@ -209,6 +231,13 @@ export default function MobileDealCard({
           </div>
         </div>
       </div>
+
+      {/* AI Quality Modal */}
+      <AIQualityBadge
+        dealId={deal.id}
+        isOpen={showAIModal}
+        onClose={() => setShowAIModal(false)}
+      />
     </div>
   );
 }

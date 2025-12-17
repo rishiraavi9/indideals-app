@@ -7,6 +7,7 @@ import CategoryPage from './pages/CategoryPage';
 import LoginPage from './pages/LoginPage';
 import SignUpPage from './pages/SignUpPage';
 import ProfilePage from './pages/ProfilePage';
+import PostDealPage from './pages/PostDealPage';
 import { initializeCapacitor } from './utils/capacitor';
 
 export default function App() {
@@ -26,6 +27,7 @@ export default function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignUpPage />} />
       <Route path="/profile" element={<ProfilePage />} />
+      <Route path="/post-deal" element={<PostDealPage />} />
     </Routes>
   );
 }

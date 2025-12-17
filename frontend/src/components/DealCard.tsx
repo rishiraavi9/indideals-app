@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import type { Deal } from '../types';
 import { affiliateApi } from '../api/affiliate';
+import AIQualityBadge from './AIQualityBadge';
 
 function Title({ deal }: { deal: Deal }) {
   const handleTitleClick = async (e: React.MouseEvent) => {
@@ -90,6 +92,7 @@ export default function DealCard({
   onUserClick?: (userId: string) => void;
 }) {
   const score = deal.score ?? deal.upvotes - deal.downvotes;
+  const [showAIModal, setShowAIModal] = useState(false);
 
   return (
     <div
@@ -100,6 +103,7 @@ export default function DealCard({
         padding: 16,
         marginTop: 12,
         boxShadow: '0 10px 24px rgba(0,0,0,0.25)',
+        position: 'relative',
       }}
     >
       <div
@@ -257,6 +261,13 @@ export default function DealCard({
           {deal.commentCount > 0 && <span>💬 {deal.commentCount}</span>}
         </div>
       </div>
+
+      {/* AI Quality Modal (detailed breakdown) */}
+      <AIQualityBadge
+        dealId={deal.id}
+        isOpen={showAIModal}
+        onClose={() => setShowAIModal(false)}
+      />
     </div>
   );
 }

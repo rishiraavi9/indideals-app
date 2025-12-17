@@ -39,220 +39,283 @@ export default function LoginPage() {
       style={{
         minHeight: '100vh',
         display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        padding: 16,
+        flexDirection: 'column',
+        background: '#f5f7fa',
       }}
     >
+      {/* Header */}
       <div
         style={{
-          width: 420,
-          maxWidth: '100%',
-          borderRadius: 18,
-          border: '1px solid rgba(255,255,255,0.16)',
-          background:
-            'linear-gradient(180deg, rgba(14, 46, 110, 0.45), rgba(2, 6, 16, 0.85))',
-          boxShadow: '0 24px 70px rgba(0,0,0,0.6)',
-          padding: 32,
-          color: '#eaf2ff',
+          background: '#ffffff',
+          borderBottom: '1px solid #e5e7eb',
+          padding: '16px 24px',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
         }}
       >
-        {/* Header */}
-        <div style={{ marginBottom: 24, textAlign: 'center' }}>
+        <div
+          style={{
+            maxWidth: '1400px',
+            margin: '0 auto',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
           <h1
             onClick={() => navigate('/')}
             style={{
               margin: 0,
-              fontSize: 32,
+              fontSize: 28,
               letterSpacing: -0.5,
+              color: '#1a1a1a',
               cursor: 'pointer',
-              marginBottom: 8,
+              transition: 'opacity 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.opacity = '0.7';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.opacity = '1';
             }}
           >
             🔥 <span style={{ fontWeight: 900 }}>IndiaDeals</span>
           </h1>
-          <h2 style={{ margin: 0, fontSize: 24, fontWeight: 600 }}>Login</h2>
-          <p style={{ margin: '8px 0 0 0', fontSize: 14, opacity: 0.7 }}>
-            Welcome back! Please login to your account.
+        </div>
+      </div>
+
+      {/* Hero Section */}
+      <div style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', padding: '60px 24px' }}>
+        <div style={{ maxWidth: '600px', margin: '0 auto', textAlign: 'center', color: 'white' }}>
+          <h1 style={{ fontSize: 42, fontWeight: 800, margin: '0 0 16px', lineHeight: 1.2, letterSpacing: '-0.5px' }}>
+            Welcome Back!
+          </h1>
+          <p style={{ fontSize: 18, margin: 0, opacity: 0.95, lineHeight: 1.6 }}>
+            Login to access exclusive deals and track your savings
           </p>
         </div>
+      </div>
 
-        <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 14 }}>
-          <label style={{ display: 'grid', gap: 6 }}>
-            <span style={{ fontSize: 12, opacity: 0.85 }}>Email</span>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="your@email.com"
-              required
-              style={{
-                padding: '10px 12px',
-                borderRadius: 12,
-                border: '1px solid rgba(255,255,255,0.14)',
-                background: 'rgba(0,0,0,0.25)',
-                color: '#eaf2ff',
-                outline: 'none',
-                fontSize: 15,
-              }}
-            />
-          </label>
+      {/* Main Content */}
+      <div style={{ flex: 1, padding: '40px 24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div
+          style={{
+            width: 480,
+            maxWidth: '100%',
+            background: '#ffffff',
+            borderRadius: 16,
+            padding: 40,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+          }}
+        >
+          <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 20 }}>
+            {/* Email */}
+            <label style={{ display: 'grid', gap: 8 }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: '#374151' }}>Email</span>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="your@email.com"
+                required
+                style={{
+                  padding: '12px 16px',
+                  borderRadius: 8,
+                  border: '1px solid #d1d5db',
+                  background: '#ffffff',
+                  color: '#1a1a1a',
+                  outline: 'none',
+                  fontSize: 15,
+                  transition: 'all 0.2s',
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = '#667eea';
+                  e.currentTarget.style.boxShadow = '0 0 0 3px rgba(102,126,234,0.1)';
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = '#d1d5db';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
+              />
+            </label>
 
-          <label style={{ display: 'grid', gap: 6 }}>
-            <span style={{ fontSize: 12, opacity: 0.85 }}>Password</span>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              required
-              minLength={6}
-              style={{
-                padding: '10px 12px',
-                borderRadius: 12,
-                border: '1px solid rgba(255,255,255,0.14)',
-                background: 'rgba(0,0,0,0.25)',
-                color: '#eaf2ff',
-                outline: 'none',
-                fontSize: 15,
-              }}
-            />
-          </label>
+            {/* Password */}
+            <label style={{ display: 'grid', gap: 8 }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: '#374151' }}>Password</span>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your password"
+                required
+                style={{
+                  padding: '12px 16px',
+                  borderRadius: 8,
+                  border: '1px solid #d1d5db',
+                  background: '#ffffff',
+                  color: '#1a1a1a',
+                  outline: 'none',
+                  fontSize: 15,
+                  transition: 'all 0.2s',
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = '#667eea';
+                  e.currentTarget.style.boxShadow = '0 0 0 3px rgba(102,126,234,0.1)';
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = '#d1d5db';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
+              />
+            </label>
 
-          {error && (
-            <div
+            {/* Error Message */}
+            {error && (
+              <div
+                style={{
+                  padding: '12px 16px',
+                  borderRadius: 8,
+                  background: '#fee2e2',
+                  border: '1px solid #ef4444',
+                  color: '#991b1b',
+                  fontWeight: 600,
+                  fontSize: 14,
+                }}
+              >
+                {error}
+              </div>
+            )}
+
+            {/* Login Button */}
+            <button
+              type="submit"
+              disabled={loading}
               style={{
-                color: '#ff8080',
+                width: '100%',
+                padding: '14px',
+                borderRadius: 10,
+                border: 'none',
+                background: loading
+                  ? '#e5e7eb'
+                  : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                color: loading ? '#9ca3af' : '#fff',
+                cursor: loading ? 'not-allowed' : 'pointer',
                 fontWeight: 700,
-                fontSize: 13,
-                padding: '8px 12px',
-                borderRadius: 8,
-                background: 'rgba(255,0,0,0.1)',
+                fontSize: 16,
+                boxShadow: loading ? 'none' : '0 4px 14px rgba(102, 126, 234, 0.4)',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                if (!loading) {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(102, 126, 234, 0.5)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = loading ? 'none' : '0 4px 14px rgba(102, 126, 234, 0.4)';
               }}
             >
-              {error}
+              {loading ? 'Logging in...' : 'Login'}
+            </button>
+
+            {/* Divider */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '8px 0' }}>
+              <div style={{ flex: 1, height: 1, background: '#e5e7eb' }} />
+              <span style={{ fontSize: 13, color: '#6b7280', fontWeight: 600 }}>OR</span>
+              <div style={{ flex: 1, height: 1, background: '#e5e7eb' }} />
             </div>
-          )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              width: '100%',
-              padding: '12px',
-              borderRadius: 12,
-              border: '1px solid rgba(255,255,255,0.18)',
-              background: loading
-                ? 'rgba(255,255,255,0.08)'
-                : 'rgba(38, 118, 255, 0.9)',
-              color: loading ? 'rgba(234,242,255,0.65)' : '#fff',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              fontWeight: 900,
-              fontSize: 16,
-            }}
-          >
-            {loading ? 'Please wait...' : 'Login'}
-          </button>
-        </form>
-
-        <div style={{ marginTop: 20, marginBottom: 20, position: 'relative', textAlign: 'center' }}>
-          <div style={{ position: 'relative', display: 'inline-block' }}>
-            <div
+            {/* Social Login Buttons */}
+            <button
+              type="button"
+              onClick={handleGoogleLogin}
               style={{
-                position: 'absolute',
-                top: '50%',
-                left: '-80px',
-                right: '-80px',
-                height: 1,
-                background: 'rgba(255,255,255,0.2)',
+                width: '100%',
+                padding: '12px',
+                borderRadius: 8,
+                border: '1px solid #d1d5db',
+                background: '#ffffff',
+                color: '#374151',
+                cursor: 'pointer',
+                fontWeight: 600,
+                fontSize: 15,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 10,
+                transition: 'all 0.2s',
               }}
-            />
-            <span
-              style={{
-                position: 'relative',
-                padding: '0 12px',
-                background: 'linear-gradient(180deg, rgba(14, 46, 110, 0.45), rgba(2, 6, 16, 0.85))',
-                fontSize: 12,
-                opacity: 0.7,
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#f9fafb';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = '#ffffff';
               }}
             >
-              or continue with
-            </span>
+              <span style={{ fontSize: 20 }}>🔍</span>
+              Continue with Google
+            </button>
+
+            <button
+              type="button"
+              onClick={handleFacebookLogin}
+              style={{
+                width: '100%',
+                padding: '12px',
+                borderRadius: 8,
+                border: '1px solid #d1d5db',
+                background: '#ffffff',
+                color: '#374151',
+                cursor: 'pointer',
+                fontWeight: 600,
+                fontSize: 15,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 10,
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#f9fafb';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = '#ffffff';
+              }}
+            >
+              <span style={{ fontSize: 20 }}>📘</span>
+              Continue with Facebook
+            </button>
+
+            {/* Sign Up Link */}
+            <div style={{ textAlign: 'center', fontSize: 14, color: '#6b7280', marginTop: 8 }}>
+              Don't have an account?{' '}
+              <Link
+                to="/signup"
+                style={{
+                  color: '#667eea',
+                  fontWeight: 700,
+                  textDecoration: 'none',
+                }}
+              >
+                Sign Up
+              </Link>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div style={{ background: '#1a1a1a', color: '#9ca3af', padding: '40px 24px' }}>
+        <div style={{ maxWidth: '1400px', margin: '0 auto', textAlign: 'center' }}>
+          <div style={{ fontSize: 24, fontWeight: 800, marginBottom: 12, color: '#ffffff' }}>
+            🔥 IndiaDeals
           </div>
-        </div>
-
-        <div style={{ display: 'flex', gap: 12 }}>
-          <button
-            onClick={handleGoogleLogin}
-            type="button"
-            style={{
-              flex: 1,
-              padding: '12px',
-              borderRadius: 12,
-              border: '1px solid rgba(255,255,255,0.18)',
-              background: '#fff',
-              color: '#333',
-              cursor: 'pointer',
-              fontWeight: 700,
-              fontSize: 14,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-            }}
-          >
-            <svg width="18" height="18" viewBox="0 0 18 18">
-              <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/>
-              <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/>
-              <path fill="#FBBC05" d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707 0-.593.102-1.17.282-1.709V4.958H.957C.347 6.173 0 7.548 0 9c0 1.452.348 2.827.957 4.042l3.007-2.335z"/>
-              <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/>
-            </svg>
-            Google
-          </button>
-
-          <button
-            onClick={handleFacebookLogin}
-            type="button"
-            style={{
-              flex: 1,
-              padding: '12px',
-              borderRadius: 12,
-              border: '1px solid rgba(255,255,255,0.18)',
-              background: '#1877F2',
-              color: '#fff',
-              cursor: 'pointer',
-              fontWeight: 700,
-              fontSize: 14,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-            }}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff">
-              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-            </svg>
-            Facebook
-          </button>
-        </div>
-
-        <div style={{ marginTop: 20, textAlign: 'center', fontSize: 14 }}>
-          Don't have an account?{' '}
-          <Link
-            to="/signup"
-            style={{
-              color: '#78aaff',
-              fontWeight: 800,
-              textDecoration: 'underline',
-            }}
-          >
-            Sign Up
-          </Link>
-        </div>
-
-        <div style={{ marginTop: 12, fontSize: 12, opacity: 0.7, textAlign: 'center' }}>
-          Demo: demo@deals.com / password123
+          <p style={{ margin: '0 0 20px', fontSize: 14 }}>
+            AI-Powered Deal Discovery Platform
+          </p>
+          <div style={{ fontSize: 12, opacity: 0.7 }}>
+            © 2025 IndiaDeals. All rights reserved.
+          </div>
         </div>
       </div>
     </div>

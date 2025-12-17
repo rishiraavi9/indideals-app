@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Deal } from '../types';
 import { affiliateApi } from '../api/affiliate';
+import AIQualityBadgeInline from './AIQualityBadgeInline';
+import AIQualityBadge from './AIQualityBadge';
 
 export default function CompactDealCard({
   deal,
@@ -17,6 +19,7 @@ export default function CompactDealCard({
   const navigate = useNavigate();
   const score = deal.score ?? deal.upvotes - deal.downvotes;
   const [isVoteHovered, setIsVoteHovered] = useState(false);
+  const [showAIModal, setShowAIModal] = useState(false);
   const savings = deal.originalPrice ? deal.originalPrice - deal.price : null;
 
   // Calculate discount percentage if not provided
@@ -158,28 +161,11 @@ export default function CompactDealCard({
           </div>
         )}
 
-        {/* AI Verified Badge - Top Left */}
-        {(deal.verified || Math.random() > 0.5) && (
-          <div
-            style={{
-              position: 'absolute',
-              top: 10,
-              left: 10,
-              padding: '4px 8px',
-              borderRadius: 6,
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              fontSize: 10,
-              fontWeight: 800,
-              color: '#fff',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 3,
-              boxShadow: '0 2px 6px rgba(102, 126, 234, 0.4)',
-            }}
-          >
-            🤖 AI VERIFIED
-          </div>
-        )}
+        {/* AI Quality Badge - Top Left */}
+        <AIQualityBadgeInline
+          dealId={deal.id}
+          onClick={() => setShowAIModal(true)}
+        />
 
         {/* Featured badge */}
         {(deal as any).isFeatured && (
@@ -187,42 +173,20 @@ export default function CompactDealCard({
             style={{
               position: 'absolute',
               top: 10,
-              left: 10,
+              left: '50%',
+              transform: 'translateX(-50%)',
               padding: '5px 10px',
               borderRadius: 6,
               background: '#fbbf24',
               fontSize: 11,
               fontWeight: 800,
               color: '#78350f',
+              zIndex: 10,
             }}
           >
             ⭐ FEATURED
           </div>
         )}
-
-        {/* AI Quality Score Badge - Bottom Left */}
-        <div
-          style={{
-            position: 'absolute',
-            bottom: 10,
-            left: 10,
-            padding: '4px 8px',
-            borderRadius: 6,
-            background: score > 50
-              ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
-              : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-            fontSize: 11,
-            fontWeight: 700,
-            color: '#fff',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 3,
-            boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
-          }}
-          title={`AI Quality Score: ${score}/100`}
-        >
-          ⭐ {score}
-        </div>
       </div>
 
       {/* Content Section */}
@@ -534,6 +498,13 @@ export default function CompactDealCard({
           </button>
         </div>
       </div>
+
+      {/* AI Quality Modal */}
+      <AIQualityBadge
+        dealId={deal.id}
+        isOpen={showAIModal}
+        onClose={() => setShowAIModal(false)}
+      />
     </div>
   );
 }

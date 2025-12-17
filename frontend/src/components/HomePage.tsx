@@ -336,7 +336,7 @@ export default function HomePage() {
       navigate('/login');
       return;
     }
-    setIsPostOpen(true);
+    navigate('/post-deal');
   };
 
   const handleDealCreated = () => {

@@ -27,9 +27,19 @@ function isProbablyValidUrl(url: string) {
 }
 
 const FESTIVE_OPTIONS = [
-  'diwali', 'pongal', 'holi', 'dussehra', 'navratri',
-  'christmas', 'new-year', 'republic-day', 'independence-day',
-  'eid', 'raksha-bandhan', 'ganesh-chaturthi', 'onam'
+  { value: 'diwali', label: 'Diwali', emoji: '🪔' },
+  { value: 'pongal', label: 'Pongal', emoji: '🌾' },
+  { value: 'holi', label: 'Holi', emoji: '🎨' },
+  { value: 'dussehra', label: 'Dussehra', emoji: '🏹' },
+  { value: 'navratri', label: 'Navratri', emoji: '💃' },
+  { value: 'christmas', label: 'Christmas', emoji: '🎄' },
+  { value: 'new-year', label: 'New Year', emoji: '🎉' },
+  { value: 'republic-day', label: 'Republic Day', emoji: '🇮🇳' },
+  { value: 'independence-day', label: 'Independence Day', emoji: '🇮🇳' },
+  { value: 'eid', label: 'Eid', emoji: '🌙' },
+  { value: 'raksha-bandhan', label: 'Raksha Bandhan', emoji: '🧵' },
+  { value: 'ganesh-chaturthi', label: 'Ganesh Chaturthi', emoji: '🐘' },
+  { value: 'onam', label: 'Onam', emoji: '🌺' },
 ];
 
 const SEASONAL_OPTIONS = ['summer', 'winter', 'monsoon', 'spring', 'autumn'];
@@ -59,21 +69,19 @@ export default function PostDealModal({ onClose, onCreate, categories }: Props) 
     const fetchImage = async () => {
       const normalizedUrl = normalizeUrl(url);
       if (!normalizedUrl || !isProbablyValidUrl(normalizedUrl)) return;
-      if (imageUrl) return; // Don't overwrite if user already has an image
+      if (imageUrl) return;
 
       setFetchingImage(true);
       try {
         const result = await scraperApi.fetchImageFromUrl(normalizedUrl);
         setImageUrl(result.imageUrl);
       } catch (err) {
-        // Silently fail - user can manually enter image URL if needed
         console.error('Failed to fetch image:', err);
       } finally {
         setFetchingImage(false);
       }
     };
 
-    // Debounce the fetch
     const timeoutId = setTimeout(fetchImage, 1000);
     return () => clearTimeout(timeoutId);
   }, [url, imageUrl]);
@@ -134,13 +142,22 @@ export default function PostDealModal({ onClose, onCreate, categories }: Props) 
     );
   };
 
+  // Calculate savings preview
+  const savingsPreview = useMemo(() => {
+    if (!originalPriceNumber || !priceNumber) return null;
+    const savings = originalPriceNumber - priceNumber;
+    const percentage = Math.round((savings / originalPriceNumber) * 100);
+    return { savings, percentage };
+  }, [originalPriceNumber, priceNumber]);
+
   return (
     <div
       onClick={onClose}
       style={{
         position: 'fixed',
         inset: 0,
-        background: 'rgba(0,0,0,0.62)',
+        background: 'rgba(0,0,0,0.35)',
+        backdropFilter: 'blur(4px)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -152,191 +169,298 @@ export default function PostDealModal({ onClose, onCreate, categories }: Props) 
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          width: 520,
+          width: 580,
           maxWidth: '100%',
-          borderRadius: 18,
-          border: '1px solid rgba(255,255,255,0.16)',
-          background:
-            'linear-gradient(180deg, rgba(14, 46, 110, 0.45), rgba(2, 6, 16, 0.85))',
-          boxShadow: '0 24px 70px rgba(0,0,0,0.6)',
-          padding: 20,
-          color: '#eaf2ff',
+          borderRadius: 24,
+          border: '1px solid rgba(255,255,255,0.12)',
+          background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
+          backdropFilter: 'blur(20px)',
+          boxShadow: '0 24px 70px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)',
+          padding: 28,
+          color: '#fff',
           margin: '20px 0',
         }}
       >
+        {/* Header */}
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            gap: 12,
-            marginBottom: 16,
+            marginBottom: 24,
           }}
         >
-          <h2 style={{ margin: 0, fontSize: 22 }}>Post a Deal</h2>
+          <div>
+            <h2 style={{ margin: 0, fontSize: 26, fontWeight: 800, background: 'linear-gradient(135deg, #fff 0%, #a8c0ff 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+              Share a Deal
+            </h2>
+            <p style={{ margin: '4px 0 0 0', fontSize: 13, opacity: 0.7 }}>
+              Help the community save money 💰
+            </p>
+          </div>
           <button
             onClick={onClose}
             style={{
-              padding: '6px 10px',
-              borderRadius: 10,
+              padding: '8px 12px',
+              borderRadius: 12,
               border: '1px solid rgba(255,255,255,0.16)',
-              background: 'rgba(0,0,0,0.25)',
-              color: '#eaf2ff',
+              background: 'rgba(0,0,0,0.2)',
+              color: '#fff',
               cursor: 'pointer',
               fontWeight: 800,
+              fontSize: 18,
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(0,0,0,0.2)';
             }}
           >
             ✕
           </button>
         </div>
 
-        <div style={{ display: 'grid', gap: 12 }}>
-          <label style={{ display: 'grid', gap: 6 }}>
-            <span style={{ fontSize: 12, opacity: 0.85 }}>Title *</span>
+        <div style={{ display: 'grid', gap: 16 }}>
+          {/* Title */}
+          <label style={{ display: 'grid', gap: 8 }}>
+            <span style={{ fontSize: 13, fontWeight: 700, opacity: 0.9 }}>
+              Product Title <span style={{ color: '#10b981' }}>*</span>
+            </span>
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Product name + key details"
+              placeholder="e.g., iPhone 15 Pro Max 256GB - Titanium Blue"
               style={{
-                padding: '10px 12px',
+                padding: '12px 16px',
                 borderRadius: 12,
-                border: '1px solid rgba(255,255,255,0.14)',
-                background: 'rgba(0,0,0,0.25)',
-                color: '#eaf2ff',
+                border: '1px solid rgba(255,255,255,0.16)',
+                background: 'rgba(255,255,255,0.08)',
+                color: '#fff',
                 outline: 'none',
+                fontSize: 15,
+                transition: 'all 0.2s',
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.background = 'rgba(255,255,255,0.12)';
+                e.currentTarget.style.borderColor = 'rgba(16,185,129,0.5)';
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.16)';
               }}
             />
           </label>
 
-          <label style={{ display: 'grid', gap: 6 }}>
-            <span style={{ fontSize: 12, opacity: 0.85 }}>Description (optional)</span>
+          {/* Description */}
+          <label style={{ display: 'grid', gap: 8 }}>
+            <span style={{ fontSize: 13, fontWeight: 700, opacity: 0.9 }}>
+              Description <span style={{ fontSize: 11, opacity: 0.6 }}>(optional)</span>
+            </span>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Add more details about this deal..."
+              placeholder="Add key features, why this is a great deal, or any important details..."
               rows={3}
               style={{
-                padding: '10px 12px',
+                padding: '12px 16px',
                 borderRadius: 12,
-                border: '1px solid rgba(255,255,255,0.14)',
-                background: 'rgba(0,0,0,0.25)',
-                color: '#eaf2ff',
+                border: '1px solid rgba(255,255,255,0.16)',
+                background: 'rgba(255,255,255,0.08)',
+                color: '#fff',
                 outline: 'none',
                 resize: 'vertical',
                 fontFamily: 'inherit',
+                fontSize: 15,
+                transition: 'all 0.2s',
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.background = 'rgba(255,255,255,0.12)';
+                e.currentTarget.style.borderColor = 'rgba(16,185,129,0.5)';
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.16)';
               }}
             />
           </label>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            <label style={{ display: 'grid', gap: 6 }}>
-              <span style={{ fontSize: 12, opacity: 0.85 }}>Price *</span>
-              <input
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                placeholder="18999"
-                inputMode="numeric"
-                style={{
-                  padding: '10px 12px',
-                  borderRadius: 12,
-                  border: '1px solid rgba(255,255,255,0.14)',
-                  background: 'rgba(0,0,0,0.25)',
-                  color: '#eaf2ff',
-                  outline: 'none',
-                }}
-              />
-            </label>
+          {/* Price Section with Preview */}
+          <div
+            style={{
+              padding: 16,
+              borderRadius: 14,
+              background: 'linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(5,150,105,0.1) 100%)',
+              border: '1px solid rgba(16,185,129,0.2)',
+            }}
+          >
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+              <label style={{ display: 'grid', gap: 8 }}>
+                <span style={{ fontSize: 13, fontWeight: 700, opacity: 0.9 }}>
+                  Deal Price <span style={{ color: '#10b981' }}>*</span>
+                </span>
+                <div style={{ position: 'relative' }}>
+                  <span style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', fontSize: 16, fontWeight: 700, color: '#10b981' }}>₹</span>
+                  <input
+                    value={price}
+                    onChange={(e) => setPrice(e.target.value)}
+                    placeholder="18999"
+                    inputMode="numeric"
+                    style={{
+                      padding: '12px 16px 12px 32px',
+                      borderRadius: 12,
+                      border: '1px solid rgba(16,185,129,0.3)',
+                      background: 'rgba(255,255,255,0.12)',
+                      color: '#fff',
+                      outline: 'none',
+                      fontSize: 16,
+                      fontWeight: 700,
+                      width: '100%',
+                    }}
+                  />
+                </div>
+              </label>
 
-            <label style={{ display: 'grid', gap: 6 }}>
-              <span style={{ fontSize: 12, opacity: 0.85 }}>Original Price</span>
-              <input
-                value={originalPrice}
-                onChange={(e) => setOriginalPrice(e.target.value)}
-                placeholder="24900"
-                inputMode="numeric"
+              <label style={{ display: 'grid', gap: 8 }}>
+                <span style={{ fontSize: 13, fontWeight: 700, opacity: 0.9 }}>
+                  Original Price <span style={{ fontSize: 11, opacity: 0.6 }}>(optional)</span>
+                </span>
+                <div style={{ position: 'relative' }}>
+                  <span style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', fontSize: 16, opacity: 0.6 }}>₹</span>
+                  <input
+                    value={originalPrice}
+                    onChange={(e) => setOriginalPrice(e.target.value)}
+                    placeholder="24900"
+                    inputMode="numeric"
+                    style={{
+                      padding: '12px 16px 12px 32px',
+                      borderRadius: 12,
+                      border: '1px solid rgba(255,255,255,0.16)',
+                      background: 'rgba(255,255,255,0.08)',
+                      color: '#fff',
+                      outline: 'none',
+                      fontSize: 16,
+                      width: '100%',
+                    }}
+                  />
+                </div>
+              </label>
+            </div>
+
+            {/* Savings Preview */}
+            {savingsPreview && (
+              <div
                 style={{
-                  padding: '10px 12px',
-                  borderRadius: 12,
-                  border: '1px solid rgba(255,255,255,0.14)',
-                  background: 'rgba(0,0,0,0.25)',
-                  color: '#eaf2ff',
-                  outline: 'none',
+                  padding: 12,
+                  borderRadius: 10,
+                  background: 'rgba(16,185,129,0.15)',
+                  border: '1px solid rgba(16,185,129,0.25)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
                 }}
-              />
-            </label>
+              >
+                <span style={{ fontSize: 24 }}>💰</span>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#10b981' }}>
+                    Save ₹{savingsPreview.savings.toLocaleString('en-IN')} ({savingsPreview.percentage}% OFF)
+                  </div>
+                  <div style={{ fontSize: 11, opacity: 0.7, marginTop: 2 }}>
+                    Great deal! AI will score this highly
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
-          <label style={{ display: 'grid', gap: 6 }}>
-            <span style={{ fontSize: 12, opacity: 0.85 }}>Merchant *</span>
+          {/* Merchant */}
+          <label style={{ display: 'grid', gap: 8 }}>
+            <span style={{ fontSize: 13, fontWeight: 700, opacity: 0.9 }}>
+              Merchant <span style={{ color: '#10b981' }}>*</span>
+            </span>
             <input
               value={merchant}
               onChange={(e) => setMerchant(e.target.value)}
-              placeholder="Amazon / Flipkart / Croma"
+              placeholder="Amazon / Flipkart / Croma / etc."
               style={{
-                padding: '10px 12px',
+                padding: '12px 16px',
                 borderRadius: 12,
-                border: '1px solid rgba(255,255,255,0.14)',
-                background: 'rgba(0,0,0,0.25)',
-                color: '#eaf2ff',
+                border: '1px solid rgba(255,255,255,0.16)',
+                background: 'rgba(255,255,255,0.08)',
+                color: '#fff',
                 outline: 'none',
+                fontSize: 15,
               }}
             />
           </label>
 
-          <label style={{ display: 'grid', gap: 6 }}>
-            <span style={{ fontSize: 12, opacity: 0.85 }}>Deal URL (optional)</span>
+          {/* URL */}
+          <label style={{ display: 'grid', gap: 8 }}>
+            <span style={{ fontSize: 13, fontWeight: 700, opacity: 0.9 }}>
+              Product URL <span style={{ fontSize: 11, opacity: 0.6 }}>(optional)</span>
+            </span>
             <input
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://..."
+              placeholder="https://www.amazon.in/product/..."
               style={{
-                padding: '10px 12px',
+                padding: '12px 16px',
                 borderRadius: 12,
-                border: '1px solid rgba(255,255,255,0.14)',
-                background: 'rgba(0,0,0,0.25)',
-                color: '#eaf2ff',
+                border: '1px solid rgba(255,255,255,0.16)',
+                background: 'rgba(255,255,255,0.08)',
+                color: '#fff',
                 outline: 'none',
+                fontSize: 14,
+                fontFamily: 'monospace',
               }}
             />
           </label>
 
-          <label style={{ display: 'grid', gap: 6 }}>
-            <span style={{ fontSize: 12, opacity: 0.85 }}>
-              Image URL {fetchingImage && '(auto-fetching...)'}
+          {/* Image URL */}
+          <label style={{ display: 'grid', gap: 8 }}>
+            <span style={{ fontSize: 13, fontWeight: 700, opacity: 0.9 }}>
+              Image URL {fetchingImage && <span style={{ color: '#3b82f6', fontSize: 12 }}>🔄 Auto-fetching...</span>}
             </span>
             <input
               value={imageUrl}
               onChange={(e) => setImageUrl(e.target.value)}
-              placeholder={fetchingImage ? "Fetching from product page..." : "Auto-filled from URL or enter manually"}
+              placeholder={fetchingImage ? "Fetching from product page..." : "Auto-filled or enter manually"}
               disabled={fetchingImage}
               style={{
-                padding: '10px 12px',
+                padding: '12px 16px',
                 borderRadius: 12,
-                border: '1px solid rgba(255,255,255,0.14)',
-                background: fetchingImage ? 'rgba(0,0,0,0.15)' : 'rgba(0,0,0,0.25)',
-                color: '#eaf2ff',
+                border: '1px solid rgba(255,255,255,0.16)',
+                background: fetchingImage ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.08)',
+                color: '#fff',
                 outline: 'none',
+                fontSize: 14,
+                fontFamily: 'monospace',
                 opacity: fetchingImage ? 0.6 : 1,
               }}
             />
           </label>
 
+          {/* Category */}
           {categories.length > 0 && (
-            <label style={{ display: 'grid', gap: 6 }}>
-              <span style={{ fontSize: 12, opacity: 0.85 }}>Category</span>
+            <label style={{ display: 'grid', gap: 8 }}>
+              <span style={{ fontSize: 13, fontWeight: 700, opacity: 0.9 }}>
+                Category <span style={{ fontSize: 11, opacity: 0.6 }}>(optional)</span>
+              </span>
               <select
                 value={categoryId}
                 onChange={(e) => setCategoryId(e.target.value)}
                 style={{
-                  padding: '10px 12px',
+                  padding: '12px 16px',
                   borderRadius: 12,
-                  border: '1px solid rgba(255,255,255,0.14)',
-                  background: 'rgba(0,0,0,0.25)',
-                  color: '#eaf2ff',
+                  border: '1px solid rgba(255,255,255,0.16)',
+                  background: 'rgba(255,255,255,0.08)',
+                  color: '#fff',
                   outline: 'none',
+                  fontSize: 15,
                 }}
               >
-                <option value="">Select a category...</option>
+                <option value="" style={{ background: '#1a1a2e' }}>Select a category...</option>
                 {categories.map((cat) => (
                   <option key={cat.id} value={cat.id} style={{ background: '#1a1a2e' }}>
                     {cat.icon} {cat.name}
@@ -346,51 +470,68 @@ export default function PostDealModal({ onClose, onCreate, categories }: Props) 
             </label>
           )}
 
-          <label style={{ display: 'grid', gap: 6 }}>
-            <span style={{ fontSize: 12, opacity: 0.85 }}>Festive Tags (optional)</span>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          {/* Festive Tags */}
+          <label style={{ display: 'grid', gap: 8 }}>
+            <span style={{ fontSize: 13, fontWeight: 700, opacity: 0.9 }}>
+              Festive Tags <span style={{ fontSize: 11, opacity: 0.6 }}>(optional - boosts visibility!)</span>
+            </span>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {FESTIVE_OPTIONS.map(tag => (
                 <button
-                  key={tag}
+                  key={tag.value}
                   type="button"
-                  onClick={() => toggleFestiveTag(tag)}
+                  onClick={() => toggleFestiveTag(tag.value)}
                   style={{
-                    padding: '6px 12px',
+                    padding: '8px 14px',
                     borderRadius: 999,
-                    border: festiveTags.includes(tag)
-                      ? '1px solid rgba(255, 193, 7, 0.5)'
-                      : '1px solid rgba(255,255,255,0.14)',
-                    background: festiveTags.includes(tag)
-                      ? 'rgba(255, 193, 7, 0.25)'
-                      : 'rgba(0,0,0,0.18)',
-                    color: festiveTags.includes(tag) ? '#ffd54f' : 'rgba(234,242,255,0.85)',
+                    border: festiveTags.includes(tag.value)
+                      ? '2px solid rgba(255, 193, 7, 0.6)'
+                      : '1px solid rgba(255,255,255,0.16)',
+                    background: festiveTags.includes(tag.value)
+                      ? 'linear-gradient(135deg, rgba(255, 193, 7, 0.3) 0%, rgba(255, 152, 0, 0.2) 100%)'
+                      : 'rgba(255,255,255,0.08)',
+                    color: festiveTags.includes(tag.value) ? '#ffd54f' : '#fff',
                     cursor: 'pointer',
                     fontWeight: 700,
-                    fontSize: 11,
-                    textTransform: 'capitalize',
+                    fontSize: 12,
+                    transition: 'all 0.2s',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!festiveTags.includes(tag.value)) {
+                      e.currentTarget.style.background = 'rgba(255,255,255,0.12)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!festiveTags.includes(tag.value)) {
+                      e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+                    }
                   }}
                 >
-                  {tag.replace('-', ' ')}
+                  {tag.emoji} {tag.label}
                 </button>
               ))}
             </div>
           </label>
 
-          <label style={{ display: 'grid', gap: 6 }}>
-            <span style={{ fontSize: 12, opacity: 0.85 }}>Seasonal Tag (optional)</span>
+          {/* Seasonal Tag */}
+          <label style={{ display: 'grid', gap: 8 }}>
+            <span style={{ fontSize: 13, fontWeight: 700, opacity: 0.9 }}>
+              Seasonal Tag <span style={{ fontSize: 11, opacity: 0.6 }}>(optional)</span>
+            </span>
             <select
               value={seasonalTag}
               onChange={(e) => setSeasonalTag(e.target.value)}
               style={{
-                padding: '10px 12px',
+                padding: '12px 16px',
                 borderRadius: 12,
-                border: '1px solid rgba(255,255,255,0.14)',
-                background: 'rgba(0,0,0,0.25)',
-                color: '#eaf2ff',
+                border: '1px solid rgba(255,255,255,0.16)',
+                background: 'rgba(255,255,255,0.08)',
+                color: '#fff',
                 outline: 'none',
+                fontSize: 15,
               }}
             >
-              <option value="">Select a season...</option>
+              <option value="" style={{ background: '#1a1a2e' }}>Select a season...</option>
               {SEASONAL_OPTIONS.map((season) => (
                 <option key={season} value={season} style={{ background: '#1a1a2e', textTransform: 'capitalize' }}>
                   {season.charAt(0).toUpperCase() + season.slice(1)}
@@ -399,44 +540,71 @@ export default function PostDealModal({ onClose, onCreate, categories }: Props) 
             </select>
           </label>
 
+          {/* Error Message */}
           {error && (
             <div
               style={{
-                color: '#ff8080',
+                padding: '12px 16px',
+                borderRadius: 12,
+                background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(220, 38, 38, 0.15) 100%)',
+                border: '1px solid rgba(239, 68, 68, 0.4)',
+                color: '#fca5a5',
                 fontWeight: 700,
                 fontSize: 13,
-                padding: '8px 12px',
-                borderRadius: 8,
-                background: 'rgba(255,0,0,0.1)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
               }}
             >
+              <span style={{ fontSize: 18 }}>⚠️</span>
               {error}
             </div>
           )}
 
+          {/* Submit Button */}
           <button
             onClick={submit}
             disabled={loading || !canSubmit}
             style={{
               width: '100%',
-              padding: '12px',
-              borderRadius: 12,
-              border: '1px solid rgba(255,255,255,0.18)',
+              padding: '14px',
+              borderRadius: 14,
+              border: 'none',
               background:
                 canSubmit && !loading
-                  ? 'rgba(38, 118, 255, 0.9)'
-                  : 'rgba(255,255,255,0.08)',
-              color: canSubmit && !loading ? '#fff' : 'rgba(234,242,255,0.65)',
+                  ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
+                  : 'rgba(255,255,255,0.1)',
+              color: canSubmit && !loading ? '#fff' : 'rgba(255,255,255,0.4)',
               cursor: canSubmit && !loading ? 'pointer' : 'not-allowed',
               fontWeight: 900,
               fontSize: 16,
+              boxShadow: canSubmit && !loading ? '0 4px 14px rgba(16,185,129,0.4)' : 'none',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              if (canSubmit && !loading) {
+                e.currentTarget.style.transform = 'translateY(-1px)';
+                e.currentTarget.style.boxShadow = '0 6px 20px rgba(16,185,129,0.5)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = canSubmit && !loading ? '0 4px 14px rgba(16,185,129,0.4)' : 'none';
             }}
           >
-            {loading ? 'Creating...' : 'Create Deal'}
+            {loading ? '🔄 Creating Deal...' : '✨ Share This Deal'}
           </button>
 
-          <div style={{ fontSize: 12, opacity: 0.7 }}>
-            Tip: press <b>Esc</b> to close.
+          {/* Footer Tip */}
+          <div
+            style={{
+              textAlign: 'center',
+              fontSize: 12,
+              opacity: 0.6,
+              paddingTop: 8,
+            }}
+          >
+            💡 Tip: Press <kbd style={{ padding: '2px 6px', borderRadius: 4, background: 'rgba(255,255,255,0.1)', fontFamily: 'monospace' }}>Esc</kbd> to close
           </div>
         </div>
       </div>

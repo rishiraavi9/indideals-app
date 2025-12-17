@@ -5,7 +5,7 @@
 
 export const FEATURE_FLAGS = {
   // Ad system - disable for MVP Phase 1
-  ADS_ENABLED: false as boolean,
+  ADS_ENABLED: true as boolean,
 
   // Future feature flags can be added here
   // ANALYTICS_ENABLED: true,
