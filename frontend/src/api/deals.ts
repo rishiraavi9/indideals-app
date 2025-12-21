@@ -10,6 +10,7 @@ export type GetDealsParams = {
   userId?: string; // Filter deals by user ID
   limit?: number;
   offset?: number;
+  sortBy?: 'newest' | 'popular' | 'price-asc' | 'price-desc' | 'discount';
   preferredCategories?: string; // Comma-separated category IDs for anonymous users
 };
 

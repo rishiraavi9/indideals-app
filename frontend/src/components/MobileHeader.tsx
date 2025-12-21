@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+import Logo from './Logo';
 import type { Tab } from '../types';
 
 interface MobileHeaderProps {
@@ -11,7 +13,20 @@ export default function MobileHeader({
   onTabChange,
   onSearchClick,
 }: MobileHeaderProps) {
-  const tabs: Tab[] = ['For You', 'Frontpage', 'Popular', 'New'];
+  const { t } = useTranslation();
+  const tabs: Tab[] = ['All', 'Hot Deals', 'Great Deals', 'Budget Buys', 'New'];
+
+  // Tab translation map
+  const getTabLabel = (tab: Tab): string => {
+    switch (tab) {
+      case 'All': return t('common.all');
+      case 'Hot Deals': return t('home.hot');
+      case 'Great Deals': return t('home.greatDeals');
+      case 'Budget Buys': return t('home.budgetBuys');
+      case 'New': return t('home.new');
+      default: return tab;
+    }
+  };
 
   return (
     <div
@@ -34,25 +49,7 @@ export default function MobileHeader({
         }}
       >
         {/* Logo */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-          }}
-        >
-          <span style={{ fontSize: 24 }}>🔥</span>
-          <span
-            style={{
-              fontSize: 20,
-              fontWeight: 900,
-              color: '#fff',
-              letterSpacing: -0.5,
-            }}
-          >
-            IndiaDeals
-          </span>
-        </div>
+        <Logo variant="horizontal" size="sm" darkMode />
 
         {/* Search Icon */}
         <button
@@ -70,7 +67,7 @@ export default function MobileHeader({
             gap: 8,
           }}
         >
-          🔍 <span style={{ fontSize: 14, fontWeight: 600 }}>Search</span>
+          🔍 <span style={{ fontSize: 14, fontWeight: 600 }}>{t('common.search')}</span>
         </button>
       </div>
 
@@ -106,7 +103,7 @@ export default function MobileHeader({
                 transition: 'all 0.2s',
               }}
             >
-              {tab}
+              {getTabLabel(tab)}
             </button>
           );
         })}

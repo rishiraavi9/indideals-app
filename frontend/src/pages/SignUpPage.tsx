@@ -79,7 +79,7 @@ export default function SignUpPage() {
               e.currentTarget.style.opacity = '1';
             }}
           >
-            🔥 <span style={{ fontWeight: 900 }}>IndiaDeals</span>
+            🔥 <span style={{ fontWeight: 900 }}>DesiDealsAI</span>
           </h1>
         </div>
       </div>
@@ -88,7 +88,7 @@ export default function SignUpPage() {
       <div style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', padding: '60px 24px' }}>
         <div style={{ maxWidth: '600px', margin: '0 auto', textAlign: 'center', color: 'white' }}>
           <h1 style={{ fontSize: 42, fontWeight: 800, margin: '0 0 16px', lineHeight: 1.2, letterSpacing: '-0.5px' }}>
-            Join IndiaDeals
+            Join DesiDealsAI
           </h1>
           <p style={{ fontSize: 18, margin: 0, opacity: 0.95, lineHeight: 1.6 }}>
             Create your account to start sharing deals and saving money
@@ -339,13 +339,13 @@ export default function SignUpPage() {
       <div style={{ background: '#1a1a1a', color: '#9ca3af', padding: '40px 24px' }}>
         <div style={{ maxWidth: '1400px', margin: '0 auto', textAlign: 'center' }}>
           <div style={{ fontSize: 24, fontWeight: 800, marginBottom: 12, color: '#ffffff' }}>
-            🔥 IndiaDeals
+            🔥 DesiDealsAI
           </div>
           <p style={{ margin: '0 0 20px', fontSize: 14 }}>
             AI-Powered Deal Discovery Platform
           </p>
           <div style={{ fontSize: 12, opacity: 0.7 }}>
-            © 2025 IndiaDeals. All rights reserved.
+            © 2025 DesiDealsAI. All rights reserved.
           </div>
         </div>
       </div>

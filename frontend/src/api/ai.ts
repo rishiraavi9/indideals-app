@@ -14,8 +14,6 @@ export interface QualityScoreResult {
   reasoning: string;      // Human-readable explanation
 }
 
-// Explicitly export types
-export type { QualityScoreBreakdown, QualityScoreResult };
 
 export interface AIStats {
   queues: {

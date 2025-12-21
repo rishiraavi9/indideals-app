@@ -130,7 +130,9 @@ export class DealQualityService {
         .limit(90); // 3 months of data
 
       if (history.length < 3) {
-        return 20; // New deal, neutral score
+        // New deal - give benefit of the doubt based on current price being tracked
+        // If there's at least 1 entry, assume it's a reasonable starting point
+        return history.length > 0 ? 30 : 25;
       }
 
       const prices = history.map(h => h.price);
@@ -196,11 +198,13 @@ export class DealQualityService {
     if (deal.verified) {
       score += 30;
     } else if (deal.verificationAttempts > 0 && deal.urlAccessible) {
-      score += 20; // Attempted verification, URL works
+      score += 25; // Attempted verification, URL works
     } else if (deal.verificationAttempts > 0) {
-      score += 5; // Verification attempted but failed
+      score += 10; // Verification attempted but failed
+    } else if (deal.url) {
+      score += 18; // Has URL but not yet verified - give benefit of doubt
     } else {
-      score += 10; // Unverified but not flagged
+      score += 10; // No URL, unverified
     }
 
     // 3. Deal completeness (0-15 points)
@@ -225,6 +229,29 @@ export class DealQualityService {
    * Score merchant trustworthiness based on historical performance
    */
   private static async scoreMerchantTrust(merchantName: string): Promise<number> {
+    // Known trusted merchants get a base boost
+    const trustedMerchants: Record<string, number> = {
+      'Amazon': 35,
+      'Flipkart': 35,
+      'Myntra': 32,
+      'Ajio': 30,
+      'Nykaa': 30,
+      'Tata Cliq': 30,
+      'Croma': 30,
+      'Reliance Digital': 30,
+      'Vijay Sales': 28,
+      'Snapdeal': 25,
+      'Meesho': 22,
+    };
+
+    // Check if it's a known trusted merchant
+    const merchantLower = merchantName?.toLowerCase() || '';
+    for (const [name, score] of Object.entries(trustedMerchants)) {
+      if (merchantLower.includes(name.toLowerCase())) {
+        return score;
+      }
+    }
+
     try {
       // Get merchant's deal history
       const merchantDeals = await db
@@ -239,7 +266,7 @@ export class DealQualityService {
         .limit(50); // Last 50 deals
 
       if (merchantDeals.length === 0) {
-        return 20; // New merchant, neutral-low score
+        return 22; // New merchant, moderate score
       }
 
       // Calculate metrics
@@ -292,7 +319,7 @@ export class DealQualityService {
       const expiryScore = this.scoreExpiration(deal.expiresAt);
       score += expiryScore;
     } else {
-      score += 15; // No expiry = moderate urgency
+      score += 20; // No expiry = deals typically stay available
     }
 
     return Math.min(100, score);
@@ -305,14 +332,15 @@ export class DealQualityService {
     const ageHours = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60);
 
     if (ageHours <= 2) return 40;        // Just posted
-    if (ageHours <= 6) return 35;        // Very fresh
-    if (ageHours <= 24) return 28;       // Fresh
-    if (ageHours <= 48) return 20;       // Recent
-    if (ageHours <= 168) return 12;      // This week
+    if (ageHours <= 6) return 38;        // Very fresh
+    if (ageHours <= 24) return 35;       // Fresh - still very relevant
+    if (ageHours <= 48) return 30;       // Recent
+    if (ageHours <= 72) return 25;       // 3 days old
+    if (ageHours <= 168) return 20;      // This week - still good
 
-    // Decay after 1 week
+    // Gradual decay after 1 week
     const ageDays = ageHours / 24;
-    return Math.max(0, 12 - ageDays);
+    return Math.max(10, 20 - (ageDays - 7)); // Minimum 10 points
   }
 
   /**
@@ -327,7 +355,7 @@ export class DealQualityService {
         .orderBy(desc(priceHistory.scrapedAt))
         .limit(10);
 
-      if (recent.length < 3) return 15; // Not enough data
+      if (recent.length < 3) return 20; // Not enough data - neutral score
 
       const prices = recent.map(h => h.price);
       const trend = this.calculateTrend(prices);
@@ -365,7 +393,7 @@ export class DealQualityService {
   private static async calculateSocialProof(dealId: string, deal: any): Promise<number> {
     const upvotes = deal.upvotes || 0;
     const downvotes = deal.downvotes || 0;
-    const comments = deal.commentCount || 0;
+    const commentCount = deal.commentCount || 0;
     const views = deal.viewCount || 0;
 
     let score = 0;
@@ -380,18 +408,27 @@ export class DealQualityService {
       if (totalVotes >= 100) score += voteScore * 1.2;
       else if (totalVotes >= 50) score += voteScore * 1.1;
       else if (totalVotes >= 10) score += voteScore;
-      else score += voteScore * 0.8; // Penalty for low engagement
+      else score += voteScore * 0.9; // Small penalty for low engagement
     } else {
-      score += 25; // Neutral for new deals
+      // New deals get a moderate base score - don't penalize for being new
+      score += 40;
     }
 
     // 2. Discussion quality (0-30 points)
-    const commentScore = Math.min(30, comments * 5); // 5 points per comment
-    score += commentScore;
+    if (commentCount > 0) {
+      const commentScore = Math.min(30, commentCount * 6); // 6 points per comment
+      score += commentScore;
+    } else {
+      score += 15; // Base score for no comments yet
+    }
 
     // 3. Interest level (0-20 points)
-    const viewScore = Math.min(20, Math.log10(views + 1) * 5);
-    score += viewScore;
+    if (views > 0) {
+      const viewScore = Math.min(20, Math.log10(views + 1) * 8);
+      score += viewScore;
+    } else {
+      score += 10; // Base score for new deals
+    }
 
     return Math.min(100, Math.round(score));
   }
@@ -402,27 +439,35 @@ export class DealQualityService {
   private static generateBadges(totalScore: number, breakdown: any, deal: any): string[] {
     const badges: string[] = [];
 
-    // Overall quality
-    if (totalScore >= 90) badges.push('💎 Exceptional Deal');
-    else if (totalScore >= 80) badges.push('🔥 Hot Deal');
-    else if (totalScore >= 70) badges.push('⭐ Great Deal');
-    else if (totalScore >= 60) badges.push('👍 Good Deal');
+    // Overall quality badges
+    if (totalScore >= 85) badges.push('💎 Exceptional Deal');
+    else if (totalScore >= 75) badges.push('🔥 Hot Deal');
+    else if (totalScore >= 65) badges.push('⭐ Great Deal');
+    else if (totalScore >= 55) badges.push('👍 Good Deal');
 
-    // Value-based
-    if (breakdown.valueProp >= 85) badges.push('💰 Best Price');
+    // Value-based badges
+    if (breakdown.valueProp >= 75) badges.push('💰 Best Price');
+    else if (breakdown.valueProp >= 60 && deal.discountPercentage >= 40) badges.push('💵 Good Value');
+
     if (deal.discountPercentage >= 70) badges.push('📉 Huge Discount');
+    else if (deal.discountPercentage >= 50) badges.push('🏷️ Big Savings');
 
-    // Trust-based
-    if (breakdown.authenticity >= 85) badges.push('✅ Verified');
+    // Trust-based badges
+    if (breakdown.authenticity >= 80) badges.push('✅ Verified');
     if (deal.verified) badges.push('🤖 AI Verified');
 
-    // Urgency-based
-    if (breakdown.urgency >= 85) badges.push('⚡ Act Fast');
-    if (breakdown.urgency >= 70) badges.push('⏰ Limited Time');
+    // Urgency-based badges
+    if (breakdown.urgency >= 80) badges.push('⚡ Act Fast');
+    else if (breakdown.urgency >= 65) badges.push('⏰ Limited Time');
 
-    // Social proof
-    if (breakdown.socialProof >= 80) badges.push('❤️ Community Favorite');
-    if ((deal.upvotes || 0) >= 100) badges.push('🌟 Trending');
+    // Social proof badges
+    if (breakdown.socialProof >= 75) badges.push('❤️ Community Favorite');
+    if ((deal.upvotes || 0) >= 50) badges.push('🌟 Trending');
+    else if ((deal.upvotes || 0) >= 20) badges.push('👆 Popular');
+
+    // Deal freshness
+    const ageHours = (Date.now() - new Date(deal.createdAt).getTime()) / (1000 * 60 * 60);
+    if (ageHours <= 24) badges.push('🆕 New');
 
     return badges.slice(0, 5); // Limit to top 5 badges
   }

@@ -1,7 +1,8 @@
-# Architecture Overview - IndiaDeals
+# Architecture Overview - DesiDealsAI
 
-**Last Updated**: December 14, 2025
-**Version**: 2.1.0 (Production Ready + Frontend Refactor)
+**Domain**: desidealsai.com
+**Last Updated**: December 21, 2025
+**Version**: 2.6.0 (AI-Powered Deal Platform with Rebranding, i18n, PWA & Mobile-First Architecture)
 
 ---
 
@@ -1065,6 +1066,236 @@ logs/combined.log    - All logs
 
 ## Recent Changes
 
+### v2.5.0 - i18n, PWA & Mobile-First Architecture (December 21, 2025) 🌍📱
+
+**Major Release** - Comprehensive internationalization, Progressive Web App support, and mobile-first UI architecture.
+
+---
+
+### v2.4.1 - Anti-Bot Protection for Scrapers (December 21, 2025) 🛡️
+
+**1. User-Agent Rotation**
+- ✅ Pool of 8 different browser User-Agent strings
+- ✅ Random selection for each request
+- ✅ Includes Chrome, Firefox, Safari, Edge, Mobile browsers
+
+**2. Rate Limiting**
+- ✅ 2.5-second delay between requests per domain
+- ✅ Per-domain tracking with `Map<string, number>`
+- ✅ Automatic wait before each merchant request
+
+**3. Retry with Exponential Backoff**
+- ✅ 3 retry attempts for 500/503 errors
+- ✅ Exponential backoff: 2s → 4s → 8s
+- ✅ Graceful handling of `ECONNRESET` errors
+
+**4. Reduced Scraping Intensity**
+- ✅ `dealsPerChannel`: 30 → 15 (reduced)
+- ✅ `delayBetweenChannels`: 2000ms → 5000ms (increased)
+- ✅ Title extraction fixed for `NUMBER₹` format
+
+**Files Modified:**
+- `backend/src/services/affiliate.service.ts`
+- `backend/src/config/telegram-channels.ts`
+- `backend/src/services/scrapers/telegram-scraper.service.ts`
+
+---
+
+### v2.4.0 - AI-Powered Deal Platform (December 21, 2025) 🤖
+
+**Major Release** - This version adds AI quality scoring, automated deal verification, Telegram scraping, price tracking, wishlist functionality, and a complete UI modernization.
+
+---
+
+### v2.3.0 - Telegram Scraper & Two-Phase Algorithm (December 21, 2025) 📡
+
+**1. Telegram Channel Scraping**
+- ✅ Automated deal scraping from multiple Telegram channels
+- ✅ Configurable channels in `backend/src/config/telegram-channels.ts`
+- ✅ Currently enabled: MahidharZone, iamprasadtech, TechFactsDeals
+- ✅ Scheduled via Bull queue (every 2 hours by default)
+
+**2. Two-Phase Scraping Algorithm**
+- ✅ Phase 1: Scrape NEW messages (newest first, catches new posts)
+- ✅ Phase 2: BACKFILL older messages (continues from oldest known)
+- ✅ Boolean flags to enable/disable each phase independently
+- ✅ Configurable max pages per phase (10 pages = 500 messages)
+
+**3. Deal Processing Pipeline**
+- ✅ URL expansion (amzn.to, fkrt.co → full URLs)
+- ✅ Affiliate tag replacement with our tags
+- ✅ ML-based deduplication using TF-IDF + cosine similarity
+- ✅ Roundup post filtering (skip posts with >2 URLs)
+- ✅ Price extraction from merchant pages
+- ✅ Product image extraction with fallbacks
+
+**4. ML Deduplication**
+- ✅ TF-IDF vectorization of deal titles
+- ✅ Cosine similarity scoring (0-100%)
+- ✅ Decision logic: >70% similar + better price → replace existing
+- ✅ Located in: `backend/src/services/ml-deduplication.service.ts`
+
+**Files Created/Modified:**
+- `backend/src/services/scrapers/telegram-scraper.service.ts`
+- `backend/src/config/telegram-channels.ts`
+- `backend/src/services/ml-deduplication.service.ts`
+- `backend/src/services/affiliate.service.ts`
+- `backend/src/jobs/telegram-scraper.job.ts`
+
+---
+
+### v2.2.5 - AI Quality Scoring System (December 21, 2025) 🧠
+
+**1. Smart Deal Scoring Algorithm**
+- ✅ Multi-factor AI scoring (0-100 scale)
+- ✅ Located in: `backend/src/services/ai/deal-quality.service.ts`
+
+**2. Scoring Components (Weighted)**
+- ✅ Value Proposition (40%) - Is this actually a good price?
+  - Discount quality (tier-based, 0-40 points)
+  - Historical price analysis vs median (0-40 points)
+  - Absolute savings bonus (₹50k+ savings = 20 points)
+- ✅ Authenticity (25%) - Can we trust this deal?
+  - Merchant trust score (Amazon/Flipkart = 35 points)
+  - Deal verification status (30 points if verified)
+  - Completeness check (URL, image, description)
+  - Red flags detection (auto-flagged, suspicious discounts)
+- ✅ Urgency (20%) - Should user act now?
+  - Freshness scoring (posted <2 hours = 40 points)
+  - Price trend analysis (dropping = high score)
+  - Expiration urgency
+- ✅ Social Proof (15%) - Community validation
+  - Vote quality (upvote/downvote ratio)
+  - Comment engagement
+  - View count interest
+
+**3. AI Badges & Reasoning**
+- ✅ Auto-generated badges: 💎 Exceptional, 🔥 Hot, ⭐ Great, 👍 Good
+- ✅ Context badges: 💰 Best Price, ✅ Verified, ⚡ Act Fast, ❤️ Community Favorite
+- ✅ Human-readable reasoning explaining the score
+
+**4. API Endpoints**
+- ✅ `GET /api/ai/score/:dealId` - Get AI score for a deal
+- ✅ `GET /api/ai/top-deals` - Get top-scoring deals
+- ✅ `POST /api/ai/recalculate/:dealId` - Recalculate score
+
+---
+
+### v2.2.4 - Deal Verification System (December 21, 2025) ✅
+
+**1. Automated Verification**
+- ✅ URL accessibility check (HEAD/GET with redirects)
+- ✅ Price scraping from merchant pages
+- ✅ Community signal analysis (downvote ratio)
+- ✅ User trust score consideration
+- ✅ Located in: `backend/src/services/deal-verifier.service.ts`
+
+**2. Verification Types**
+- ✅ `initial` - When deal is first created
+- ✅ `periodic` - Scheduled every 6 hours via Bull queue
+- ✅ `manual` - Triggered via admin/API
+
+**3. Verification Results**
+- ✅ `verified` - URL works, price matches (±5%)
+- ✅ `flagged` - URL issues or price mismatch >20%
+- ✅ `failed` - URL dead (404/410) or sold out
+
+**4. Merchant-Specific Detection**
+- ✅ Amazon: Checks #add-to-cart-button, #availability
+- ✅ Flipkart: Checks Add to Cart vs Notify Me buttons
+- ✅ Generic: Conservative sold-out text detection
+
+**5. Database Updates**
+- ✅ Updates deal: `verified`, `verificationStatus`, `urlAccessible`, `priceMatch`
+- ✅ Logs all attempts to `deal_verification_logs` table
+- ✅ Updates `price_history` with scraped prices
+
+---
+
+### v2.2.3 - Bull Queue Job System (December 21, 2025) ⚙️
+
+**1. Queue Infrastructure**
+- ✅ 7 Bull queues with Redis backend
+- ✅ Bull Board dashboard at `/admin/queues`
+- ✅ Feature flag controlled activation
+
+**2. Available Queues**
+```
+emailQueue           - Email notifications
+priceTrackerQueue    - Price tracking (hourly)
+scraperQueue         - Legacy scraping
+dealVerifierQueue    - Deal verification (every 6 hours)
+alertProcessorQueue  - Daily/weekly alert digests
+cleanupQueue         - Database cleanup (daily at 2 AM)
+telegramScraperQueue - Telegram scraping (every 2 hours)
+```
+
+**3. Job Retry Policy**
+- ✅ 3 retry attempts with exponential backoff (2s base)
+- ✅ Keep last 100 completed jobs
+- ✅ Keep last 500 failed jobs for debugging
+
+**4. Scheduled Jobs**
+- ✅ Daily alerts: 9 AM every day
+- ✅ Weekly alerts: 9 AM every Monday
+- ✅ Price tracking: Every hour
+- ✅ Deal verification: Every 6 hours
+- ✅ Cleanup: 2 AM daily
+- ✅ Telegram scraping: Configurable (default every 2 hours)
+
+---
+
+### v2.2.2 - Wishlist System (December 21, 2025) ❤️
+
+**1. Backend API**
+- ✅ `POST /api/wishlist` - Save deal to wishlist
+- ✅ `GET /api/wishlist` - Get user's wishlist (paginated)
+- ✅ `DELETE /api/wishlist/:dealId` - Remove from wishlist
+- ✅ `PATCH /api/wishlist/:dealId` - Update notes
+- ✅ `GET /api/wishlist/check/:dealId` - Check if deal is saved
+
+**2. Features**
+- ✅ Personal notes for saved deals
+- ✅ Handles unauthenticated users gracefully (returns false)
+- ✅ Prevents duplicate saves (409 Conflict)
+- ✅ Database table: `saved_deals`
+
+**3. Frontend Integration**
+- ✅ Heart/bookmark button on deal cards
+- ✅ Wishlist page component
+- ✅ Real-time wishlist status
+
+---
+
+### v2.2.1 - Token Refresh System (December 21, 2025) 🔐
+
+**1. Dual Token Authentication**
+- ✅ Access tokens: JWT, 15 minute expiry
+- ✅ Refresh tokens: Crypto random, 7 day expiry, stored in DB
+- ✅ Located in: `backend/src/utils/tokens.ts`
+
+**2. Token Management**
+- ✅ `generateAccessToken(userId)` - Short-lived JWT
+- ✅ `generateRefreshToken(userId, ip, userAgent)` - Stored in DB
+- ✅ `verifyAccessToken(token)` - Validate JWT
+- ✅ `verifyRefreshToken(token)` - Check DB + expiry + revoked
+- ✅ `revokeRefreshToken(token)` - Single logout
+- ✅ `revokeAllUserTokens(userId)` - Logout all devices
+- ✅ `cleanupExpiredTokens()` - Periodic cleanup
+
+**3. Security Features**
+- ✅ IP address and User-Agent tracking per token
+- ✅ Token revocation support
+- ✅ Automatic expired token cleanup
+- ✅ Security event logging (token_refreshed)
+
+**4. API Endpoints**
+- ✅ `POST /api/auth/refresh` - Exchange refresh token
+- ✅ `POST /api/auth/logout` - Revoke current refresh token
+- ✅ `POST /api/auth/logout-all` - Revoke all user tokens
+
+---
+
 ### v2.2.0 - Ad Sidebar & Anonymous Personalization (December 14, 2025) 🎯
 
 **1. Two-Column Layout with Dedicated Ad Sidebar**
@@ -1166,7 +1397,7 @@ logs/combined.log    - All logs
 
 ## Future Roadmap 🚀
 
-A comprehensive 4-phase enhancement plan exists to transform IndiaDeals into a comprehensive deals aggregation platform. See [foamy-tinkering-hammock.md](.claude/plans/foamy-tinkering-hammock.md) for complete implementation details.
+A comprehensive 4-phase enhancement plan exists to transform DesiDealsAI into a comprehensive deals aggregation platform. See [foamy-tinkering-hammock.md](.claude/plans/foamy-tinkering-hammock.md) for complete implementation details.
 
 ### Feature Flag System 🚩
 
@@ -1325,7 +1556,740 @@ When a feature is disabled, API endpoints return `503 Service Unavailable` with 
 
 ---
 
-**Architecture Version**: 2.2.0
-**Last Updated**: December 14, 2025
-**Status**: ✅ Production Ready (with Ad Sidebar & Anonymous Personalization)
+---
+
+## Telegram Scraper System (NEW - December 21, 2025)
+
+### Overview
+
+Automated deal scraping from Telegram channels with intelligent deduplication and affiliate link processing.
+
+### Configuration
+
+Located in: `backend/src/config/telegram-channels.ts`
+
+```typescript
+export const TELEGRAM_SCRAPER_CONFIG = {
+  dealsPerChannel: 30,           // Target deals per channel per run
+  scheduleCron: '0 */2 * * *',   // Every 2 hours
+  delayBetweenChannels: 2000,    // 2 seconds between channels
+  minDealsToImport: 1,           // Minimum deals to proceed
+  maxUrlsPerDeal: 2,             // Skip roundup posts with more URLs
+  enablePhase1NewDeals: true,    // Enable/disable Phase 1
+  enablePhase2Backfill: true,    // Enable/disable Phase 2
+  maxPagesPerPhase: 10,          // Max pages per phase (50 msgs/page)
+};
+
+export const TELEGRAM_CHANNELS: TelegramChannel[] = [
+  { url: 'https://t.me/s/MahidharZone', username: 'MahidharZone', enabled: true },
+  { url: 'https://t.me/s/iamprasadtech', username: 'iamprasadtech', enabled: true },
+  { url: 'https://t.me/s/TechFactsDeals', username: 'TechFactsDeals', enabled: true },
+];
+```
+
+### Two-Phase Scraping Algorithm
+
+```
+Channel Timeline: [A] → [B] → [C] → [D] → [E] → [F]
+                  oldest                    newest
+
+Morning Run:
+  Scraped D, C, B (newest first) - stopped at limit
+  A never reached
+
+Evening Run (new posts E, F added):
+  PHASE 1 - NEW DEALS:
+  ├─ Start from F (newest)
+  ├─ Scrape F → E → D (processed) → C (processed)
+  └─ Stop when hitting processed zone
+
+  PHASE 2 - BACKFILL:
+  ├─ Find oldest known message (B)
+  ├─ Continue backwards: before B → A → ...
+  └─ Stop at beginning of channel
+
+Result: Both new (E, F) and old (A) deals captured!
+```
+
+### Deal Processing Pipeline
+
+```
+Telegram Message
+       │
+       ▼
+┌──────────────────┐
+│ Parse Deal Info  │  Extract: title, price, URL, image
+└────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│ Roundup Filter   │  Skip posts with >2 URLs (compilation posts)
+└────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│ URL Expansion    │  Expand: amzn.to, fkrt.co → full URLs
+└────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│ Affiliate Swap   │  Replace affiliate tags with ours
+└────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│ ML Deduplication │  Check similarity against existing deals
+│                  │  If duplicate with better price → replace
+└────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│ Price Extraction │  Scrape actual price from merchant site
+└────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│ Image Extraction │  Fetch product image from merchant
+└────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│ AI Quality Score │  Calculate 0-100 score
+└────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│ Save to Database │  Insert deal + price history + telegram_messages
+└──────────────────┘
+```
+
+### ML Deduplication
+
+Located in: `backend/src/services/ml-deduplication.service.ts`
+
+1. **Text Normalization** - Remove emojis, lowercase, remove filler words
+2. **TF-IDF Vectorization** - Convert titles to term frequency vectors
+3. **Cosine Similarity** - Score 0-100% similarity
+4. **Decision Logic**:
+   - Similarity > 70% AND new price < existing → Replace existing deal
+   - Similarity > 70% AND new price >= existing → Skip
+   - Similarity <= 70% → Import as new deal
+
+### URL Processing
+
+**Shortened URL Expansion**:
+```
+amzn.to/xyz     → amazon.in/dp/B0ABC123?tag=...
+fkrt.co/abc     → flipkart.com/product/p/...
+myntr.in/xyz    → myntra.com/product/...
+bit.ly/abc      → actual destination
+```
+
+**Affiliate Tag Replacement**:
+```typescript
+// Original: https://amazon.in/dp/B0ABC?tag=someone-else-21
+// Processed: https://amazon.in/dp/B0ABC?tag=indiadeals-21
+```
+
+### Image Extraction
+
+Located in: `backend/src/controllers/scraper.controller.ts`
+
+1. Expand shortened URL (if needed)
+2. Fetch HTML from merchant page
+3. Extract image using merchant-specific patterns:
+   - Amazon: `landingImage`, `data-old-hires`, `images-amazon.com`
+   - Flipkart: `rukminim1.flixcart.com` URLs
+   - Generic: `og:image`, `twitter:image` meta tags
+4. Validate: Must be from known CDN, valid extension, not tracking pixel
+
+### Database Tables
+
+```sql
+-- Track processed Telegram messages
+telegram_messages (
+  id, message_id, channel_username, deal_id,
+  processed, skipped_reason, posted_at, created_at
+)
+
+-- Indexes for efficient queries
+CREATE INDEX telegram_messages_message_id_idx ON telegram_messages(message_id);
+CREATE INDEX telegram_messages_channel_idx ON telegram_messages(channel_username);
+CREATE INDEX telegram_messages_posted_at_idx ON telegram_messages(posted_at);
+```
+
+### Logging
+
+View scraper logs:
+```bash
+# Real-time formatted logs
+tail -f backend/logs/combined.log | jq .
+
+# Filter telegram logs
+grep "Telegram" backend/logs/combined.log | jq .
+
+# Check last scraper run
+grep "Job Complete" backend/logs/combined.log | tail -5
+```
+
+### Manual Trigger
+
+The scraper can be triggered manually via Bull Board:
+`http://localhost:3001/admin/queues`
+
+Or programmatically:
+```typescript
+import { TelegramScraperService } from './services/scrapers/telegram-scraper.service.js';
+await TelegramScraperService.scrapeAndImport(30); // 30 deals per channel
+```
+
+---
+
+## AI Quality Scoring Details
+
+Located in: `backend/src/services/ai/deal-quality.service.ts`
+
+### Scoring Algorithm
+
+```
+Total Score = (Value × 0.40) + (Authenticity × 0.25) + (Urgency × 0.20) + (Social × 0.15)
+
+Value Proposition (0-100):
+├─ Discount Quality (0-40)
+│   ├─ 80%+ discount = 40 points
+│   ├─ 60%+ = 35, 40%+ = 28, 25%+ = 20, 15%+ = 12
+│   └─ Penalty: Suspicious discounts (>70% on items <₹1000)
+├─ Price History (0-40)
+│   ├─ All-time low = 40 points
+│   ├─ 30% below median = 38, 20% = 32, 10% = 25
+│   └─ Above median = penalty (5-10 points)
+└─ Absolute Savings Bonus (0-20)
+    ├─ ₹50k+ savings = 20, ₹20k+ = 15, ₹10k+ = 12
+    └─ ₹5k+ = 8, ₹2k+ = 5, ₹1k+ = 3
+
+Authenticity (0-100):
+├─ Merchant Trust (0-40)
+│   ├─ Amazon/Flipkart = 35, Myntra/Ajio = 30-32
+│   └─ Unknown merchants scored by historical performance
+├─ Verification (0-30)
+│   ├─ Verified = 30, URL accessible = 25
+│   └─ Unverified with URL = 18, No URL = 10
+├─ Completeness (0-15)
+│   └─ URL + Image + Description (5 pts each)
+└─ Red Flags (penalty)
+    └─ Auto-flagged (-10), No URL (-5), >85% discount (-5)
+
+Urgency (0-100):
+├─ Freshness (0-40)
+│   ├─ <2 hours = 40, <6 hours = 38, <24 hours = 35
+│   └─ <48 hours = 30, <72 hours = 25, <1 week = 20
+├─ Price Trend (0-30)
+│   ├─ Dropping fast = 30, Dropping = 25
+│   └─ Stable = 15, Rising = 5-10
+└─ Expiration (0-30)
+    ├─ <6 hours = 30, <24 hours = 25
+    └─ <2 days = 20, <1 week = 15
+
+Social Proof (0-100):
+├─ Vote Quality (0-50)
+│   ├─ Positive ratio × 50, with engagement bonus
+│   └─ New deals get base 40 (not penalized for being new)
+├─ Discussion (0-30)
+│   └─ 6 points per comment (max 30)
+└─ Interest (0-20)
+    └─ log10(views) × 8
+```
+
+### Badge Generation
+
+| Score Range | Primary Badge |
+|-------------|---------------|
+| 85-100 | 💎 Exceptional Deal |
+| 75-84 | 🔥 Hot Deal |
+| 65-74 | ⭐ Great Deal |
+| 55-64 | 👍 Good Deal |
+
+**Context Badges:**
+- 💰 Best Price - Value score ≥75
+- 📉 Huge Discount - 70%+ discount
+- ✅ Verified - Authenticity ≥80
+- ⚡ Act Fast - Urgency ≥80
+- ❤️ Community Favorite - Social ≥75
+- 🌟 Trending - 50+ upvotes
+- 🆕 New - Posted <24 hours ago
+
+---
+
+## Deal Verification Details
+
+Located in: `backend/src/services/deal-verifier.service.ts`
+
+### Verification Flow
+
+```
+Deal Created/Scheduled
+       │
+       ▼
+┌──────────────────┐
+│ URL Check        │  HEAD/GET request with redirects
+│ (10s timeout)    │
+└────────┬─────────┘
+         │
+    ┌────┴────┐
+    │ 200 OK? │
+    └────┬────┘
+         │
+    YES ─┴─ NO → Flag or Expire (404/410)
+         │
+         ▼
+┌──────────────────┐
+│ Price Scraping   │  Cheerio CSS selectors
+│ (15s timeout)    │  Merchant-specific patterns
+└────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│ Sold Out Check   │  Amazon: #add-to-cart-button
+│                  │  Flipkart: Notify Me button
+└────────┬─────────┘
+         │
+    ┌────┴────┐
+    │ Sold Out│
+    └────┬────┘
+         │
+    YES ─┴─ NO
+     ↓       ↓
+   Expire   Continue
+             │
+             ▼
+┌──────────────────┐
+│ Price Match      │  ±5% tolerance
+│ Check            │
+└────────┬─────────┘
+         │
+    ┌────┴────┐
+    │>20% diff│
+    └────┬────┘
+         │
+    YES ─┴─ NO
+     ↓       ↓
+   Flag   Verified
+         │
+         ▼
+┌──────────────────┐
+│ Update DB        │  verified, status, priceMatch
+│ Log Attempt      │  Insert to verification_logs
+│ Update Price     │  Insert to price_history
+│ Recalc AI Score  │  Trigger quality recalculation
+└──────────────────┘
+```
+
+### Verification Statuses
+
+| Status | Meaning | Trigger |
+|--------|---------|---------|
+| `pending` | Not yet verified | Initial state |
+| `verified` | URL works, price OK | Successful check |
+| `flagged` | Issues detected | Price mismatch, URL issues |
+| `failed` | Deal invalid | 404/410, sold out |
+
+---
+
+## Internationalization (i18n) System
+
+Located in: `frontend/src/i18n/`
+
+### Supported Languages
+
+| Code | Language | Native Name | Status |
+|------|----------|-------------|--------|
+| en | English | English | ✅ Complete (default) |
+| hi | Hindi | हिंदी | ✅ Complete |
+| ta | Tamil | தமிழ் | ✅ Complete |
+| te | Telugu | తెలుగు | ✅ Complete |
+
+### Implementation Stack
+
+- **i18next** (v25.7.3) - Core i18n framework
+- **react-i18next** (v16.5.0) - React integration
+- **i18next-browser-languagedetector** (v8.2.0) - Browser language detection
+
+### Configuration
+
+```typescript
+// frontend/src/i18n/index.ts
+export const supportedLanguages = [
+  { code: 'en', name: 'English', nativeName: 'English' },
+  { code: 'hi', name: 'Hindi', nativeName: 'हिंदी' },
+  { code: 'ta', name: 'Tamil', nativeName: 'தமிழ்' },
+  { code: 'te', name: 'Telugu', nativeName: 'తెలుగు' },
+];
+
+// Storage key: 'indiadeals_language' in localStorage
+// Fallback language: English (en)
+// Detection order: localStorage > navigator.language
+```
+
+### Translation File Structure
+
+Each locale JSON (`frontend/src/i18n/locales/*.json`) contains:
+
+| Section | Description | Key Count |
+|---------|-------------|-----------|
+| common | Basic UI terms (loading, save, cancel) | 25+ |
+| nav | Navigation labels | 11 |
+| home | Hero section, features | 35+ |
+| deals | Deal terminology (price, discount, merchant) | 25+ |
+| aiScore | AI quality scoring labels | 25+ |
+| dealPage | Deal detail page text | 20+ |
+| profile | Account and settings | 40+ |
+| search | Search functionality | 20+ |
+| auth | Authentication text | 15+ |
+| languages | Language name mappings | 10 |
+| time | Relative time with pluralization | 15+ |
+
+**Total: ~450+ translation keys per language**
+
+### Dynamic Content Translation
+
+```typescript
+// frontend/src/services/translation.service.ts
+export async function translateText(text: string, targetLang: string): Promise<string>
+export async function translateDeal<T>(deal: T, targetLang: string): Promise<T>
+export async function translateDeals<T>(deals: T[], targetLang: string): Promise<T[]>
+```
+
+Features:
+- ✅ Google Translate API integration (free endpoint)
+- ✅ Client-side caching with 24-hour expiry
+- ✅ Batch translation with rate limiting (5 items/batch)
+- ✅ Graceful fallback to original text on error
+
+### Custom React Hooks
+
+```typescript
+// frontend/src/hooks/useTranslatedDeals.ts
+export function useTranslatedDeals<T>(deals: T[]): {
+  translatedDeals: T[];
+  isTranslating: boolean;
+}
+
+export function useTranslatedText(text: string): {
+  translatedText: string;
+  isTranslating: boolean;
+}
+```
+
+### Language Switching
+
+- **Desktop**: Profile Settings page → Language selector grid
+- **Mobile**: MobileProfile → Language selection modal
+- Real-time switching without page reload
+- Preference persisted in localStorage
+
+---
+
+## Progressive Web App (PWA)
+
+### Service Worker
+
+Located in: `frontend/public/sw.js`
+
+**Caching Strategies:**
+
+| Strategy | Use Case | Behavior |
+|----------|----------|----------|
+| Network First | API calls | Try network, cache fallback |
+| Cache First | Images | Return cached, network fallback |
+| Stale While Revalidate | Static assets | Serve cached, update background |
+
+**Cache Names:**
+- `indiadeals-v1` - Static assets
+- `indiadeals-dynamic-v1` - Dynamic content
+- `indiadeals-images-v1` - Image cache
+
+**Background Sync:**
+```javascript
+// Tags for offline actions
+'sync-wishlist'  - Sync saved deals when back online
+'sync-votes'     - Sync upvotes/downvotes offline
+```
+
+**Periodic Sync:**
+- `update-deals` tag - Background deal updates every 24+ hours
+
+**Push Notifications:**
+- Vibration feedback: [100ms, 50ms, 100ms]
+- Badge and icon support
+- Action buttons: "View Deal", "Dismiss"
+- Tag-based notification grouping
+
+### PWA Manifest
+
+Located in: `frontend/public/manifest.json`
+
+```json
+{
+  "name": "DesiDealsAI - AI-Powered Deal Discovery",
+  "display": "standalone",
+  "theme_color": "#667eea",
+  "background_color": "#0a0a0a",
+  "lang": "en-IN",
+  "categories": ["shopping", "lifestyle", "finance"]
+}
+```
+
+**App Shortcuts:**
+- 🔥 Hot Deals (70%+ discount)
+- ❤️ My Wishlist
+- 🔔 Price Alerts
+
+**Share Target:**
+- Accept shared text, URL, and title
+- GET method for share handling
+
+---
+
+## Mobile-First Architecture
+
+### Mobile Components (17 total)
+
+Located in: `frontend/src/components/mobile/`
+
+| Component | Description |
+|-----------|-------------|
+| **MobileApp** | Main container with pull-to-refresh |
+| **MobileHeader** | Dynamic header with filters |
+| **MobileBottomNav** | 5-tab navigation with badges |
+| **MobileHome** | Personalized deal feed |
+| **MobileSearch** | Full-text search interface |
+| **MobileForums** | Community discussions |
+| **MobileProfile** | Account management |
+| **MobilePostDeal** | In-app deal posting |
+| **MobileAlerts** | Deal notifications |
+| **MobileDealCard** | Optimized deal display |
+| **MobileCarousel** | Horizontal scrolling |
+| **MobileCategoryScroll** | Category browsing |
+| **MobileFilterChips** | Multi-select filters |
+| **MobileCategories** | Category grid view |
+| **MobileNotifications** | Slide-out drawer |
+| **MobileDealPage** | Full deal detail |
+
+### Mobile Hooks
+
+**usePullToRefresh:**
+```typescript
+const { pullDistance, isPulling, isRefreshing } = usePullToRefresh(onRefresh);
+// - 80px threshold to trigger refresh
+// - 120px max pull distance
+// - 0.5x resistance curve
+```
+
+**useHaptics:**
+```typescript
+const haptics = useHaptics();
+haptics.impact('light' | 'medium' | 'heavy');
+haptics.selection();
+haptics.success();
+haptics.warning();
+haptics.error();
+
+// Patterns (ms):
+// light: 10, medium: 20, heavy: 30
+// selection: [5, 5, 5]
+// success: [10, 50, 10]
+// warning: [20, 30, 20]
+// error: [30, 20, 30, 20, 30]
+```
+
+### Mobile Features
+
+- ✅ Safe area padding for notch/status bar
+- ✅ Pull-to-refresh with visual feedback
+- ✅ Haptic feedback on all interactions
+- ✅ Real-time notification count (60s polling)
+- ✅ Bottom sheet modals
+- ✅ Swipe gestures
+
+---
+
+## Price History & Tracking
+
+### Components
+
+- `frontend/src/components/PriceHistoryChart.tsx`
+- `frontend/src/api/priceHistory.ts`
+
+### Chart Features
+
+- Interactive SVG-based price chart
+- Configurable time periods: 7, 30, 90 days
+- Price statistics: lowest, highest, average, current
+- "All-time low" indicator with badge
+- Gradient area fill visualization
+- Responsive scaling
+
+### Smart Recommendations
+
+| Price Position | Recommendation |
+|----------------|----------------|
+| All-time low | 🎯 Buy Now! |
+| Below average | 👍 Good Price |
+| Near average | ⏳ Consider Waiting |
+| Above average | 🚫 Wait for Drop |
+
+### API Endpoints
+
+```
+GET  /price-history/deals/{dealId}?days={7|30|90}
+POST /deals/{dealId}/price-alerts
+GET  /price-alerts?active={boolean}
+PATCH /price-alerts/{alertId}
+DELETE /price-alerts/{alertId}
+```
+
+---
+
+## Price Alerts System
+
+### Alert Types
+
+**1. Price Drop Alerts:**
+- Set target price for specific deal
+- Preset buttons: -5%, -10%, -20%, -30%
+- Custom target price input
+- Email notification when triggered
+
+**2. Keyword Alerts:**
+- Keyword-based deal matching
+- Filters: min discount, max price
+- Frequency: instant, daily, weekly
+- Matches new deals in real-time
+
+### UI Components
+
+- `PriceAlertModal.tsx` - Price alert creation
+- `AlertsPage.tsx` - Two-tab alert management
+
+---
+
+## Notifications System
+
+### Notification Types
+
+| Type | Description |
+|------|-------------|
+| `price_drop` | Price alert triggered |
+| `deal_alert` | Keyword match found |
+| `wishlist` | Item status change |
+| `system` | General notifications |
+
+### API Endpoints
+
+```
+GET  /notifications?limit=20&offset=0&unread=true
+GET  /notifications/unread-count
+PATCH /notifications/{id}/read
+POST /notifications/mark-all-read
+DELETE /notifications/{id}
+```
+
+### Features
+
+- Slide-out notification drawer
+- Unread count badge (polled every 60s)
+- Mark single/all as read
+- Navigation to deal from notification
+- Icon mapping per notification type
+- Haptic feedback on interactions
+
+---
+
+## Image Services
+
+### Image Proxy Service
+
+Located in: `backend/src/services/image-proxy.service.ts`
+
+- File-based caching system
+- In-memory LRU cache (100 items)
+- MD5 hash-based cache keys
+- 15-second timeout per request
+
+### Image Fallback Service
+
+Located in: `backend/src/services/image-fallback.service.ts`
+
+**Merchant-Specific Extraction:**
+
+| Merchant | Selectors |
+|----------|-----------|
+| Amazon | `landingImage`, `imgBlkFront`, `data-old-hires` |
+| Flipkart | Dynamic classes, resolution upgrade (128→832) |
+| Generic | `og:image`, `twitter:image` meta tags |
+
+---
+
+## Email Service
+
+Located in: `backend/src/services/email.service.ts`
+
+### Email Types
+
+| Type | Description |
+|------|-------------|
+| Welcome | Account verification complete |
+| Verification | Email confirmation link |
+| Password Reset | 1-hour token expiry |
+| Deal Alert | Formatted deal card with image |
+| Price Drop | Target price reached |
+| Deal Expired | Automatic expiration notice |
+
+### Features
+
+- HTML and plain text versions
+- SMTP with nodemailer
+- Company branding templates
+- Affiliate link support
+- Unsubscribe links
+- Error logging and retry
+
+---
+
+## Affiliate Link Management
+
+Located in: `backend/src/services/affiliate.service.ts`
+
+### URL Processing Pipeline
+
+```
+1. Expand shortened URLs (amzn.to, fkrt.co, bit.ly)
+2. Rate limit (2.5s per domain)
+3. Random User-Agent selection
+4. Replace affiliate tags
+5. Clean tracking parameters
+6. Extract price information
+```
+
+### Supported Merchants
+
+| Merchant | Tag Parameter | Price Selectors |
+|----------|--------------|-----------------|
+| Amazon | `tag` | `.a-price-whole`, `#priceblock_*` |
+| Flipkart | `affid` | `.hZ3P6w`, `._30jeq3` |
+| Myntra | - | `.pdp-price`, `.pdp-mrp` |
+| Ajio | - | `.prod-sp`, `.price-value` |
+
+### Anti-Bot Protection
+
+- 8 rotating User-Agent strings
+- 2.5-second delay per domain
+- 3 retries with exponential backoff
+- ECONNRESET handling
+
+---
+
+**Architecture Version**: 2.5.0
+**Last Updated**: December 21, 2025
+**Status**: ✅ Production Ready (AI-Powered Platform with i18n, PWA & Mobile-First Architecture)
 **Next Review**: Q1 2026

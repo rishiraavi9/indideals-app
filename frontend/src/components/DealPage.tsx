@@ -1,13 +1,20 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import Layout from './Layout';
 import AdBlock from './AdBlock';
+import PriceHistoryChart from './PriceHistoryChart';
+import PriceAlertModal from './PriceAlertModal';
+import WishlistButton from './WishlistButton';
+import DealImage from './DealImage';
 import { dealsApi } from '../api/deals';
 import { commentsApi } from '../api/comments';
+import { getDealQualityScore } from '../api/ai';
 import type { Deal, Comment } from '../types';
 import { useAuth } from '../context/AuthContext';
 
 export default function DealPage() {
+  const { t } = useTranslation();
   const { dealId } = useParams<{ dealId: string }>();
   const navigate = useNavigate();
   const [deal, setDeal] = useState<Deal | null>(null);
@@ -17,14 +24,32 @@ export default function DealPage() {
   const [submittingComment, setSubmittingComment] = useState(false);
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
+  const [aiScore, setAiScore] = useState<number | null>(null);
+  const [showPriceAlertModal, setShowPriceAlertModal] = useState(false);
+  const [priceAlertSuccess, setPriceAlertSuccess] = useState(false);
   const { isAuthenticated } = useAuth();
 
   useEffect(() => {
+    // Scroll to top when deal page loads
+    window.scrollTo(0, 0);
+
     if (dealId) {
       loadDealDetails();
       loadComments();
+      loadAIScore();
     }
   }, [dealId]);
+
+  const loadAIScore = async () => {
+    if (!dealId) return;
+    try {
+      const scoreData = await getDealQualityScore(dealId);
+      setAiScore(scoreData.totalScore);
+    } catch (error) {
+      console.error('Failed to load AI score:', error);
+      setAiScore(null);
+    }
+  };
 
   const loadDealDetails = async () => {
     if (!dealId) return;
@@ -118,7 +143,7 @@ export default function DealPage() {
 
   if (loading) {
     return (
-      <Layout onPostDealClick={() => navigate('/')} onLoginClick={() => navigate('/')}>
+      <Layout onPostDealClick={() => navigate('/')}>
         <div style={{
           display: 'flex',
           alignItems: 'center',
@@ -131,7 +156,7 @@ export default function DealPage() {
             borderRadius: 12,
             boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
           }}>
-            <p style={{ color: '#1f2937', fontSize: 18, margin: 0 }}>Loading deal...</p>
+            <p style={{ color: '#1f2937', fontSize: 18, margin: 0 }}>{t('dealPage.loadingDeal')}</p>
           </div>
         </div>
       </Layout>
@@ -140,7 +165,7 @@ export default function DealPage() {
 
   if (!deal) {
     return (
-      <Layout onPostDealClick={() => navigate('/')} onLoginClick={() => navigate('/')}>
+      <Layout onPostDealClick={() => navigate('/')}>
         <div style={{
           display: 'flex',
           alignItems: 'center',
@@ -154,7 +179,7 @@ export default function DealPage() {
             boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
             textAlign: 'center',
           }}>
-            <p style={{ color: '#1f2937', fontSize: 18, margin: 0 }}>Deal not found</p>
+            <p style={{ color: '#1f2937', fontSize: 18, margin: 0 }}>{t('dealPage.dealNotFound')}</p>
             <button
               onClick={() => navigate('/')}
               style={{
@@ -168,7 +193,7 @@ export default function DealPage() {
                 cursor: 'pointer',
               }}
             >
-              Go Back Home
+              {t('dealPage.goBackHome')}
             </button>
           </div>
         </div>
@@ -176,11 +201,10 @@ export default function DealPage() {
     );
   }
 
-  const score = deal.upvotes - deal.downvotes;
   const savings = deal.originalPrice ? deal.originalPrice - deal.price : null;
 
   return (
-    <Layout onPostDealClick={() => navigate('/')} onLoginClick={() => navigate('/')}>
+    <Layout onPostDealClick={() => navigate('/')}>
       {/* Main Content */}
       <div style={{
         maxWidth: '1400px',
@@ -202,30 +226,25 @@ export default function DealPage() {
           }}>
             <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap' }}>
               {/* Image */}
-              <div style={{
-                width: 300,
-                height: 300,
-                borderRadius: 8,
-                background: deal.imageUrl
-                  ? `url(${deal.imageUrl}) center/cover`
-                  : '#f3f4f6',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-                border: '1px solid #e5e7eb',
-              }}>
-                {!deal.imageUrl && (
-                  <div style={{ fontSize: 80, opacity: 0.3 }}>
-                    {deal.category?.icon || '🏷️'}
-                  </div>
-                )}
-              </div>
+              <DealImage
+                src={deal.imageUrl}
+                alt={deal.title}
+                dealId={deal.id}
+                merchantUrl={deal.url}
+                style={{
+                  width: 300,
+                  height: 300,
+                  borderRadius: 8,
+                  flexShrink: 0,
+                  border: '1px solid #e5e7eb',
+                  background: '#f3f4f6',
+                }}
+              />
 
               {/* Details */}
               <div style={{ flex: 1, minWidth: 300 }}>
                 {/* Badges */}
-                <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap', alignItems: 'center' }}>
                   {deal.discountPercentage && (
                     <span style={{
                       padding: '6px 12px',
@@ -235,19 +254,29 @@ export default function DealPage() {
                       fontWeight: 900,
                       color: '#fff',
                     }}>
-                      -{deal.discountPercentage}% OFF
+                      -{deal.discountPercentage}% {t('dealPage.off')}
                     </span>
                   )}
-                  <span style={{
-                    padding: '6px 12px',
-                    borderRadius: 6,
-                    background: score > 50 ? '#4caf50' : '#2676ff',
-                    fontSize: 14,
-                    fontWeight: 800,
-                    color: '#fff',
-                  }}>
-                    🔥 {score} Score
-                  </span>
+
+                  {/* AI Quality Score Badge */}
+                  {aiScore !== null && (
+                    <span style={{
+                      padding: '6px 12px',
+                      borderRadius: 6,
+                      background: aiScore >= 80 ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' :
+                                 aiScore >= 70 ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' :
+                                 aiScore >= 60 ? 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)' :
+                                 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)',
+                      fontSize: 14,
+                      fontWeight: 800,
+                      color: '#fff',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                    }}>
+                      {aiScore >= 90 ? '💎' : aiScore >= 80 ? '🔥' : aiScore >= 70 ? '⭐' : aiScore >= 60 ? '👍' : '📊'} AI: {aiScore}
+                    </span>
+                  )}
                   {deal.category && (
                     <span style={{
                       padding: '6px 12px',
@@ -291,7 +320,7 @@ export default function DealPage() {
                   </div>
                   {savings && (
                     <div style={{ fontSize: 16, color: '#10b981', fontWeight: 700 }}>
-                      You Save ₹{savings.toLocaleString('en-IN')}
+                      {t('dealPage.youSave')} ₹{savings.toLocaleString('en-IN')}
                     </div>
                   )}
                 </div>
@@ -299,18 +328,18 @@ export default function DealPage() {
                 {/* Merchant & Posted By */}
                 <div style={{ marginBottom: 20 }}>
                   <p style={{ fontSize: 16, margin: '0 0 8px 0', color: '#374151' }}>
-                    Available at <strong>{deal.merchant}</strong>
+                    {t('dealPage.availableAt')} <strong>{deal.merchant}</strong>
                   </p>
                   {deal.user && (
                     <p style={{ fontSize: 14, color: '#6b7280', margin: 0 }}>
-                      Posted by{' '}
+                      {t('dealPage.postedBy')}{' '}
                       <span style={{
                         fontWeight: 700,
                         color: '#2676ff',
                       }}>
                         {deal.user.username}
                       </span>
-                      {' on '}
+                      {' '}{t('dealPage.on')}{' '}
                       {new Date(deal.createdAt).toLocaleDateString('en-US', {
                         month: 'long',
                         day: 'numeric',
@@ -372,14 +401,51 @@ export default function DealPage() {
                       cursor: 'pointer',
                     }}
                   >
-                    🛒 Get This Deal
+                    🛒 {t('dealPage.getThisDeal')}
                   </button>
 
+                  {/* Wishlist Button */}
+                  <WishlistButton
+                    dealId={deal.id}
+                    size="large"
+                    showLabel={true}
+                  />
+
+                  {/* Price Alert Button */}
+                  <button
+                    onClick={() => {
+                      if (isAuthenticated) {
+                        setShowPriceAlertModal(true);
+                      }
+                    }}
+                    disabled={!isAuthenticated}
+                    style={{
+                      padding: '14px 24px',
+                      borderRadius: 8,
+                      border: priceAlertSuccess ? '2px solid #10b981' : '1px solid #d1d5db',
+                      background: priceAlertSuccess ? '#ecfdf5' : '#ffffff',
+                      color: priceAlertSuccess ? '#10b981' : '#374151',
+                      fontSize: 16,
+                      fontWeight: 800,
+                      cursor: isAuthenticated ? 'pointer' : 'not-allowed',
+                      opacity: isAuthenticated ? 1 : 0.5,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                    }}
+                    title={isAuthenticated ? 'Set price alert' : 'Login to set price alerts'}
+                  >
+                    {priceAlertSuccess ? '✅' : '🔔'} {priceAlertSuccess ? t('dealPage.alertSet') : t('dealPage.priceAlert')}
+                  </button>
+                </div>
+
+                {/* Voting Row */}
+                <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
                   <button
                     onClick={() => handleVoteDeal(deal.userVote === 1 ? 0 : 1)}
                     disabled={!isAuthenticated}
                     style={{
-                      padding: '14px 24px',
+                      padding: '10px 20px',
                       borderRadius: 8,
                       border: deal.userVote === 1
                         ? '2px solid #4caf50'
@@ -388,7 +454,7 @@ export default function DealPage() {
                         ? '#ecfdf5'
                         : '#ffffff',
                       color: deal.userVote === 1 ? '#10b981' : '#374151',
-                      fontSize: 16,
+                      fontSize: 14,
                       fontWeight: 800,
                       cursor: isAuthenticated ? 'pointer' : 'not-allowed',
                       opacity: isAuthenticated ? 1 : 0.5,
@@ -401,7 +467,7 @@ export default function DealPage() {
                     onClick={() => handleVoteDeal(deal.userVote === -1 ? 0 : -1)}
                     disabled={!isAuthenticated}
                     style={{
-                      padding: '14px 24px',
+                      padding: '10px 20px',
                       borderRadius: 8,
                       border: deal.userVote === -1
                         ? '2px solid #f44336'
@@ -410,7 +476,7 @@ export default function DealPage() {
                         ? '#fef2f2'
                         : '#ffffff',
                       color: deal.userVote === -1 ? '#ef4444' : '#374151',
-                      fontSize: 16,
+                      fontSize: 14,
                       fontWeight: 800,
                       cursor: isAuthenticated ? 'pointer' : 'not-allowed',
                       opacity: isAuthenticated ? 1 : 0.5,
@@ -418,9 +484,24 @@ export default function DealPage() {
                   >
                     👎 {deal.downvotes}
                   </button>
+
+                  <span style={{
+                    fontSize: 14,
+                    color: '#6b7280',
+                    display: 'flex',
+                    alignItems: 'center',
+                    marginLeft: 'auto',
+                  }}>
+                    💬 {deal.commentCount} {t('dealPage.comments')}
+                  </span>
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Price History Section */}
+          <div style={{ marginBottom: 24 }}>
+            <PriceHistoryChart dealId={deal.id} currentPrice={deal.price} />
           </div>
 
           {/* Comments Section */}
@@ -431,7 +512,7 @@ export default function DealPage() {
             boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
           }}>
             <h2 style={{ margin: '0 0 20px 0', fontSize: 24, fontWeight: 900, color: '#1f2937' }}>
-              💬 Community Discussion ({deal.commentCount})
+              💬 {t('dealPage.communityDiscussion')} ({deal.commentCount})
             </h2>
 
             {/* Comment Form */}
@@ -440,7 +521,7 @@ export default function DealPage() {
                 <textarea
                   value={commentText}
                   onChange={(e) => setCommentText(e.target.value)}
-                  placeholder="Share your thoughts about this deal..."
+                  placeholder={t('dealPage.sharethoughts')}
                   style={{
                     width: '100%',
                     minHeight: 100,
@@ -472,7 +553,7 @@ export default function DealPage() {
                     cursor: submittingComment || !commentText.trim() ? 'not-allowed' : 'pointer',
                   }}
                 >
-                  {submittingComment ? 'Posting...' : 'Post Comment'}
+                  {submittingComment ? t('dealPage.posting') : t('dealPage.postComment')}
                 </button>
               </form>
             ) : (
@@ -484,7 +565,7 @@ export default function DealPage() {
                 color: '#b45309',
                 marginBottom: 24,
               }}>
-                Please log in to post comments
+                {t('dealPage.loginToComment')}
               </p>
             )}
 
@@ -492,7 +573,7 @@ export default function DealPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {comments.length === 0 ? (
                 <p style={{ color: '#6b7280', textAlign: 'center', padding: 20 }}>
-                  No comments yet. Be the first to share your thoughts!
+                  {t('dealPage.noComments')}
                 </p>
               ) : (
                 comments.map((comment) => (
@@ -603,10 +684,10 @@ export default function DealPage() {
                           opacity: isAuthenticated ? 1 : 0.5,
                         }}
                       >
-                        💬 Reply
+                        💬 {t('dealPage.reply')}
                       </button>
                       <span style={{ fontSize: 13, color: '#6b7280', marginLeft: 'auto' }}>
-                        Score: {comment.upvotes - comment.downvotes}
+                        {t('dealPage.score')}: {comment.upvotes - comment.downvotes}
                       </span>
                     </div>
 
@@ -616,7 +697,7 @@ export default function DealPage() {
                         <textarea
                           value={replyText}
                           onChange={(e) => setReplyText(e.target.value)}
-                          placeholder="Write your reply..."
+                          placeholder={t('dealPage.writeReply')}
                           style={{
                             width: '100%',
                             minHeight: 80,
@@ -646,7 +727,7 @@ export default function DealPage() {
                               fontSize: 13,
                             }}
                           >
-                            {submittingComment ? 'Posting...' : 'Post Reply'}
+                            {submittingComment ? t('dealPage.posting') : t('dealPage.postReply')}
                           </button>
                           <button
                             onClick={() => {
@@ -664,7 +745,7 @@ export default function DealPage() {
                               fontSize: 13,
                             }}
                           >
-                            Cancel
+                            {t('dealPage.cancel')}
                           </button>
                         </div>
                       </div>
@@ -742,7 +823,7 @@ export default function DealPage() {
                                 👎 {reply.downvotes}
                               </button>
                               <span style={{ fontSize: 11, color: '#6b7280', marginLeft: 4 }}>
-                                Score: {reply.upvotes - reply.downvotes}
+                                {t('dealPage.score')}: {reply.upvotes - reply.downvotes}
                               </span>
                             </div>
                           </div>
@@ -767,6 +848,20 @@ export default function DealPage() {
           </div>
         </div>
       </div>
+
+      {/* Price Alert Modal */}
+      {showPriceAlertModal && deal && (
+        <PriceAlertModal
+          dealId={deal.id}
+          dealTitle={deal.title}
+          currentPrice={deal.price}
+          onClose={() => setShowPriceAlertModal(false)}
+          onSuccess={() => {
+            setShowPriceAlertModal(false);
+            setPriceAlertSuccess(true);
+          }}
+        />
+      )}
     </Layout>
   );
 }

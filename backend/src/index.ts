@@ -23,6 +23,7 @@ import wishlistRoutes from './routes/wishlist.routes.js';
 import priceHistoryRoutes from './routes/price-history.routes.js';
 import couponsRoutes from './routes/coupons.routes.js';
 import aiRoutes from './routes/ai.routes.js';
+import notificationsRoutes from './routes/notifications.routes.js';
 
 // Job queue
 import { bullBoardRouter, shutdownQueues } from './services/queue.service.js';
@@ -130,6 +131,21 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// App config endpoint - exposes feature flags and config to frontend
+app.get('/api/config', (req, res) => {
+  // Import dynamically to get fresh values
+  import('./config/features.js').then(({ features, appConfig }) => {
+    res.json({
+      features: {
+        adsEnabled: true, // Frontend-specific flag
+        imageStrategy: appConfig.imageStrategy,
+        imageFallbackEnabled: features.IMAGE_FALLBACK,
+        imageProxyEnabled: features.IMAGE_PROXY,
+      },
+    });
+  });
+});
+
 // Bull Board (queue monitoring dashboard) - feature flag protected
 if (isFeatureEnabled('BULL_BOARD_DASHBOARD')) {
   app.use('/admin/queues', bullBoardRouter);
@@ -160,6 +176,35 @@ app.use('/api/coupons', couponsRoutes);
 
 // Phase 2 routes - AI features
 app.use('/api/ai', aiRoutes);
+
+// Notifications
+app.use('/api/notifications', notificationsRoutes);
+
+// Image proxy endpoint (Option 3 - proxy-cache strategy)
+app.get('/api/image-proxy', async (req, res) => {
+  const { url } = req.query;
+
+  if (!url || typeof url !== 'string') {
+    res.status(400).json({ error: 'Missing url parameter' });
+    return;
+  }
+
+  try {
+    const { proxyImage } = await import('./services/image-proxy.service.js');
+    const result = await proxyImage(url);
+
+    if (result) {
+      res.setHeader('Content-Type', result.contentType);
+      res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache for 24 hours
+      res.send(result.buffer);
+    } else {
+      res.status(404).json({ error: 'Image not found' });
+    }
+  } catch (error) {
+    console.error('Image proxy error:', error);
+    res.status(500).json({ error: 'Failed to proxy image' });
+  }
+});
 
 // 404 handler
 app.use((req, res) => {

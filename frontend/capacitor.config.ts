@@ -1,38 +1,18 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.indideals.app',
-  appName: 'IndiaDeals',
+  appId: 'com.desidealsai.app',
+  appName: 'DesiDealsAI',
   webDir: 'dist',
   server: {
+    // Use bundled files - API URLs are handled dynamically in client.ts
     androidScheme: 'https',
-    // For development, you can set this to your local server:
-    // url: 'http://localhost:5173',
-    // cleartext: true
-  },
-  plugins: {
-    SplashScreen: {
-      launchShowDuration: 2000,
-      launchAutoHide: true,
-      backgroundColor: '#2563eb',
-      androidSplashResourceName: 'splash',
-      androidScaleType: 'CENTER_CROP',
-      showSpinner: false,
-      iosSpinnerStyle: 'small',
-      spinnerColor: '#ffffff',
-    },
-    PushNotifications: {
-      presentationOptions: ['badge', 'sound', 'alert'],
-    },
-    StatusBar: {
-      style: 'LIGHT',
-      backgroundColor: '#2563eb',
-    },
+    cleartext: true,
   },
   android: {
-    allowMixedContent: false,
+    allowMixedContent: true,
     captureInput: true,
-    webContentsDebuggingEnabled: false,
+    webContentsDebuggingEnabled: true,
   },
   ios: {
     contentInset: 'automatic',

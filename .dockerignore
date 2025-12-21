@@ -1,0 +1,55 @@
+# Dependencies
+node_modules
+*/node_modules
+
+# Build outputs (we build in Docker)
+dist
+*/dist
+.next
+
+# Development files
+.git
+.gitignore
+*.md
+!README.md
+
+# Environment files (handled separately)
+.env
+.env.*
+!.env.example
+!.env.production.example
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Test files
+coverage
+*.test.*
+*.spec.*
+__tests__
+
+# Docker files (not needed in container)
+docker-compose*.yml
+Dockerfile*
+
+# Mobile builds
+android
+ios
+*.apk
+*.ipa
+
+# Misc
+.claude
+scripts

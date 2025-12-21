@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
-import { db, deals, votes, users, userActivity } from '../db/index.js';
+import { db, deals, votes, users, userActivity, priceHistory } from '../db/index.js';
 import { eq, desc, sql, and, or, ilike, gte, inArray, isNotNull } from 'drizzle-orm';
 import type { AuthRequest } from '../middleware/auth.js';
 import { indexDeal, updateDeal, deleteDeal } from '../services/elasticsearch.service.js';
@@ -11,6 +11,77 @@ import {
   invalidateDealCache,
   invalidateDealsCache,
 } from '../services/cache.service.js';
+import { DealQualityService } from '../services/ai/deal-quality.service.js';
+import { MlDeduplicationService } from '../services/ml-deduplication.service.js';
+
+/**
+ * Generate demo price history for a newly created deal
+ * Creates 30 days of realistic price fluctuations
+ */
+async function generateDemoPriceHistory(dealId: string, currentPrice: number, originalPrice: number | null, merchant: string) {
+  try {
+    const historyEntries = [];
+    const now = new Date();
+    const effectiveOriginalPrice = originalPrice || Math.round(currentPrice * 1.3);
+
+    for (let daysAgo = 30; daysAgo >= 1; daysAgo--) {
+      const date = new Date(now);
+      date.setDate(date.getDate() - daysAgo);
+      date.setHours(Math.floor(Math.random() * 12) + 8);
+      date.setMinutes(Math.floor(Math.random() * 60));
+
+      let priceAtPoint: number;
+
+      if (daysAgo >= 25) {
+        // 25-30 days ago: Near original price
+        const variation = 0.9 + Math.random() * 0.15;
+        priceAtPoint = Math.round(effectiveOriginalPrice * variation);
+      } else if (daysAgo >= 15) {
+        // 15-24 days ago: Gradual decrease
+        const progress = (25 - daysAgo) / 10;
+        const targetPrice = effectiveOriginalPrice - (effectiveOriginalPrice - currentPrice) * (progress * 0.5);
+        const variation = 0.95 + Math.random() * 0.1;
+        priceAtPoint = Math.round(targetPrice * variation);
+      } else if (daysAgo >= 7) {
+        // 7-14 days ago: Getting closer to current
+        const progress = (15 - daysAgo) / 8;
+        const targetPrice = effectiveOriginalPrice - (effectiveOriginalPrice - currentPrice) * (0.5 + progress * 0.3);
+        const variation = 0.97 + Math.random() * 0.06;
+        priceAtPoint = Math.round(targetPrice * variation);
+      } else {
+        // 1-6 days ago: Near current price
+        const variation = 0.98 + Math.random() * 0.05;
+        priceAtPoint = Math.round(currentPrice * variation);
+      }
+
+      // Ensure price stays within bounds
+      priceAtPoint = Math.max(currentPrice, Math.min(priceAtPoint, effectiveOriginalPrice));
+
+      // Occasional flash sale dips (10% chance)
+      if (Math.random() < 0.1 && daysAgo > 2) {
+        priceAtPoint = Math.round(priceAtPoint * (0.85 + Math.random() * 0.1));
+      }
+
+      historyEntries.push({
+        dealId,
+        price: priceAtPoint,
+        originalPrice: originalPrice ? Math.round(originalPrice) : null,
+        merchant: merchant || 'Unknown',
+        scrapedAt: date,
+        source: 'demo',
+      });
+    }
+
+    // Insert all history entries
+    if (historyEntries.length > 0) {
+      await db.insert(priceHistory).values(historyEntries as any);
+    }
+
+    console.log(`Generated ${historyEntries.length} demo price history entries for deal ${dealId}`);
+  } catch (err) {
+    console.error('Failed to generate demo price history:', err);
+  }
+}
 
 const createDealSchema = z.object({
   title: z.string().min(3).max(255),
@@ -31,6 +102,53 @@ export const createDeal = async (req: AuthRequest, res: Response) => {
     const userId = req.userId!;
     const data = createDealSchema.parse(req.body);
 
+    // Check for duplicate deals using ML deduplication
+    const duplicateCheck = await MlDeduplicationService.checkForDuplicates({
+      title: data.title,
+      price: data.price,
+      merchant: data.merchant,
+      url: data.url || null,
+    });
+
+    let replacingDealId: string | null = null;
+    let oldPriceHistory: any[] = [];
+
+    if (duplicateCheck.isDuplicate && duplicateCheck.matchedDealId) {
+      const existingPrice = duplicateCheck.matchedDealPrice || Infinity;
+
+      if (data.price < existingPrice) {
+        // Better price - replace the old deal
+        console.log(`[Deals] 🔄 Better price found! Replacing deal ${duplicateCheck.matchedDealId}`);
+        console.log(`[Deals]   Existing: ₹${existingPrice} → New: ₹${data.price}`);
+        replacingDealId = duplicateCheck.matchedDealId;
+
+        // Get old price history before deleting
+        oldPriceHistory = await db
+          .select()
+          .from(priceHistory)
+          .where(eq(priceHistory.dealId, replacingDealId));
+
+        // Delete the old deal
+        await db.delete(deals).where(eq(deals.id, replacingDealId));
+
+        // Delete from Elasticsearch
+        deleteDeal(replacingDealId).catch((err) => {
+          console.error('Failed to delete old deal from Elasticsearch:', err);
+        });
+
+        console.log(`[Deals] ✅ Deleted old deal ${replacingDealId}`);
+      } else {
+        // Same or higher price - reject the duplicate
+        res.status(409).json({
+          error: 'Duplicate deal exists',
+          message: `A similar deal already exists at ₹${existingPrice}. Your price (₹${data.price}) is not better.`,
+          existingDealId: duplicateCheck.matchedDealId,
+          similarityScore: duplicateCheck.similarityScore,
+        });
+        return;
+      }
+    }
+
     // Calculate discount percentage if original price provided
     let discountPercentage: number | undefined;
     if (data.originalPrice && data.originalPrice > data.price) {
@@ -49,6 +167,24 @@ export const createDeal = async (req: AuthRequest, res: Response) => {
       })
       .returning();
 
+    // If we replaced a deal, restore the old price history
+    if (oldPriceHistory.length > 0) {
+      console.log(`[Deals] 📊 Restoring ${oldPriceHistory.length} price history entries...`);
+      for (const entry of oldPriceHistory) {
+        await db.insert(priceHistory).values({
+          dealId: deal.id,
+          price: entry.price,
+          originalPrice: entry.originalPrice,
+          merchant: entry.merchant,
+          source: entry.source,
+          scrapedAt: entry.scrapedAt,
+        } as any).catch((err) => {
+          console.error('Failed to restore price history entry:', err);
+        });
+      }
+      console.log(`[Deals] ✅ Restored price history from previous deal`);
+    }
+
     // Fetch with user info
     const dealWithUser = await db.query.deals.findFirst({
       where: eq(deals.id, deal.id),
@@ -64,6 +200,45 @@ export const createDeal = async (req: AuthRequest, res: Response) => {
         category: true,
       },
     });
+
+    // Create initial price history entry (today's price)
+    await db.insert(priceHistory).values({
+      dealId: deal.id,
+      price: deal.price,
+      merchant: deal.merchant,
+      source: replacingDealId ? 'price_update' : 'manual',
+    } as any).catch((err) => {
+      console.error('Failed to create initial price history entry:', err);
+    });
+
+    // Generate demo price history (30 days of historical data) - only for new deals, not replacements
+    if (!replacingDealId) {
+      generateDemoPriceHistory(
+        deal.id,
+        deal.price,
+        deal.originalPrice,
+        deal.merchant
+      ).catch((err) => {
+        console.error('Failed to generate demo price history:', err);
+      });
+    }
+
+    // Calculate and save AI quality score immediately
+    try {
+      const aiResult = await DealQualityService.calculateScore(deal.id);
+      await db.update(deals).set({
+        aiScore: aiResult.totalScore,
+        aiScoreBreakdown: aiResult.breakdown,
+      }).where(eq(deals.id, deal.id));
+
+      // Update the response object with AI score
+      if (dealWithUser) {
+        (dealWithUser as any).aiScore = aiResult.totalScore;
+        (dealWithUser as any).aiScoreBreakdown = aiResult.breakdown;
+      }
+    } catch (err) {
+      console.error('Failed to calculate AI score for new deal:', err);
+    }
 
     // Index in Elasticsearch asynchronously
     if (dealWithUser) {
@@ -249,9 +424,9 @@ export const getDeals = async (req: AuthRequest, res: Response) => {
       conditions.push(eq(deals.categoryId, category as string));
     }
 
-    // Merchant filter
+    // Merchant filter (case-insensitive contains match)
     if (merchant) {
-      conditions.push(ilike(deals.merchant, merchant as string));
+      conditions.push(ilike(deals.merchant, `%${merchant}%`));
     }
 
     // Search filter
@@ -264,29 +439,21 @@ export const getDeals = async (req: AuthRequest, res: Response) => {
       );
     }
 
-    // Tab-based filtering and sorting (skip if filtering by userId for profile pages)
+    // Tab-based sorting (client-side filtering is now done in frontend)
     let orderBy;
 
     if (userId) {
       // Profile page: show ALL user's deals, sorted by creation date (newest first)
       orderBy = desc(deals.createdAt);
-    } else if (tab === 'frontpage') {
-      // Frontpage: score >= 120
-      conditions.push(sql`(${deals.upvotes} - ${deals.downvotes}) >= 120`);
-      orderBy = desc(sql`(${deals.upvotes} - ${deals.downvotes})`);
-    } else if (tab === 'popular') {
-      // Popular: score between 50 and 119 (exclusive ranges)
-      conditions.push(
-        sql`(${deals.upvotes} - ${deals.downvotes}) >= 50 AND (${deals.upvotes} - ${deals.downvotes}) < 120`
-      );
-      orderBy = desc(sql`(${deals.upvotes} - ${deals.downvotes})`);
+    } else if (tab === 'new') {
+      // New tab: sort by creation date (newest first)
+      orderBy = desc(deals.createdAt);
     } else if (festive === 'true') {
-      // Festive deals: sort by score regardless of tab
+      // Festive deals: sort by score
       orderBy = desc(sql`(${deals.upvotes} - ${deals.downvotes})`);
     } else {
-      // New tab: score < 50, sorted by creation date (newest first)
-      conditions.push(sql`(${deals.upvotes} - ${deals.downvotes}) < 50`);
-      orderBy = desc(deals.createdAt);
+      // Default: sort by score first, then by creation date
+      orderBy = [desc(sql`(${deals.upvotes} - ${deals.downvotes})`), desc(deals.createdAt)];
     }
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
@@ -635,6 +802,60 @@ export const trackActivity = async (req: AuthRequest, res: Response) => {
       return;
     }
     console.error('Track activity error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+/**
+ * Get fallback image for a deal when the original image fails
+ * Attempts to extract image from merchant URL (Amazon/Flipkart)
+ */
+export const getImageFallback = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const deal = await db.query.deals.findFirst({
+      where: eq(deals.id, id),
+      columns: {
+        url: true,
+        imageUrl: true,
+      },
+    });
+
+    if (!deal) {
+      res.status(404).json({ error: 'Deal not found' });
+      return;
+    }
+
+    if (!deal.url) {
+      res.status(400).json({ error: 'No merchant URL available' });
+      return;
+    }
+
+    // Import dynamically to avoid loading cheerio unless needed
+    const { getImageFallback: fetchImage } = await import(
+      '../services/image-fallback.service.js'
+    );
+    const result = await fetchImage(deal.url);
+
+    if (result.success && result.imageUrl) {
+      // Optionally update the deal's imageUrl in database
+      await db.update(deals).set({ imageUrl: result.imageUrl }).where(eq(deals.id, id));
+
+      res.json({
+        success: true,
+        imageUrl: result.imageUrl,
+        source: result.source,
+      });
+    } else {
+      res.json({
+        success: false,
+        imageUrl: null,
+        source: result.source,
+      });
+    }
+  } catch (error) {
+    console.error('Image fallback error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };

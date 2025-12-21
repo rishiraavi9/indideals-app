@@ -174,6 +174,12 @@ export const updateNotes = async (req: Request, res: Response) => {
  */
 export const checkWishlist = async (req: Request, res: Response) => {
   try {
+    // Return false if user is not logged in
+    if (!req.user) {
+      res.json({ inWishlist: false, saved: null });
+      return;
+    }
+
     const userId = (req.user as any).id;
     const { dealId } = req.params;
 

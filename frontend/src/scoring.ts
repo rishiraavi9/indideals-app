@@ -4,8 +4,7 @@ export function calculateScore(upvotes: number, downvotes: number) {
   return upvotes - downvotes;
 }
 
-export function getLabelFromScore(score: number): Tab {
-  if (score >= 120) return "Frontpage";
-  if (score >= 50) return "Popular";
-  return "New";
+export function getLabelFromScore(_score: number): Tab {
+  // Simplified - no longer using score-based tabs
+  return "All";
 }

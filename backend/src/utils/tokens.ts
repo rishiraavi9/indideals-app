@@ -3,7 +3,7 @@ import crypto from 'crypto';
 import { env } from '../config/env.js';
 import { db } from '../db/index.js';
 import { refreshTokens } from '../db/schema.js';
-import { eq, and, gt } from 'drizzle-orm';
+import { eq, and, gt, lt } from 'drizzle-orm';
 
 const JWT_SECRET = env.JWT_SECRET;
 const ACCESS_TOKEN_EXPIRY = '15m'; // Short-lived access token
@@ -141,7 +141,7 @@ export async function cleanupExpiredTokens(): Promise<void> {
   try {
     await db
       .delete(refreshTokens)
-      .where(gt(new Date(), refreshTokens.expiresAt));
+      .where(lt(refreshTokens.expiresAt, new Date()));
   } catch (error) {
     console.error('Error cleaning up expired tokens:', error);
   }

@@ -71,6 +71,10 @@ export const deals = pgTable('deals', {
   commentCount: integer('comment_count').default(0).notNull(),
   viewCount: integer('view_count').default(0).notNull(),
 
+  // AI Quality Score
+  aiScore: integer('ai_score'), // Overall score 0-100
+  aiScoreBreakdown: jsonb('ai_score_breakdown'), // { valueProp, authenticity, urgency, socialProof }
+
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 }, (table) => ({
@@ -488,4 +492,49 @@ export const dealVerificationLogs = pgTable('deal_verification_logs', {
   dealIdIdx: index('verification_logs_deal_id_idx').on(table.dealId),
   createdAtIdx: index('verification_logs_created_at_idx').on(table.createdAt),
   statusIdx: index('verification_logs_status_idx').on(table.status),
+}));
+
+// User Notifications - Unified notification center
+export const notifications = pgTable('notifications', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  type: varchar('type', { length: 30 }).notNull(), // 'price_drop', 'deal_alert', 'wishlist', 'system'
+  title: varchar('title', { length: 255 }).notNull(),
+  message: text('message').notNull(),
+  dealId: uuid('deal_id').references(() => deals.id, { onDelete: 'set null' }),
+  imageUrl: text('image_url'),
+  read: boolean('read').default(false).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index('notifications_user_id_idx').on(table.userId),
+  readIdx: index('notifications_read_idx').on(table.read),
+  createdAtIdx: index('notifications_created_at_idx').on(table.createdAt),
+  typeIdx: index('notifications_type_idx').on(table.type),
+}));
+
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  user: one(users, {
+    fields: [notifications.userId],
+    references: [users.id],
+  }),
+  deal: one(deals, {
+    fields: [notifications.dealId],
+    references: [deals.id],
+  }),
+}));
+
+// Telegram message tracking (to avoid reprocessing old messages)
+export const telegramMessages = pgTable('telegram_messages', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  messageId: varchar('message_id', { length: 255 }).notNull().unique(), // e.g., "iamprasadtech/100311"
+  channelUsername: varchar('channel_username', { length: 100 }).notNull(),
+  dealId: uuid('deal_id').references(() => deals.id, { onDelete: 'set null' }), // Link to created deal (if any)
+  processed: boolean('processed').notNull().default(true),
+  skippedReason: varchar('skipped_reason', { length: 100 }), // 'duplicate', 'invalid_url', 'no_price', etc.
+  postedAt: timestamp('posted_at').notNull(), // When the message was posted to Telegram
+  createdAt: timestamp('created_at').notNull().defaultNow(), // When we processed it
+}, (table) => ({
+  messageIdIdx: index('telegram_messages_message_id_idx').on(table.messageId),
+  channelIdx: index('telegram_messages_channel_idx').on(table.channelUsername),
+  postedAtIdx: index('telegram_messages_posted_at_idx').on(table.postedAt),
 }));

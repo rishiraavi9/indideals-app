@@ -1,6 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-// import Layout from './Layout'; // TODO: Refactor to use Layout component
+import { useTranslation } from 'react-i18next';
+import AppHeader from './AppHeader';
+import SearchBar from './SearchBar';
 import CompactDealCard from './CompactDealCard';
 import MobileDealCard from './MobileDealCard';
 import MobileHeader from './MobileHeader';
@@ -12,12 +14,11 @@ import AdBlock from './AdBlock';
 import { useAuth } from '../context/AuthContext';
 import { dealsApi } from '../api/deals';
 import { categoriesApi } from '../api/categories';
-import { searchApi } from '../api/search';
 import type { Deal, Tab, Category } from '../types';
 import { trackBrowsingActivity, getPreferredCategories } from '../utils/anonymousTracking';
-import { getFrontpageFilters, hasPreferences } from '../utils/userPreferences';
 
 export default function HomePage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<Tab>('All');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -31,16 +32,19 @@ export default function HomePage() {
   const [isSearchActive, setIsSearchActive] = useState(false);
   const [personalizedCarouselIndex, setPersonalizedCarouselIndex] = useState(0);
   const [festiveCarouselIndex, setFestiveCarouselIndex] = useState(0);
-  const [autocompleteSuggestions, setAutocompleteSuggestions] = useState<Array<{title: string; merchant: string; categoryName: string}>>([]);
-  const [showAutocomplete, setShowAutocomplete] = useState(false);
-  const [showCategoriesDropdown, setShowCategoriesDropdown] = useState(false);
-  const searchInputRef = useRef<HTMLInputElement>(null);
-  const categoriesRef = useRef<HTMLDivElement>(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [bottomNavItem, setBottomNavItem] = useState('home');
   const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
+  const [sortBy, setSortBy] = useState<'newest' | 'price_low' | 'price_high' | 'discount' | 'popular'>('newest');
+  const [selectedMerchant, setSelectedMerchant] = useState<string | null>(null);
+  const [availableMerchants, setAvailableMerchants] = useState<string[]>([]);
 
-  const { user, isAuthenticated, logout } = useAuth();
+  const { isAuthenticated } = useAuth();
+
+  // Scroll to top on page load
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   // Detect mobile viewport
   useEffect(() => {
@@ -61,7 +65,7 @@ export default function HomePage() {
 
   useEffect(() => {
     loadDeals();
-  }, [activeTab, selectedCategory, searchQuery]);
+  }, [activeTab, selectedCategory, selectedMerchant, searchQuery, sortBy]);
 
   const loadCategories = async () => {
     try {
@@ -72,82 +76,69 @@ export default function HomePage() {
     }
   };
 
+  // Sort function
+  const sortDeals = (dealsToSort: Deal[]) => {
+    const sorted = [...dealsToSort];
+    switch (sortBy) {
+      case 'newest':
+        return sorted.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      case 'price_low':
+        return sorted.sort((a, b) => a.price - b.price);
+      case 'price_high':
+        return sorted.sort((a, b) => b.price - a.price);
+      case 'discount':
+        return sorted.sort((a, b) => (b.discountPercentage || 0) - (a.discountPercentage || 0));
+      case 'popular':
+        return sorted.sort((a, b) => (b.upvotes - b.downvotes) - (a.upvotes - a.downvotes));
+      default:
+        return sorted;
+    }
+  };
+
   const loadDeals = async () => {
     setLoading(true);
     try {
-      // Handle "All" tab - shows all deals without specific tab filtering
-      if (activeTab === 'All') {
-        const response = await dealsApi.getDeals({
-          tab: 'frontpage', // Use frontpage as base, but get more deals
-          category: selectedCategory || undefined,
-          search: searchQuery || undefined,
-          limit: 100,
-        });
-        setDeals(response.deals);
-      } else {
-        const tab = activeTab.toLowerCase() as 'frontpage' | 'popular' | 'new';
+      // Use 'new' tab when New is selected to get deals sorted by creation date from backend
+      const response = await dealsApi.getDeals({
+        tab: activeTab === 'New' ? 'new' : 'frontpage',
+        category: selectedCategory || undefined,
+        search: searchQuery || undefined,
+        limit: 100,
+      });
 
-        // For Frontpage tab, apply user preferences
-        let response;
-        if (tab === 'frontpage' && hasPreferences()) {
-          const filters = getFrontpageFilters();
-          response = await dealsApi.getDeals({
-            tab,
-            category: selectedCategory || undefined,
-            search: searchQuery || undefined,
-            limit: 100, // Fetch more to filter client-side
-          });
+      // Extract unique merchants from all deals (for dropdown)
+      const merchants = [...new Set(response.deals.map(d => d.merchant))].sort();
+      setAvailableMerchants(merchants);
 
-          // Client-side filtering based on preferences
-          let filteredDeals = response.deals;
+      let filteredDeals = response.deals;
 
-          // Filter by liked/disliked categories
-          if (filters.likedCategories.length > 0) {
-            // Show only liked categories (or deals without category)
-            filteredDeals = filteredDeals.filter(
-              (deal) =>
-                !deal.categoryId ||
-                filters.likedCategories.includes(deal.categoryId) ||
-                (filters.showFireDealsOnly && deal.trending) // Always show fire deals if enabled
-            );
-          } else if (filters.dislikedCategories.length > 0) {
-            // Hide disliked categories
-            filteredDeals = filteredDeals.filter(
-              (deal) =>
-                !deal.categoryId ||
-                !filters.dislikedCategories.includes(deal.categoryId) ||
-                (filters.showFireDealsOnly && deal.trending)
-            );
-          }
-
-          // Filter expired deals if enabled
-          if (filters.hideExpired) {
-            const now = new Date();
-            filteredDeals = filteredDeals.filter(
-              (deal) =>
-                !deal.expiresAt || new Date(deal.expiresAt) > now
-            );
-          }
-
-          // Filter fire deals only if enabled
-          if (filters.showFireDealsOnly) {
-            filteredDeals = filteredDeals.filter((deal) => deal.trending || deal.verified);
-          }
-
-          setDeals(filteredDeals.slice(0, 40));
-        } else {
-          // For Popular/New tabs or Frontpage without preferences, use normal loading
-          response = await dealsApi.getDeals({
-            tab,
-            category: selectedCategory || undefined,
-            search: searchQuery || undefined,
-            limit: 40,
-          });
-          setDeals(response.deals);
-        }
+      // Apply merchant filter
+      if (selectedMerchant) {
+        filteredDeals = filteredDeals.filter(d => d.merchant === selectedMerchant);
       }
+
+      // Apply client-side filtering based on active tab
+      if (activeTab === 'Hot Deals') {
+        // 70%+ discount
+        filteredDeals = filteredDeals.filter(d => (d.discountPercentage || 0) >= 70);
+      } else if (activeTab === 'Great Deals') {
+        // 50%+ discount
+        filteredDeals = filteredDeals.filter(d => (d.discountPercentage || 0) >= 50);
+      } else if (activeTab === 'Budget Buys') {
+        // Under ₹500
+        filteredDeals = filteredDeals.filter(d => d.price < 500);
+      } else if (activeTab === 'New') {
+        // New today
+        const oneDayAgo = new Date();
+        oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+        filteredDeals = filteredDeals.filter(d => new Date(d.createdAt) > oneDayAgo);
+      }
+      // 'All' tab shows everything without filtering
+
+      // Apply sorting
+      setDeals(sortDeals(filteredDeals));
     } catch (error) {
-      console.error('Failed to load deals:', error);
+      // Error handled silently - empty deals will be shown
     } finally {
       setLoading(false);
     }
@@ -294,43 +285,6 @@ export default function HomePage() {
     );
   };
 
-  // Autocomplete functionality
-  useEffect(() => {
-    const fetchAutocomplete = async () => {
-      if (searchQuery.trim().length >= 2) {
-        try {
-          const suggestions = await searchApi.autocomplete(searchQuery, 8);
-          setAutocompleteSuggestions(suggestions);
-          setShowAutocomplete(true);
-        } catch (error) {
-          console.error('Failed to fetch autocomplete:', error);
-          setAutocompleteSuggestions([]);
-        }
-      } else {
-        setAutocompleteSuggestions([]);
-        setShowAutocomplete(false);
-      }
-    };
-
-    const debounceTimer = setTimeout(fetchAutocomplete, 200);
-    return () => clearTimeout(debounceTimer);
-  }, [searchQuery]);
-
-  // Close dropdowns when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (searchInputRef.current && !searchInputRef.current.contains(event.target as Node)) {
-        setShowAutocomplete(false);
-      }
-      if (categoriesRef.current && !categoriesRef.current.contains(event.target as Node)) {
-        setShowCategoriesDropdown(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
   const handleCreateDeal = () => {
     if (!isAuthenticated) {
       navigate('/login');
@@ -347,7 +301,7 @@ export default function HomePage() {
 
   // Mobile Layout
   if (isMobile) {
-    const displayDeals = activeTab === 'For You' ? personalizedDeals : deals;
+    const displayDeals = deals;
 
     return (
       <div
@@ -376,7 +330,7 @@ export default function HomePage() {
                 color: '#888',
               }}
             >
-              Loading deals...
+              {t('home.loadingDeals')}
             </div>
           ) : displayDeals.length === 0 ? (
             <div
@@ -386,8 +340,8 @@ export default function HomePage() {
                 color: '#888',
               }}
             >
-              <p style={{ margin: 0, fontSize: 16 }}>No deals found</p>
-              <p style={{ margin: '8px 0 0', fontSize: 14 }}>Be the first to post one!</p>
+              <p style={{ margin: 0, fontSize: 16 }}>{t('home.noDeals')}</p>
+              <p style={{ margin: '8px 0 0', fontSize: 14 }}>{t('home.beFirstToPost')}</p>
             </div>
           ) : (
             displayDeals.map((deal) => (
@@ -449,399 +403,26 @@ export default function HomePage() {
           boxSizing: 'border-box',
         }}
       >
-        {/* Header */}
-        <div
-          style={{
-            background: '#ffffff',
-            borderBottom: '1px solid #e5e7eb',
-            padding: '16px 24px',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+        {/* Header - Using Shared AppHeader Component */}
+        <AppHeader
+          onLogoClick={() => {
+            setIsSearchActive(false);
+            setSearchQuery('');
+            setSelectedCategory(null);
+            setActiveTab('All');
           }}
-        >
-          <div
-            style={{
-              maxWidth: '1400px',
-              margin: '0 auto',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 16,
-            }}
-          >
-            {/* Logo */}
-            <h1
-              onClick={() => {
-                setIsSearchActive(false);
-                setSearchQuery('');
-                setSelectedCategory(null);
-                setActiveTab('Frontpage');
+          searchComponent={
+            <SearchBar
+              value={searchQuery}
+              onChange={setSearchQuery}
+              onSearch={(q) => {
+                setSearchQuery(q);
+                setIsSearchActive(true);
               }}
-              style={{
-                margin: 0,
-                fontSize: 28,
-                letterSpacing: -0.5,
-                color: '#1a1a1a',
-                whiteSpace: 'nowrap',
-                cursor: 'pointer',
-                transition: 'opacity 0.2s',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.opacity = '0.7';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.opacity = '1';
-              }}
-            >
-              🔥 <span style={{ fontWeight: 900 }}>IndiaDeals</span>
-            </h1>
-
-            {/* Categories Dropdown */}
-            <div style={{ position: 'relative' }} ref={categoriesRef}>
-              <button
-                onClick={() => setShowCategoriesDropdown(!showCategoriesDropdown)}
-                style={{
-                  padding: '10px 16px',
-                  borderRadius: 8,
-                  border: '1px solid #d1d5db',
-                  background: showCategoriesDropdown ? '#f3f4f6' : '#ffffff',
-                  color: '#374151',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  fontSize: 14,
-                  whiteSpace: 'nowrap',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  transition: 'all 0.2s',
-                }}
-                onMouseEnter={(e) => {
-                  if (!showCategoriesDropdown) e.currentTarget.style.background = '#f9fafb';
-                }}
-                onMouseLeave={(e) => {
-                  if (!showCategoriesDropdown) e.currentTarget.style.background = '#ffffff';
-                }}
-              >
-                <span>Categories</span>
-                <span style={{ fontSize: 12, transition: 'transform 0.2s', transform: showCategoriesDropdown ? 'rotate(180deg)' : 'rotate(0)' }}>▼</span>
-              </button>
-
-              {/* Dropdown Menu */}
-              {showCategoriesDropdown && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: 'calc(100% + 8px)',
-                    left: 0,
-                    background: '#ffffff',
-                    border: '1px solid #d1d5db',
-                    borderRadius: 8,
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    zIndex: 100,
-                    minWidth: 250,
-                    maxHeight: '70vh',
-                    overflowY: 'auto',
-                  }}
-                >
-                  {/* Popular Deals Option */}
-                  <div
-                    onClick={() => {
-                      window.location.href = '/deals';
-                    }}
-                    style={{
-                      padding: '12px 16px',
-                      cursor: 'pointer',
-                      borderBottom: '1px solid #e5e7eb',
-                      fontSize: 14,
-                      fontWeight: 600,
-                      color: '#2563eb',
-                      transition: 'background 0.15s',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = '#eff6ff';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = '#ffffff';
-                    }}
-                  >
-                    🔥 Popular Deals
-                  </div>
-
-                  {/* Category List */}
-                  {categories.map((category) => (
-                    <div
-                      key={category.id}
-                      onClick={() => {
-                        window.location.href = `/deals/${category.slug}`;
-                      }}
-                      style={{
-                        padding: '12px 16px',
-                        cursor: 'pointer',
-                        borderBottom: '1px solid #f3f4f6',
-                        fontSize: 14,
-                        color: '#374151',
-                        transition: 'background 0.15s',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 10,
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = '#f9fafb';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = '#ffffff';
-                      }}
-                    >
-                      <span style={{ fontSize: 18 }}>{category.icon}</span>
-                      <span style={{ fontWeight: 500 }}>{category.name}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Search bar */}
-            <div style={{ position: 'relative', flex: 1, minWidth: 200 }} ref={searchInputRef}>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && searchQuery.trim()) {
-                    setIsSearchActive(true);
-                    setShowAutocomplete(false);
-                  } else if (e.key === 'Escape') {
-                    setShowAutocomplete(false);
-                  }
-                }}
-                onFocus={() => {
-                  if (searchQuery.trim().length >= 2 && autocompleteSuggestions.length > 0) {
-                    setShowAutocomplete(true);
-                  }
-                }}
-                placeholder="Search for deals, products, or merchants..."
-                style={{
-                  width: '100%',
-                  padding: '12px 110px 12px 16px',
-                  borderRadius: 8,
-                  border: '1px solid #d1d5db',
-                  background: '#ffffff',
-                  color: '#1a1a1a',
-                  outline: 'none',
-                  fontSize: 15,
-                  boxSizing: 'border-box',
-                  boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-                }}
-              />
-              <button
-                onClick={() => {
-                  if (searchQuery.trim()) {
-                    setIsSearchActive(true);
-                    setShowAutocomplete(false);
-                  }
-                }}
-                style={{
-                  position: 'absolute',
-                  right: 6,
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  padding: '8px 18px',
-                  borderRadius: 6,
-                  border: 'none',
-                  background: searchQuery.trim() ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : '#9ca3af',
-                  color: 'white',
-                  cursor: searchQuery.trim() ? 'pointer' : 'not-allowed',
-                  fontSize: 14,
-                  fontWeight: 600,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                }}
-                disabled={!searchQuery.trim()}
-              >
-                <span>🔍</span>
-                <span>Search</span>
-              </button>
-
-              {/* Autocomplete Suggestions */}
-              {showAutocomplete && autocompleteSuggestions.length > 0 && !isSearchActive && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: '100%',
-                    left: 0,
-                    right: 0,
-                    marginTop: 4,
-                    background: '#ffffff',
-                    border: '1px solid #d1d5db',
-                    borderRadius: 8,
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    zIndex: 100,
-                    maxHeight: '400px',
-                    overflowY: 'auto',
-                  }}
-                >
-                  {autocompleteSuggestions.map((suggestion, index) => (
-                    <div
-                      key={index}
-                      onClick={() => {
-                        setSearchQuery(suggestion.title);
-                        setShowAutocomplete(false);
-                        setIsSearchActive(true);
-                      }}
-                      style={{
-                        padding: '12px 16px',
-                        cursor: 'pointer',
-                        borderBottom: index < autocompleteSuggestions.length - 1 ? '1px solid #f3f4f6' : 'none',
-                        transition: 'background 0.15s',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = '#f9fafb';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = '#ffffff';
-                      }}
-                    >
-                      <div style={{
-                        fontSize: 14,
-                        fontWeight: 500,
-                        color: '#1a1a1a',
-                        marginBottom: 4,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}>
-                        🔍 {suggestion.title}
-                      </div>
-                      <div style={{
-                        fontSize: 12,
-                        color: '#6b7280',
-                        display: 'flex',
-                        gap: 8,
-                      }}>
-                        {suggestion.merchant && (
-                          <span>at <strong>{suggestion.merchant}</strong></span>
-                        )}
-                        {suggestion.categoryName && (
-                          <span>• {suggestion.categoryName}</span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* User actions */}
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
-              {isAuthenticated && user ? (
-                <>
-                  <div
-                    onClick={() => navigate("/profile")}
-                    style={{
-                      fontSize: 13,
-                      color: '#374151',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 6,
-                      cursor: 'pointer',
-                      padding: '6px 10px',
-                      borderRadius: 8,
-                      transition: 'background 0.2s',
-                      background: '#f9fafb',
-                      whiteSpace: 'nowrap',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = '#e5e7eb';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = '#f9fafb';
-                    }}
-                  >
-                    <span style={{ fontWeight: 600 }}>{user.username}</span>
-                    <span
-                      style={{
-                        padding: '2px 6px',
-                        borderRadius: 999,
-                        background: '#10b981',
-                        color: 'white',
-                        fontSize: 10,
-                        fontWeight: 700,
-                      }}
-                    >
-                      {user.reputation}
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => navigate("/profile")}
-                    style={{
-                      padding: '8px 12px',
-                      borderRadius: 8,
-                      border: '1px solid #d1d5db',
-                      background: '#ffffff',
-                      color: '#374151',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      fontSize: 13,
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    📊
-                  </button>
-                  <button
-                    onClick={logout}
-                    style={{
-                      padding: '8px 14px',
-                      borderRadius: 8,
-                      border: '1px solid #d1d5db',
-                      background: '#ffffff',
-                      color: '#374151',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      fontSize: 13,
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    Logout
-                  </button>
-                </>
-              ) : (
-                <button
-                  onClick={() => navigate('/login')}
-                  style={{
-                    padding: '10px 16px',
-                    borderRadius: 8,
-                    border: 'none',
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    color: '#fff',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    fontSize: 14,
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  Login
-                </button>
-              )}
-
-              <button
-                onClick={handleCreateDeal}
-                style={{
-                  padding: '10px 16px',
-                  borderRadius: 8,
-                  border: 'none',
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  color: '#fff',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  fontSize: 14,
-                  whiteSpace: 'nowrap',
-                  boxShadow: '0 2px 8px rgba(102, 126, 234, 0.3)',
-                }}
-              >
-                + Share a Deal
-              </button>
-            </div>
-          </div>
-        </div>
+            />
+          }
+          onShareDealClick={handleCreateDeal}
+        />
 
         {/* AI Hero Section */}
         {!isSearchActive && !searchQuery && (
@@ -857,13 +438,13 @@ export default function HomePage() {
               }}
             >
               <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 12, opacity: 0.95, letterSpacing: '0.5px' }}>
-                🤖 AI-POWERED DEAL DISCOVERY
+                🤖 {t('home.aiPowered')}
               </div>
               <h1 style={{ fontSize: 42, fontWeight: 800, margin: '0 0 16px', lineHeight: 1.2, letterSpacing: '-0.5px' }}>
-                Never Miss a Great Deal Again
+                {t('home.heroTitle')}
               </h1>
               <p style={{ fontSize: 18, margin: '0 0 40px', opacity: 0.95, maxWidth: 700, marginInline: 'auto', lineHeight: 1.6 }}>
-                Our AI analyzes thousands of products daily to find you the best deals across India's top retailers
+                {t('home.heroSubtitle')}
               </p>
 
               {/* Live Stats */}
@@ -872,19 +453,19 @@ export default function HomePage() {
                   <div style={{ fontSize: 32, fontWeight: 800, marginBottom: 4 }}>
                     {deals.length > 0 ? `${(deals.length * 50).toLocaleString()}+` : '10,000+'}
                   </div>
-                  <div style={{ fontSize: 13, opacity: 0.9, fontWeight: 500 }}>Deals Analyzed Daily</div>
+                  <div style={{ fontSize: 13, opacity: 0.9, fontWeight: 500 }}>{t('home.dealsAnalyzed')}</div>
                 </div>
                 <div style={{ minWidth: 140 }}>
                   <div style={{ fontSize: 32, fontWeight: 800, marginBottom: 4 }}>₹2.5Cr+</div>
-                  <div style={{ fontSize: 13, opacity: 0.9, fontWeight: 500 }}>Total Savings</div>
+                  <div style={{ fontSize: 13, opacity: 0.9, fontWeight: 500 }}>{t('home.totalSavings')}</div>
                 </div>
                 <div style={{ minWidth: 140 }}>
                   <div style={{ fontSize: 32, fontWeight: 800, marginBottom: 4 }}>100+</div>
-                  <div style={{ fontSize: 13, opacity: 0.9, fontWeight: 500 }}>Stores Monitored</div>
+                  <div style={{ fontSize: 13, opacity: 0.9, fontWeight: 500 }}>{t('home.storesMonitored')}</div>
                 </div>
                 <div style={{ minWidth: 140 }}>
                   <div style={{ fontSize: 32, fontWeight: 800, marginBottom: 4 }}>24/7</div>
-                  <div style={{ fontSize: 13, opacity: 0.9, fontWeight: 500 }}>AI Price Tracking</div>
+                  <div style={{ fontSize: 13, opacity: 0.9, fontWeight: 500 }}>{t('home.aiPriceTracking')}</div>
                 </div>
               </div>
             </div>
@@ -908,8 +489,7 @@ export default function HomePage() {
                     navigate(`/deal/${dealId}`);
                     setIsSearchActive(false);
                   }}
-                  onUserClick={(userId) => {
-                    setSelectedUserId(userId);
+                  onUserClick={() => {
                     navigate("/profile");
                     setIsSearchActive(false);
                   }}
@@ -936,7 +516,7 @@ export default function HomePage() {
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#1a1a1a' }}>
-                    ✨ Just For You
+                    ✨ {t('home.justForYou')}
                   </h2>
                   <span
                     style={{
@@ -949,10 +529,10 @@ export default function HomePage() {
                     }}
                   >
                     {isAuthenticated
-                      ? 'Based on your activity'
+                      ? t('home.basedOnActivity')
                       : getPreferredCategories().length > 0
-                        ? 'Based on your browsing'
-                        : 'Popular deals'}
+                        ? t('home.basedOnBrowsing')
+                        : t('home.popularDeals')}
                   </span>
                 </div>
 
@@ -1042,7 +622,7 @@ export default function HomePage() {
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#1a1a1a' }}>
-                    🎉 Festive & Seasonal Deals
+                    🎉 {t('home.festiveSeasonal')}
                   </h2>
                   <span
                     style={{
@@ -1054,7 +634,7 @@ export default function HomePage() {
                       fontWeight: 500,
                     }}
                   >
-                    Special offers for the season
+                    {t('home.specialOffers')}
                   </span>
                 </div>
 
@@ -1147,7 +727,7 @@ export default function HomePage() {
                     outline: 'none',
                   }}
                 >
-                  <option value="">📂 All Categories</option>
+                  <option value="">📂 {t('home.allCategories')}</option>
                   {categories.map((cat) => (
                     <option key={cat.id} value={cat.id}>
                       {cat.icon} {cat.name}
@@ -1165,7 +745,7 @@ export default function HomePage() {
 
               {/* Tabs */}
               <div style={{ display: 'flex', gap: 10 }}>
-                {(['All', 'Frontpage', 'Popular', 'New'] as Tab[]).map((tab) => {
+                {(['All', 'Hot Deals', 'Great Deals', 'Budget Buys', 'New'] as Tab[]).map((tab) => {
                   const active = activeTab === tab;
                   return (
                     <button
@@ -1188,30 +768,75 @@ export default function HomePage() {
                   );
                 })}
               </div>
-            </div>
 
-            {/* Personalize Frontpage Button - Right Corner */}
-            <button
-              onClick={() => setIsPreferencesOpen(true)}
-              style={{
-                padding: '10px 16px',
-                borderRadius: 8,
-                border: '1px solid #d1d5db',
-                background: '#ffffff',
-                color: '#374151',
-                cursor: 'pointer',
-                fontWeight: 600,
-                fontSize: 14,
-                whiteSpace: 'nowrap',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-              }}
-              title="Customize what appears on your Frontpage"
-            >
-              <span style={{ fontSize: 16 }}>⚙️</span>
-              <span>Personalize Frontpage</span>
-            </button>
+              {/* Vertical Divider */}
+              <div style={{
+                width: 1,
+                height: 32,
+                background: '#d1d5db',
+              }} />
+
+              {/* Sort By Dropdown */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 14, color: '#6b7280', fontWeight: 500 }}>{t('home.sortBy')}:</span>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                  style={{
+                    padding: '10px 16px',
+                    borderRadius: 8,
+                    border: '1px solid #d1d5db',
+                    background: '#ffffff',
+                    color: '#374151',
+                    fontWeight: 600,
+                    fontSize: 14,
+                    cursor: 'pointer',
+                    outline: 'none',
+                  }}
+                >
+                  <option value="newest">{t('home.newestFirst')}</option>
+                  <option value="discount">{t('home.highestDiscount')}</option>
+                  <option value="price_low">{t('search.priceLowToHigh')}</option>
+                  <option value="price_high">{t('search.priceHighToLow')}</option>
+                  <option value="popular">{t('home.mostPopular')}</option>
+                </select>
+              </div>
+
+              {/* Vertical Divider */}
+              <div style={{
+                width: 1,
+                height: 32,
+                background: '#d1d5db',
+              }} />
+
+              {/* Retailers Dropdown */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 14, color: '#6b7280', fontWeight: 500 }}>{t('home.retailer')}:</span>
+                <select
+                  value={selectedMerchant || ''}
+                  onChange={(e) => setSelectedMerchant(e.target.value || null)}
+                  style={{
+                    padding: '10px 16px',
+                    borderRadius: 8,
+                    border: '1px solid #d1d5db',
+                    background: '#ffffff',
+                    color: '#374151',
+                    fontWeight: 600,
+                    fontSize: 14,
+                    cursor: 'pointer',
+                    outline: 'none',
+                    minWidth: 140,
+                  }}
+                >
+                  <option value="">{t('home.allRetailers')}</option>
+                  {availableMerchants.map((merchant) => (
+                    <option key={merchant} value={merchant}>
+                      {merchant}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
           </div>
 
           {/* Deals Grid */}
@@ -1225,7 +850,7 @@ export default function HomePage() {
                 color: '#6b7280',
               }}
             >
-              Loading deals...
+              {t('home.loadingDeals')}
             </div>
           ) : deals.length === 0 ? (
             <div>
@@ -1239,8 +864,8 @@ export default function HomePage() {
                   marginBottom: 16,
                 }}
               >
-                <p style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>No deals found</p>
-                <p style={{ margin: '8px 0 0', fontSize: 14 }}>Be the first to post one!</p>
+                <p style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>{t('home.noDeals')}</p>
+                <p style={{ margin: '8px 0 0', fontSize: 14 }}>{t('home.beFirstToPost')}</p>
               </div>
               <AdBlock type="banner" />
             </div>
@@ -1304,13 +929,13 @@ export default function HomePage() {
             <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
               <div style={{ textAlign: 'center', marginBottom: 60 }}>
                 <div style={{ fontSize: 14, fontWeight: 700, color: '#667eea', letterSpacing: '1px', marginBottom: 12 }}>
-                  HOW IT WORKS
+                  {t('home.howItWorks')}
                 </div>
                 <h2 style={{ fontSize: 36, fontWeight: 800, color: '#1a1a1a', margin: '0 0 16px', fontFamily: 'Poppins' }}>
-                  How Our AI Finds You the Best Deals
+                  {t('home.howAiFinds')}
                 </h2>
                 <p style={{ fontSize: 16, color: '#6b7280', maxWidth: 600, margin: '0 auto', lineHeight: 1.6 }}>
-                  Powered by advanced machine learning algorithms, we analyze thousands of deals every day
+                  {t('home.aiDescription')}
                 </p>
               </div>
 
@@ -1341,10 +966,10 @@ export default function HomePage() {
                     🤖
                   </div>
                   <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 12, color: '#1a1a1a', fontFamily: 'Poppins' }}>
-                    AI-Powered Scraping
+                    {t('home.aiScraping')}
                   </h3>
                   <p style={{ color: '#6b7280', lineHeight: 1.6, fontSize: 14 }}>
-                    Our AI monitors 100+ stores 24/7, analyzing thousands of products daily for price drops and amazing deals
+                    {t('home.aiScrapingDesc')}
                   </p>
                 </div>
 
@@ -1374,10 +999,10 @@ export default function HomePage() {
                     📊
                   </div>
                   <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 12, color: '#1a1a1a', fontFamily: 'Poppins' }}>
-                    Smart Analysis
+                    {t('home.smartAnalysis')}
                   </h3>
                   <p style={{ color: '#6b7280', lineHeight: 1.6, fontSize: 14 }}>
-                    Machine learning algorithms verify authenticity, calculate quality scores, and predict price trends
+                    {t('home.smartAnalysisDesc')}
                   </p>
                 </div>
 
@@ -1407,10 +1032,10 @@ export default function HomePage() {
                     🎯
                   </div>
                   <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 12, color: '#1a1a1a', fontFamily: 'Poppins' }}>
-                    Personalized Alerts
+                    {t('home.personalizedAlerts')}
                   </h3>
                   <p style={{ color: '#6b7280', lineHeight: 1.6, fontSize: 14 }}>
-                    Get instant notifications for deals matching your interests and price targets. Never miss out again!
+                    {t('home.personalizedAlertsDesc')}
                   </p>
                 </div>
               </div>
@@ -1425,27 +1050,27 @@ export default function HomePage() {
                 boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
               }}>
                 <div style={{ fontSize: 14, fontWeight: 700, color: '#667eea', marginBottom: 16 }}>
-                  TRUSTED BY THOUSANDS
+                  {t('home.trustedBy')}
                 </div>
                 <div style={{ display: 'flex', gap: 48, justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }}>
                   <div>
-                    <div style={{ fontSize: 24, fontWeight: 800, color: '#1a1a1a' }}>100% Verified</div>
-                    <div style={{ fontSize: 13, color: '#6b7280' }}>AI-Checked Deals</div>
+                    <div style={{ fontSize: 24, fontWeight: 800, color: '#1a1a1a' }}>{t('home.verified')}</div>
+                    <div style={{ fontSize: 13, color: '#6b7280' }}>{t('home.aiChecked')}</div>
                   </div>
                   <div style={{ width: 1, height: 40, background: '#d1d5db' }} />
                   <div>
-                    <div style={{ fontSize: 24, fontWeight: 800, color: '#1a1a1a' }}>Real-Time</div>
-                    <div style={{ fontSize: 13, color: '#6b7280' }}>Price Updates</div>
+                    <div style={{ fontSize: 24, fontWeight: 800, color: '#1a1a1a' }}>{t('home.realTime')}</div>
+                    <div style={{ fontSize: 13, color: '#6b7280' }}>{t('home.priceUpdates')}</div>
                   </div>
                   <div style={{ width: 1, height: 40, background: '#d1d5db' }} />
                   <div>
-                    <div style={{ fontSize: 24, fontWeight: 800, color: '#1a1a1a' }}>Community</div>
-                    <div style={{ fontSize: 13, color: '#6b7280' }}>Driven Platform</div>
+                    <div style={{ fontSize: 24, fontWeight: 800, color: '#1a1a1a' }}>{t('home.community')}</div>
+                    <div style={{ fontSize: 13, color: '#6b7280' }}>{t('home.drivenPlatform')}</div>
                   </div>
                   <div style={{ width: 1, height: 40, background: '#d1d5db' }} />
                   <div>
-                    <div style={{ fontSize: 24, fontWeight: 800, color: '#1a1a1a' }}>No Spam</div>
-                    <div style={{ fontSize: 13, color: '#6b7280' }}>Clean Experience</div>
+                    <div style={{ fontSize: 24, fontWeight: 800, color: '#1a1a1a' }}>{t('home.noSpam')}</div>
+                    <div style={{ fontSize: 13, color: '#6b7280' }}>{t('home.cleanExperience')}</div>
                   </div>
                 </div>
               </div>

@@ -43,6 +43,22 @@ export interface FeatureFlags {
   CDN_INTEGRATION: boolean;
   RATE_LIMITING_ADVANCED: boolean;
   MONITORING: boolean;
+
+  // Image Handling
+  IMAGE_FALLBACK: boolean;
+  IMAGE_PROXY: boolean;
+}
+
+/**
+ * Image Strategy Configuration
+ * - 'placeholder': Show placeholder SVG when image fails (default)
+ * - 'merchant-fallback': Scrape image from Amazon/Flipkart when original fails
+ * - 'proxy-cache': Route all images through proxy with caching
+ */
+export type ImageStrategy = 'placeholder' | 'merchant-fallback' | 'proxy-cache';
+
+export interface AppConfig {
+  imageStrategy: ImageStrategy;
 }
 
 const toBool = (value: string | undefined, defaultValue: boolean): boolean => {
@@ -83,6 +99,25 @@ export const features: FeatureFlags = {
   CDN_INTEGRATION: toBool(process.env.FEATURE_CDN_INTEGRATION, false),
   RATE_LIMITING_ADVANCED: toBool(process.env.FEATURE_RATE_LIMITING_ADVANCED, false),
   MONITORING: toBool(process.env.FEATURE_MONITORING, false),
+
+  // Image Handling (Default: Enabled for fallback strategies)
+  IMAGE_FALLBACK: toBool(process.env.FEATURE_IMAGE_FALLBACK, true),
+  IMAGE_PROXY: toBool(process.env.FEATURE_IMAGE_PROXY, true),
+};
+
+/**
+ * App configuration (non-boolean settings)
+ */
+const getImageStrategy = (): ImageStrategy => {
+  const strategy = process.env.IMAGE_STRATEGY?.toLowerCase();
+  if (strategy === 'merchant-fallback' || strategy === 'proxy-cache') {
+    return strategy;
+  }
+  return 'placeholder'; // default
+};
+
+export const appConfig: AppConfig = {
+  imageStrategy: getImageStrategy(),
 };
 
 /**

@@ -47,17 +47,5 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>remote-notification</string>
-	</array>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>IndiaDeals needs access to your photo library to share deal images.</string>
-	<key>NSCameraUsageDescription</key>
-	<string>IndiaDeals needs access to your camera to capture deal images.</string>
-	<key>NSUserTrackingUsageDescription</key>
-	<string>IndiaDeals would like to show you personalized deal recommendations.</string>
-	<key>ITSAppUsesNonExemptEncryption</key>
-	<false/>
 </dict>
 </plist>

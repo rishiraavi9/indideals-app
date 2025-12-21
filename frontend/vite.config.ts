@@ -16,15 +16,7 @@ export default defineConfig({
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom', 'react-router-dom'],
-          capacitor: [
-            '@capacitor/core',
-            '@capacitor/app',
-            '@capacitor/haptics',
-            '@capacitor/push-notifications',
-            '@capacitor/share',
-            '@capacitor/splash-screen',
-            '@capacitor/status-bar',
-          ],
+          capacitor: ['@capacitor/core'],
         },
       },
     },

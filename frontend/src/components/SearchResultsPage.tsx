@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { searchApi } from '../api/search';
 import { categoriesApi } from '../api/categories';
 import type { Deal, Category } from '../types';
@@ -16,9 +17,10 @@ export default function SearchResultsPage({
   initialQuery,
   onClose,
   onDealClick,
-  onUserClick,
+  onUserClick: _onUserClick,
   onVote
 }: SearchResultsPageProps) {
+  const { t } = useTranslation();
   const [query] = useState(initialQuery);
   const [deals, setDeals] = useState<Deal[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -160,7 +162,7 @@ export default function SearchResultsPage({
             whiteSpace: 'nowrap',
           }}
         >
-          ← Back
+          ← {t('common.back')}
         </button>
 
         <select
@@ -178,11 +180,11 @@ export default function SearchResultsPage({
             whiteSpace: 'nowrap',
           }}
         >
-          <option value="relevance">Sort: Relevance</option>
-          <option value="price-low">Price: Low to High</option>
-          <option value="price-high">Price: High to Low</option>
-          <option value="discount">Discount %</option>
-          <option value="recent">Most Recent</option>
+          <option value="relevance">{t('search.sortBy')}: {t('search.relevance')}</option>
+          <option value="price-low">{t('search.priceLowToHigh')}</option>
+          <option value="price-high">{t('search.priceHighToLow')}</option>
+          <option value="discount">{t('search.discountPercent')}</option>
+          <option value="recent">{t('search.mostRecent')}</option>
         </select>
 
         {activeFiltersCount > 0 && (
@@ -200,7 +202,7 @@ export default function SearchResultsPage({
               whiteSpace: 'nowrap',
             }}
           >
-            Clear Filters ({activeFiltersCount})
+            {t('search.clearFilters')} ({activeFiltersCount})
           </button>
         )}
       </div>
@@ -224,7 +226,7 @@ export default function SearchResultsPage({
             marginBottom: 20,
           }}>
             <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#1a1a1a' }}>
-              Filters {activeFiltersCount > 0 && `(${activeFiltersCount})`}
+              {t('search.filters')} {activeFiltersCount > 0 && `(${activeFiltersCount})`}
             </h3>
             {activeFiltersCount > 0 && (
               <button
@@ -240,13 +242,13 @@ export default function SearchResultsPage({
                   fontWeight: 600,
                 }}
               >
-                Clear All
+                {t('search.clearFilters')}
               </button>
             )}
           </div>
 
           {/* Categories */}
-          <FilterSection title="Categories" defaultExpanded={false}>
+          <FilterSection title={t('search.categories')} defaultExpanded={false}>
             {categories.map(cat => (
               <FilterCheckbox
                 key={cat.id}
@@ -258,7 +260,7 @@ export default function SearchResultsPage({
           </FilterSection>
 
           {/* Merchants */}
-          <FilterSection title="Stores">
+          <FilterSection title={t('search.stores')}>
             {availableMerchants.map(merchant => (
               <FilterCheckbox
                 key={merchant}
@@ -270,11 +272,11 @@ export default function SearchResultsPage({
           </FilterSection>
 
           {/* Discount */}
-          <FilterSection title="Discount">
+          <FilterSection title={t('deals.discount')}>
             {[10, 25, 50, 75].map(discount => (
               <FilterCheckbox
                 key={discount}
-                label={`${discount}% off or more`}
+                label={`${discount}% ${t('search.offOrMore')}`}
                 checked={minDiscount === discount}
                 onChange={() => setMinDiscount(minDiscount === discount ? 0 : discount)}
                 radio
@@ -283,11 +285,11 @@ export default function SearchResultsPage({
           </FilterSection>
 
           {/* Price Range */}
-          <FilterSection title="Price">
+          <FilterSection title={t('deals.price')}>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               <input
                 type="number"
-                placeholder="Min"
+                placeholder={t('search.minPrice')}
                 value={minPrice || ''}
                 onChange={(e) => setMinPrice(Number(e.target.value))}
                 style={{
@@ -301,10 +303,10 @@ export default function SearchResultsPage({
                   outline: 'none',
                 }}
               />
-              <span style={{ color: '#6b7280', fontSize: 14 }}>to</span>
+              <span style={{ color: '#6b7280', fontSize: 14 }}>{t('search.to')}</span>
               <input
                 type="number"
-                placeholder="Max"
+                placeholder={t('search.maxPrice')}
                 value={maxPrice || ''}
                 onChange={(e) => setMaxPrice(Number(e.target.value))}
                 style={{
@@ -322,9 +324,9 @@ export default function SearchResultsPage({
           </FilterSection>
 
           {/* Other Options */}
-          <FilterSection title="Options">
+          <FilterSection title={t('search.filters')}>
             <FilterCheckbox
-              label="Show Expired Deals"
+              label={t('search.showExpired')}
               checked={showExpired}
               onChange={() => setShowExpired(!showExpired)}
             />
@@ -334,7 +336,7 @@ export default function SearchResultsPage({
         {/* Results */}
         <div style={{ flex: 1, padding: 24, background: '#f5f7fa' }}>
           <h2 style={{ margin: '0 0 20px', fontSize: 24, fontWeight: 700, color: '#1a1a1a' }}>
-            {loading ? 'Searching...' : `${deals.length} results for "${query}"`}
+            {loading ? t('search.searching') : `${deals.length} ${t('search.resultsFor')} "${query}"`}
           </h2>
 
           {loading ? (
@@ -345,7 +347,7 @@ export default function SearchResultsPage({
               textAlign: 'center',
               color: '#6b7280',
             }}>
-              Loading...
+              {t('common.loading')}
             </div>
           ) : deals.length === 0 ? (
             <div style={{
@@ -355,8 +357,8 @@ export default function SearchResultsPage({
               textAlign: 'center',
               color: '#6b7280',
             }}>
-              <p style={{ fontSize: 18, marginBottom: 8, fontWeight: 600, margin: 0 }}>No deals found</p>
-              <p style={{ fontSize: 14, margin: '8px 0 0' }}>Try adjusting your filters or search query</p>
+              <p style={{ fontSize: 18, marginBottom: 8, fontWeight: 600, margin: 0 }}>{t('search.noResults')}</p>
+              <p style={{ fontSize: 14, margin: '8px 0 0' }}>{t('search.tryDifferent')}</p>
             </div>
           ) : (
             <div style={{
@@ -371,7 +373,6 @@ export default function SearchResultsPage({
                   onUpvote={() => onVote(deal.id, deal.userVote === 1 ? 0 : 1)}
                   onDownvote={() => onVote(deal.id, deal.userVote === -1 ? 0 : -1)}
                   onView={() => onDealClick(deal.id)}
-                  onUserClick={() => deal.userId && onUserClick(deal.userId)}
                 />
               ))}
             </div>

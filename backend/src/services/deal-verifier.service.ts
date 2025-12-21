@@ -72,6 +72,8 @@ export class DealVerifierService {
         ...communityCheck,
         trustScore,
         verificationType,
+        expectedPrice: deal.price,
+        expectedOriginalPrice: deal.originalPrice,
       });
 
       // Step 5: Update deal in database
@@ -83,6 +85,16 @@ export class DealVerifierService {
       // Step 7: Update price history if price was scraped
       if (result.scrapedPrice) {
         await this.updatePriceHistory(dealId, result.scrapedPrice, result.scrapedOriginalPrice, deal.merchant);
+      }
+
+      // Step 8: Recalculate AI quality score (now that verification status has changed)
+      try {
+        const { DealQualityService } = await import('./ai/deal-quality.service.js');
+        await DealQualityService.calculateScore(dealId);
+        logger.info(`[Verifier] AI score recalculated for deal ${dealId}`);
+      } catch (error: any) {
+        logger.warn(`[Verifier] Failed to recalculate AI score for deal ${dealId}:`, error.message);
+        // Don't fail verification if AI scoring fails
       }
 
       logger.info(`[Verifier] Verification complete for deal ${dealId}: ${result.success ? 'PASSED' : 'FAILED'}`);
@@ -179,6 +191,58 @@ export class DealVerifierService {
 
       const $ = cheerio.load(response.data);
 
+      // Check for sold out / out of stock indicators
+      // IMPORTANT: We need to be careful with Amazon/Flipkart pages as they have
+      // variant-related "unavailable" text that doesn't mean the main product is sold out
+      const isAmazon = url?.includes('amazon.') || false;
+      const isFlipkart = url?.includes('flipkart.') || false;
+
+      let isSoldOut = false;
+
+      if (isAmazon) {
+        // For Amazon, check specific buy box elements
+        const buyBoxText = $('#add-to-cart-button, #buy-now-button, #availability').text().toLowerCase();
+        const addToCartExists = $('#add-to-cart-button').length > 0;
+        const availabilityText = $('#availability').text().toLowerCase();
+
+        // Only mark as sold out if:
+        // 1. No add-to-cart button AND availability says unavailable
+        // 2. Availability explicitly says "currently unavailable" (not in variant context)
+        if (!addToCartExists && (
+          availabilityText.includes('currently unavailable') ||
+          availabilityText.includes('out of stock')
+        )) {
+          isSoldOut = true;
+        }
+      } else if (isFlipkart) {
+        // For Flipkart, check the buy button and notify me sections
+        const buyButtonExists = $('button:contains("Add to Cart"), button:contains("Buy Now")').length > 0;
+        const notifyMeExists = $('button:contains("Notify Me")').length > 0;
+
+        if (!buyButtonExists && notifyMeExists) {
+          isSoldOut = true;
+        }
+      } else {
+        // For other sites, use more conservative text matching
+        // Only check specific elements, not the entire page
+        const buyElements = $('[class*="buy"], [class*="cart"], [id*="buy"], [id*="cart"]').text().toLowerCase();
+        const soldOutIndicators = [
+          'sold out',
+          'out of stock',
+          'currently unavailable',
+        ];
+
+        isSoldOut = soldOutIndicators.some(indicator => buyElements.includes(indicator));
+      }
+
+      if (isSoldOut) {
+        logger.warn(`[Verifier] Product appears to be sold out: ${url}`);
+        return {
+          errorMessage: 'Product is sold out or unavailable',
+          shouldExpire: true,
+        };
+      }
+
       // Common price selectors (add more as needed)
       const priceSelectors = [
         '.price',
@@ -231,14 +295,14 @@ export class DealVerifierService {
   }
 
   /**
-   * Extract price from text (handles ¹, INR, commas, etc.)
+   * Extract price from text (handles ï¿½, INR, commas, etc.)
    */
   private static extractPriceFromText(text: string): number | null {
     if (!text) return null;
 
     // Remove currency symbols and extract numbers
     const cleaned = text
-      .replace(/[¹,INR\s]/gi, '')
+      .replace(/[ï¿½,INR\s]/gi, '')
       .replace(/[^\d.]/g, '');
 
     const price = parseFloat(cleaned);
@@ -305,10 +369,13 @@ export class DealVerifierService {
       errorMessage,
       trustScore,
       verificationType,
+      shouldExpire: shouldExpireFromScraper,
     } = data;
 
-    // Auto-expire if URL is dead (404, 410)
-    const shouldExpire = !urlAccessible && (statusCode === 404 || statusCode === 410);
+    // Auto-expire if:
+    // 1. URL is dead (404, 410), OR
+    // 2. Product is sold out (detected by scraper)
+    const shouldExpire = shouldExpireFromScraper || (!urlAccessible && (statusCode === 404 || statusCode === 410));
 
     // Auto-flag conditions:
     // 1. URL not accessible (but not expired)
@@ -323,9 +390,9 @@ export class DealVerifierService {
       finalFlagReason = `URL not accessible (Status: ${statusCode})`;
     }
 
-    if (priceMatch === false && priceDifference && priceDifference > expectedPrice * 0.2) {
+    if (priceMatch === false && priceDifference && data.expectedPrice && priceDifference > data.expectedPrice * 0.2) {
       finalFlag = true;
-      finalFlagReason = `Price mismatch: Expected ¹${data.expectedPrice}, Found ¹${scrapedPrice}`;
+      finalFlagReason = `Price mismatch: Expected â‚¹${data.expectedPrice}, Found â‚¹${scrapedPrice}`;
     }
 
     // Trusted users (score > 80) bypass some flags
@@ -431,7 +498,7 @@ export class DealVerifierService {
       source: 'scraper',
     });
 
-    logger.info(`[Verifier] Price history updated for deal ${dealId}: ¹${price}`);
+    logger.info(`[Verifier] Price history updated for deal ${dealId}: ï¿½${price}`);
   }
 
   /**

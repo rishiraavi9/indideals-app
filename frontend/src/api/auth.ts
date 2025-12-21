@@ -9,6 +9,7 @@ export const authApi = {
       password,
     });
     apiClient.setToken(response.accessToken);
+    apiClient.setRefreshToken(response.refreshToken);
     return response;
   },
 
@@ -18,11 +19,21 @@ export const authApi = {
       password,
     });
     apiClient.setToken(response.accessToken);
+    apiClient.setRefreshToken(response.refreshToken);
     return response;
   },
 
-  logout: () => {
+  logout: async () => {
+    const refreshToken = apiClient.getRefreshToken();
+    if (refreshToken) {
+      try {
+        await apiClient.post('/auth/logout', { refreshToken });
+      } catch (error) {
+        console.error('Logout error:', error);
+      }
+    }
     apiClient.setToken(null);
+    apiClient.setRefreshToken(null);
   },
 
   getMe: async (): Promise<{ user: User }> => {

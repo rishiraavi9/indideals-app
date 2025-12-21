@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getDealQualityScore } from '../api/ai';
 import type { QualityScoreResult } from '../api/ai';
 
@@ -13,13 +14,14 @@ interface AIQualityBadgeProps {
 export default function AIQualityBadge({
   dealId,
   fallbackScore = 50,
-  showDetailed = false,
+  showDetailed: _showDetailed = false,
   isOpen = false,
   onClose
 }: AIQualityBadgeProps) {
+  const { t } = useTranslation();
   const [aiScore, setAiScore] = useState<QualityScoreResult | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const [_loading, setLoading] = useState(true);
+  const [_error, setError] = useState(false);
   const [showModal, setShowModal] = useState(isOpen);
 
   useEffect(() => {
@@ -58,14 +60,6 @@ export default function AIQualityBadge({
     if (score >= 70) return 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'; // Great - Blue
     if (score >= 60) return 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)'; // Good - Purple
     return 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)'; // Gray
-  };
-
-  const getScoreEmoji = (score: number) => {
-    if (score >= 90) return '💎';
-    if (score >= 80) return '🔥';
-    if (score >= 70) return '⭐';
-    if (score >= 60) return '👍';
-    return '📊';
   };
 
   const getBreakdownBar = (value: number, label: string, color: string) => (
@@ -163,14 +157,14 @@ export default function AIQualityBadge({
                     fontWeight: 700,
                     color: '#111827'
                   }}>
-                    AI Quality Score
+                    {t('aiScore.qualityScore')}
                   </h3>
                   <p style={{
                     margin: '4px 0 0 0',
                     fontSize: 13,
                     color: '#6b7280'
                   }}>
-                    Powered by smart analytics
+                    {t('aiScore.aiAnalysis')}
                   </p>
                 </div>
               </div>
@@ -200,7 +194,7 @@ export default function AIQualityBadge({
                   textTransform: 'uppercase',
                   letterSpacing: '0.5px'
                 }}>
-                  Badges
+                  {t('aiScore.socialProof')}
                 </h4>
                 <div style={{
                   display: 'flex',
@@ -237,12 +231,12 @@ export default function AIQualityBadge({
                 textTransform: 'uppercase',
                 letterSpacing: '0.5px'
               }}>
-                Score Breakdown
+                {t('aiScore.keyFactors')}
               </h4>
-              {getBreakdownBar(aiScore.breakdown.valueProp, 'Value Proposition (40%)', '#10b981')}
-              {getBreakdownBar(aiScore.breakdown.authenticity, 'Authenticity (25%)', '#3b82f6')}
-              {getBreakdownBar(aiScore.breakdown.urgency, 'Urgency (20%)', '#f59e0b')}
-              {getBreakdownBar(aiScore.breakdown.socialProof, 'Social Proof (15%)', '#8b5cf6')}
+              {getBreakdownBar(aiScore.breakdown.valueProp, `${t('aiScore.valueProposition')} (40%)`, '#10b981')}
+              {getBreakdownBar(aiScore.breakdown.authenticity, `${t('aiScore.authenticity')} (25%)`, '#3b82f6')}
+              {getBreakdownBar(aiScore.breakdown.urgency, `${t('aiScore.urgency')} (20%)`, '#f59e0b')}
+              {getBreakdownBar(aiScore.breakdown.socialProof, `${t('aiScore.socialProof')} (15%)`, '#8b5cf6')}
             </div>
 
             {/* Legend */}
@@ -253,17 +247,17 @@ export default function AIQualityBadge({
               borderTop: '1px solid #e5e7eb'
             }}>
               <div style={{ marginBottom: 6 }}>
-                <strong style={{ color: '#6b7280' }}>What this means:</strong>
+                <strong style={{ color: '#6b7280' }}>{t('aiScore.analyzesIntro')}:</strong>
               </div>
               <ul style={{
                 margin: 0,
                 paddingLeft: 20,
                 lineHeight: 1.6
               }}>
-                <li><strong>Value:</strong> Price quality vs market</li>
-                <li><strong>Authenticity:</strong> Deal trustworthiness</li>
-                <li><strong>Urgency:</strong> Time sensitivity</li>
-                <li><strong>Social:</strong> Community feedback</li>
+                <li><strong>{t('aiScore.value')}:</strong> {t('aiScore.valuePropositionDesc')}</li>
+                <li><strong>{t('aiScore.authenticity')}:</strong> {t('aiScore.authenticityDesc')}</li>
+                <li><strong>{t('aiScore.urgency')}:</strong> {t('aiScore.urgencyDesc')}</li>
+                <li><strong>{t('aiScore.socialProof')}:</strong> {t('aiScore.socialProofDesc')}</li>
               </ul>
             </div>
 
@@ -293,7 +287,7 @@ export default function AIQualityBadge({
                 e.currentTarget.style.backgroundColor = '#f3f4f6';
               }}
             >
-              Close
+              {t('common.close')}
             </button>
           </div>
         </div>

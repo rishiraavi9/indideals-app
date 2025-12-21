@@ -1,19 +1,28 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { dealsApi } from '../api/deals';
 import AffiliateAnalytics from '../components/AffiliateAnalytics';
 import Layout from '../components/Layout';
+import { supportedLanguages, changeLanguage, type LanguageCode } from '../i18n';
 import type { Deal } from '../types';
 
 type TabType = 'activity' | 'deals' | 'analytics' | 'settings';
 
 export default function ProfilePage() {
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
   const { user, isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('activity');
   const [userDeals, setUserDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedLanguage, setSelectedLanguage] = useState<LanguageCode>(i18n.language as LanguageCode);
+
+  const handleLanguageChange = async (lang: LanguageCode) => {
+    setSelectedLanguage(lang);
+    await changeLanguage(lang);
+  };
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -77,7 +86,7 @@ export default function ProfilePage() {
                   {user.username}
                 </h1>
                 <div style={{ fontSize: 14, color: '#6b7280', marginBottom: 16 }}>
-                  Joined {new Date(user.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                  {t('profile.memberSince')} {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : ''}
                 </div>
 
                 {/* Reputation Badge */}
@@ -94,7 +103,7 @@ export default function ProfilePage() {
                     fontWeight: 700,
                   }}
                 >
-                  ⭐ {user.reputation} Reputation
+                  ⭐ {user.reputation} {t('profile.reputation')}
                 </div>
               </div>
             </div>
@@ -110,7 +119,7 @@ export default function ProfilePage() {
                 }}
               >
                 <div style={{ fontSize: 36, fontWeight: 900, marginBottom: 4 }}>{userDeals.length}</div>
-                <div style={{ fontSize: 14, opacity: 0.9 }}>Deals Posted</div>
+                <div style={{ fontSize: 14, opacity: 0.9 }}>{t('profile.dealsPosted')}</div>
               </div>
 
               <div
@@ -122,7 +131,7 @@ export default function ProfilePage() {
                 }}
               >
                 <div style={{ fontSize: 36, fontWeight: 900, marginBottom: 4 }}>{totalUpvotes}</div>
-                <div style={{ fontSize: 14, opacity: 0.9 }}>Total Upvotes</div>
+                <div style={{ fontSize: 14, opacity: 0.9 }}>{t('profile.totalUpvotes')}</div>
               </div>
 
               <div
@@ -134,7 +143,7 @@ export default function ProfilePage() {
                 }}
               >
                 <div style={{ fontSize: 36, fontWeight: 900, marginBottom: 4 }}>{totalDownvotes}</div>
-                <div style={{ fontSize: 14, opacity: 0.9 }}>Total Downvotes</div>
+                <div style={{ fontSize: 14, opacity: 0.9 }}>{t('profile.totalDownvotes')}</div>
               </div>
 
               <div
@@ -146,7 +155,7 @@ export default function ProfilePage() {
                 }}
               >
                 <div style={{ fontSize: 36, fontWeight: 900, marginBottom: 4 }}>{totalComments}</div>
-                <div style={{ fontSize: 14, opacity: 0.9 }}>Total Comments</div>
+                <div style={{ fontSize: 14, opacity: 0.9 }}>{t('profile.totalComments')}</div>
               </div>
             </div>
           </div>
@@ -157,10 +166,10 @@ export default function ProfilePage() {
           <div style={{ maxWidth: 1400, margin: '0 auto', padding: '0 24px' }}>
             <div style={{ display: 'flex', gap: 8 }}>
               {[
-                { id: 'activity' as TabType, label: 'My Activity', icon: '📊' },
-                { id: 'deals' as TabType, label: 'My Deals', icon: '🔥' },
-                { id: 'analytics' as TabType, label: 'Analytics', icon: '📈' },
-                { id: 'settings' as TabType, label: 'Settings', icon: '⚙️' },
+                { id: 'activity' as TabType, label: t('profile.myActivity'), icon: '📊' },
+                { id: 'deals' as TabType, label: t('profile.myDeals'), icon: '🔥' },
+                { id: 'analytics' as TabType, label: t('profile.analytics'), icon: '📈' },
+                { id: 'settings' as TabType, label: t('profile.settings'), icon: '⚙️' },
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -193,10 +202,10 @@ export default function ProfilePage() {
           {activeTab === 'activity' && (
             <div style={{ background: '#fff', borderRadius: 12, padding: 32, border: '1px solid #e5e7eb' }}>
               <h2 style={{ margin: '0 0 24px 0', fontSize: 24, fontWeight: 700, color: '#1a1a1a' }}>
-                Recent Activity
+                {t('profile.recentActivity')}
               </h2>
               <div style={{ color: '#6b7280', fontSize: 14 }}>
-                Your recent votes, comments, and interactions will appear here.
+                {t('profile.activityDescription')}
               </div>
             </div>
           )}
@@ -205,14 +214,14 @@ export default function ProfilePage() {
             <div>
               <div style={{ background: '#fff', borderRadius: 12, padding: 32, border: '1px solid #e5e7eb' }}>
                 <h2 style={{ margin: '0 0 24px 0', fontSize: 24, fontWeight: 700, color: '#1a1a1a' }}>
-                  My Deals ({userDeals.length})
+                  {t('profile.myDeals')} ({userDeals.length})
                 </h2>
 
                 {loading ? (
-                  <div style={{ textAlign: 'center', padding: 40, color: '#6b7280' }}>Loading deals...</div>
+                  <div style={{ textAlign: 'center', padding: 40, color: '#6b7280' }}>{t('common.loading')}</div>
                 ) : userDeals.length === 0 ? (
                   <div style={{ textAlign: 'center', padding: 40, color: '#6b7280' }}>
-                    You haven't posted any deals yet.
+                    {t('profile.noDealsPosted')}
                   </div>
                 ) : (
                   <div style={{ display: 'grid', gap: 16 }}>
@@ -290,20 +299,20 @@ export default function ProfilePage() {
 
           {activeTab === 'analytics' && (
             <div style={{ background: '#fff', borderRadius: 12, padding: 32, border: '1px solid #e5e7eb' }}>
-              <AffiliateAnalytics selectedUserId={user.id} onClose={() => setActiveTab('activity')} />
+              <AffiliateAnalytics />
             </div>
           )}
 
           {activeTab === 'settings' && (
             <div style={{ background: '#fff', borderRadius: 12, padding: 32, border: '1px solid #e5e7eb' }}>
               <h2 style={{ margin: '0 0 24px 0', fontSize: 24, fontWeight: 700, color: '#1a1a1a' }}>
-                Account Settings
+                {t('profile.accountSettings')}
               </h2>
 
               <div style={{ display: 'grid', gap: 24 }}>
                 <div>
                   <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#374151', marginBottom: 8 }}>
-                    Email
+                    {t('profile.email')}
                   </label>
                   <input
                     type="email"
@@ -323,7 +332,7 @@ export default function ProfilePage() {
 
                 <div>
                   <label style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#374151', marginBottom: 8 }}>
-                    Username
+                    {t('profile.username')}
                   </label>
                   <input
                     type="text"
@@ -341,6 +350,59 @@ export default function ProfilePage() {
                   />
                 </div>
 
+                {/* Language Preference */}
+                <div style={{
+                  padding: 24,
+                  background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%)',
+                  borderRadius: 12,
+                  border: '1px solid rgba(102, 126, 234, 0.2)',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                    <span style={{ fontSize: 24 }}>🌐</span>
+                    <div>
+                      <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#1a1a1a' }}>
+                        {t('profile.languagePreference')}
+                      </h3>
+                      <p style={{ margin: '4px 0 0', fontSize: 13, color: '#6b7280' }}>
+                        {t('profile.selectLanguage')}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
+                    {supportedLanguages.map((lang) => (
+                      <button
+                        key={lang.code}
+                        onClick={() => handleLanguageChange(lang.code)}
+                        style={{
+                          padding: '16px 20px',
+                          borderRadius: 10,
+                          border: selectedLanguage === lang.code
+                            ? '2px solid #667eea'
+                            : '2px solid #e5e7eb',
+                          background: selectedLanguage === lang.code
+                            ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+                            : '#fff',
+                          color: selectedLanguage === lang.code ? '#fff' : '#374151',
+                          cursor: 'pointer',
+                          fontSize: 15,
+                          fontWeight: 600,
+                          transition: 'all 0.2s ease',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: 8,
+                        }}
+                      >
+                        <span>{lang.nativeName}</span>
+                        {selectedLanguage === lang.code && (
+                          <span style={{ fontSize: 16 }}>✓</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <div style={{ marginTop: 8 }}>
                   <button
                     style={{
@@ -354,7 +416,7 @@ export default function ProfilePage() {
                       fontSize: 15,
                     }}
                   >
-                    Save Changes
+                    {t('profile.saveChanges')}
                   </button>
                 </div>
               </div>

@@ -7,7 +7,7 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, username: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   isAuthenticated: boolean;
 }
 
@@ -36,7 +36,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             setUser(user);
           } catch (error) {
             console.error('Failed to load user:', error);
-            authApi.logout();
+            await authApi.logout();
           }
         }
       } catch (error) {
@@ -47,6 +47,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
 
     loadUser();
+
+    // Listen for automatic logout events (e.g., when refresh token expires)
+    const handleAutoLogout = () => {
+      setUser(null);
+      authApi.logout();
+    };
+
+    window.addEventListener('auth:logout', handleAutoLogout);
+
+    return () => {
+      window.removeEventListener('auth:logout', handleAutoLogout);
+    };
   }, []);
 
   const login = async (email: string, password: string) => {
@@ -59,8 +71,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(user);
   };
 
-  const logout = () => {
-    authApi.logout();
+  const logout = async () => {
+    await authApi.logout();
     setUser(null);
   };
 

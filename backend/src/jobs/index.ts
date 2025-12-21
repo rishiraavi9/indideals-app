@@ -5,12 +5,14 @@ import {
   dealVerifierQueue,
   alertProcessorQueue,
   cleanupQueue,
+  telegramScraperQueue,
   setupScheduledJobs,
 } from '../services/queue.service.js';
 import { processAlertProcessor } from './alert-processor.job.js';
 import { processPriceTracker } from './price-tracker.job.js';
 import { processDealVerifier } from './deal-verifier.job.js';
 import { processCleanup } from './cleanup.job.js';
+import { processTelegramScraper } from './telegram-scraper.job.js';
 import { logger } from '../utils/logger.js';
 import { isFeatureEnabled } from '../config/features.js';
 
@@ -20,7 +22,15 @@ export const registerJobProcessors = () => {
 
   // Alert processor
   if (isFeatureEnabled('EMAIL_ALERTS')) {
-    alertProcessorQueue.process(async (job) => {
+    alertProcessorQueue.process('daily-digest', async (job) => {
+      try {
+        await processAlertProcessor(job);
+      } catch (error) {
+        logger.error('Alert processor job failed:', error);
+        throw error;
+      }
+    });
+    alertProcessorQueue.process('weekly-digest', async (job) => {
       try {
         await processAlertProcessor(job);
       } catch (error) {
@@ -33,7 +43,7 @@ export const registerJobProcessors = () => {
 
   // Price tracker
   if (isFeatureEnabled('PRICE_TRACKING')) {
-    priceTrackerQueue.process(async (job) => {
+    priceTrackerQueue.process('track-all-prices', async (job) => {
       try {
         await processPriceTracker(job);
       } catch (error) {
@@ -46,7 +56,15 @@ export const registerJobProcessors = () => {
 
   // Deal verifier
   if (isFeatureEnabled('DEAL_VERIFICATION')) {
-    dealVerifierQueue.process(async (job) => {
+    dealVerifierQueue.process('verify-single-deal', async (job) => {
+      try {
+        await processDealVerifier(job);
+      } catch (error) {
+        logger.error('Deal verifier job failed:', error);
+        throw error;
+      }
+    });
+    dealVerifierQueue.process('verify-all-deals', async (job) => {
       try {
         await processDealVerifier(job);
       } catch (error) {
@@ -68,6 +86,19 @@ export const registerJobProcessors = () => {
       }
     });
     registeredJobs.push('Cleanup');
+  }
+
+  // Telegram scraper
+  if (isFeatureEnabled('MERCHANT_SCRAPERS')) {
+    telegramScraperQueue.process('scrape-telegram', async (job) => {
+      try {
+        await processTelegramScraper(job);
+      } catch (error) {
+        logger.error('Telegram scraper job failed:', error);
+        throw error;
+      }
+    });
+    registeredJobs.push('Telegram Scraper');
   }
 
   logger.info(`✅ Job processors registered: ${registeredJobs.join(', ')}`);

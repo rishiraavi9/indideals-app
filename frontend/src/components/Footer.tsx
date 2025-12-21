@@ -30,7 +30,7 @@ export default function Footer() {
               color: '#ffffff',
               marginBottom: 16,
             }}>
-              🔥 IndiaDeals
+              DesiDealsAI
             </h3>
             <p style={{
               fontSize: 14,
@@ -214,7 +214,7 @@ export default function Footer() {
               fontSize: 14,
               color: '#9ca3af',
             }}>
-              © {currentYear} IndiaDeals. All rights reserved.
+              © {currentYear} DesiDealsAI. All rights reserved.
             </p>
 
             {/* Social Links */}
@@ -270,7 +270,7 @@ export default function Footer() {
             color: '#6b7280',
             lineHeight: 1.6,
           }}>
-            Disclaimer: IndiaDeals is a community platform. We are not responsible for the accuracy of deals or prices.
+            Disclaimer: DesiDealsAI is a community platform. We are not responsible for the accuracy of deals or prices.
             Always verify prices and terms on the merchant's website before making a purchase. Some links may be affiliate links.
           </p>
         </div>

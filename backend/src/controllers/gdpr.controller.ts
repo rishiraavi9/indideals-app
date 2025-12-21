@@ -186,8 +186,8 @@ export const getDataProcessingInfo = async (req: Request, res: Response) => {
 
     const info = {
       dataController: {
-        name: 'IndiaDeals',
-        contact: 'privacy@indiadeals.com', // Update with actual contact
+        name: 'DesiDealsAI',
+        contact: 'privacy@desidealsai.com',
       },
       dataCollected: {
         registration: ['Email', 'Username', 'Password (hashed)', 'Avatar URL'],

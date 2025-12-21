@@ -14,13 +14,41 @@ export const comparePassword = async (
   return bcrypt.compare(password, hash);
 };
 
+/**
+ * Generate access token (short-lived, 1 hour)
+ */
 export const generateToken = (userId: string): string => {
-  return jwt.sign({ userId }, env.JWT_SECRET, { expiresIn: '7d' });
+  return jwt.sign({ userId, type: 'access' }, env.JWT_SECRET, { expiresIn: '1h' });
 };
 
-export const verifyToken = (token: string): { userId: string } | null => {
+/**
+ * Generate refresh token (long-lived, 30 days)
+ */
+export const generateRefreshToken = (userId: string): string => {
+  return jwt.sign({ userId, type: 'refresh' }, env.JWT_SECRET, { expiresIn: '30d' });
+};
+
+/**
+ * Verify access token
+ */
+export const verifyToken = (token: string): { userId: string; type: string } | null => {
   try {
-    return jwt.verify(token, env.JWT_SECRET) as { userId: string };
+    return jwt.verify(token, env.JWT_SECRET) as { userId: string; type: string };
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Verify refresh token
+ */
+export const verifyRefreshToken = (token: string): { userId: string; type: string } | null => {
+  try {
+    const payload = jwt.verify(token, env.JWT_SECRET) as { userId: string; type: string };
+    if (payload.type !== 'refresh') {
+      return null;
+    }
+    return payload;
   } catch {
     return null;
   }

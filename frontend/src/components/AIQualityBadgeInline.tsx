@@ -1,18 +1,22 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getDealQualityScore } from '../api/ai';
 import type { QualityScoreResult } from '../api/ai';
 
 interface AIQualityBadgeInlineProps {
   dealId: string;
   onClick?: () => void;
+  style?: React.CSSProperties;
 }
 
-export default function AIQualityBadgeInline({ dealId, onClick }: AIQualityBadgeInlineProps) {
+export default function AIQualityBadgeInline({ dealId, onClick, style }: AIQualityBadgeInlineProps) {
+  const { t } = useTranslation();
   const [aiScore, setAiScore] = useState<QualityScoreResult | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let mounted = true;
+    let refreshTimeout: ReturnType<typeof setTimeout> | null = null;
 
     const fetchScore = async () => {
       try {
@@ -29,10 +33,21 @@ export default function AIQualityBadgeInline({ dealId, onClick }: AIQualityBadge
       }
     };
 
+    // Initial fetch
     fetchScore();
+
+    // Refresh score after 10 seconds (to get updated score after verification completes)
+    refreshTimeout = setTimeout(() => {
+      if (mounted) {
+        fetchScore();
+      }
+    }, 10000);
 
     return () => {
       mounted = false;
+      if (refreshTimeout) {
+        clearTimeout(refreshTimeout);
+      }
     };
   }, [dealId]);
 
@@ -78,6 +93,7 @@ export default function AIQualityBadgeInline({ dealId, onClick }: AIQualityBadge
         boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
         transition: 'transform 0.2s ease',
         pointerEvents: 'auto',
+        ...style,
       }}
       onMouseEnter={(e) => {
         if (onClick) {
@@ -87,10 +103,10 @@ export default function AIQualityBadgeInline({ dealId, onClick }: AIQualityBadge
       onMouseLeave={(e) => {
         e.currentTarget.style.transform = 'scale(1)';
       }}
-      title={`AI Score: ${score}/100 - ${aiScore.reasoning} (Click for details)`}
+      title={`${t('aiScore.aiScoreLabel')}: ${score}/100 - ${aiScore.reasoning}`}
     >
       <span>{getScoreEmoji(score)}</span>
-      <span>AI: {score}</span>
+      <span>{t('aiScore.aiScoreLabel')}: {score}</span>
     </span>
   );
 }

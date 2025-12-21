@@ -6,7 +6,7 @@ const SMTP_PORT = parseInt(process.env.SMTP_PORT || '587');
 const SMTP_USER = process.env.SMTP_USER;
 const SMTP_PASS = process.env.SMTP_PASS;
 const FROM_EMAIL = process.env.FROM_EMAIL || SMTP_USER;
-const FROM_NAME = process.env.FROM_NAME || 'IndiaDeals';
+const FROM_NAME = process.env.FROM_NAME || 'DesiDealsAI';
 
 // Create reusable transporter
 const transporter = nodemailer.createTransport({
@@ -102,7 +102,7 @@ export async function sendPasswordResetEmail(email: string, resetToken: string):
         <p>This link will expire in 1 hour.</p>
         <p>If you didn't request this, you can safely ignore this email.</p>
         <div class="footer">
-          <p>This is an automated email from IndiaDeals. Please do not reply.</p>
+          <p>This is an automated email from DesiDealsAI. Please do not reply.</p>
         </div>
       </div>
     </body>
@@ -125,7 +125,7 @@ If you didn't request this, you can safely ignore this email.
 
   return sendEmail({
     to: email,
-    subject: 'Password Reset - IndiaDeals',
+    subject: 'Password Reset - DesiDealsAI',
     text,
     html,
   });
@@ -150,7 +150,7 @@ export async function sendVerificationEmail(email: string, verificationToken: st
     </head>
     <body>
       <div class="container">
-        <h2>Welcome to IndiaDeals!</h2>
+        <h2>Welcome to DesiDealsAI!</h2>
         <p>Thanks for signing up! Please verify your email address to get started.</p>
         <p style="margin: 30px 0;">
           <a href="${verifyUrl}" class="button">Verify Email</a>
@@ -159,7 +159,7 @@ export async function sendVerificationEmail(email: string, verificationToken: st
         <p><a href="${verifyUrl}">${verifyUrl}</a></p>
         <p>This link will expire in 24 hours.</p>
         <div class="footer">
-          <p>This is an automated email from IndiaDeals. Please do not reply.</p>
+          <p>This is an automated email from DesiDealsAI. Please do not reply.</p>
         </div>
       </div>
     </body>
@@ -167,7 +167,7 @@ export async function sendVerificationEmail(email: string, verificationToken: st
   `;
 
   const text = `
-Welcome to IndiaDeals!
+Welcome to DesiDealsAI!
 
 Thanks for signing up! Please verify your email address by clicking the link below:
 
@@ -178,7 +178,7 @@ This link will expire in 24 hours.
 
   return sendEmail({
     to: email,
-    subject: 'Verify Your Email - IndiaDeals',
+    subject: 'Verify Your Email - DesiDealsAI',
     text,
     html,
   });
@@ -200,7 +200,7 @@ export async function sendWelcomeEmail(email: string, username: string): Promise
     </head>
     <body>
       <div class="container">
-        <h2>Welcome to IndiaDeals, ${username}!</h2>
+        <h2>Welcome to DesiDealsAI, ${username}!</h2>
         <p>Your account has been successfully verified.</p>
         <p>You can now start discovering and sharing amazing deals!</p>
         <a href="${process.env.FRONTEND_URL}" class="button">Start Exploring Deals</a>
@@ -212,7 +212,7 @@ export async function sendWelcomeEmail(email: string, username: string): Promise
 
   return sendEmail({
     to: email,
-    subject: 'Welcome to IndiaDeals!',
+    subject: 'Welcome to DesiDealsAI!',
     html,
   });
 }
@@ -293,7 +293,7 @@ export async function sendAlertEmail(
 
         <div class="footer">
           <p>This deal matches your alert for <strong>"${alert.keyword}"</strong></p>
-          <p>You're receiving this because you subscribed to deal alerts on IndiaDeals.</p>
+          <p>You're receiving this because you subscribed to deal alerts on DesiDealsAI.</p>
           <p class="unsubscribe">
             <a href="${unsubscribeUrl}" style="color: #999;">Unsubscribe from this alert</a> |
             <a href="${process.env.FRONTEND_URL}/alerts" style="color: #999;">Manage all alerts</a>
@@ -454,7 +454,7 @@ export async function sendDealExpiredEmail(
         </div>
 
         <div class="footer">
-          <p>This is an automated message from the IndiaDeals verification system.</p>
+          <p>This is an automated message from the DesiDealsAI verification system.</p>
           <p>If you have questions, please contact support.</p>
         </div>
       </div>
@@ -477,7 +477,7 @@ If you believe this was done in error, please contact support.
 
   return sendEmail({
     to,
-    subject: 'Your Deal Has Expired - IndiaDeals',
+    subject: 'Your Deal Has Expired - DesiDealsAI',
     text,
     html,
   });

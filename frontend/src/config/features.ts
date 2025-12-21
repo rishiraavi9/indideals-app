@@ -1,25 +1,88 @@
 /**
- * Feature flags configuration
- * Control feature availability across the application
+ * Feature flags and app configuration
+ * Fetches config from backend API for server-controlled settings
  */
 
-export const FEATURE_FLAGS = {
-  // Ad system - disable for MVP Phase 1
-  ADS_ENABLED: true as boolean,
+export type ImageStrategy = 'placeholder' | 'merchant-fallback' | 'proxy-cache';
 
-  // Future feature flags can be added here
-  // ANALYTICS_ENABLED: true,
-  // SOCIAL_SHARING_ENABLED: true,
-  // NOTIFICATIONS_ENABLED: true,
+export interface AppConfig {
+  // Feature flags
+  adsEnabled: boolean;
+  imageFallbackEnabled: boolean;
+  imageProxyEnabled: boolean;
+
+  // Config values
+  imageStrategy: ImageStrategy;
+}
+
+// Default config (used before API response)
+const defaultConfig: AppConfig = {
+  adsEnabled: true,
+  imageFallbackEnabled: true,
+  imageProxyEnabled: true,
+  imageStrategy: 'placeholder',
 };
 
-export type FeatureFlag = keyof typeof FEATURE_FLAGS;
+// Cached config
+let cachedConfig: AppConfig = { ...defaultConfig };
+let configLoaded = false;
+
+/**
+ * Fetch config from backend API
+ */
+export async function loadConfig(): Promise<AppConfig> {
+  if (configLoaded) return cachedConfig;
+
+  try {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+    const response = await fetch(`${apiUrl}/api/config`);
+
+    if (response.ok) {
+      const data = await response.json();
+      cachedConfig = {
+        adsEnabled: data.features?.adsEnabled ?? defaultConfig.adsEnabled,
+        imageFallbackEnabled: data.features?.imageFallbackEnabled ?? defaultConfig.imageFallbackEnabled,
+        imageProxyEnabled: data.features?.imageProxyEnabled ?? defaultConfig.imageProxyEnabled,
+        imageStrategy: data.features?.imageStrategy ?? defaultConfig.imageStrategy,
+      };
+      configLoaded = true;
+    }
+  } catch (error) {
+    console.warn('Failed to load config from API, using defaults:', error);
+  }
+
+  return cachedConfig;
+}
+
+/**
+ * Get current config (sync - returns cached or default)
+ */
+export function getConfig(): AppConfig {
+  return cachedConfig;
+}
 
 /**
  * Check if a feature is enabled
- * @param feature - The feature flag to check
- * @returns boolean indicating if the feature is enabled
  */
-export function isFeatureEnabled(feature: FeatureFlag): boolean {
-  return FEATURE_FLAGS[feature] === true;
+export function isFeatureEnabled(feature: keyof Omit<AppConfig, 'imageStrategy'>): boolean {
+  return cachedConfig[feature] === true;
 }
+
+/**
+ * Get image strategy
+ */
+export function getImageStrategy(): ImageStrategy {
+  return cachedConfig.imageStrategy;
+}
+
+// Legacy exports for backwards compatibility
+export const FEATURE_FLAGS = {
+  get ADS_ENABLED() {
+    return cachedConfig.adsEnabled;
+  },
+};
+
+export type FeatureFlag = 'ADS_ENABLED';
+
+// Auto-load config on module import
+loadConfig();

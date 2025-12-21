@@ -4,6 +4,7 @@ import { BullAdapter } from '@bull-board/api/bullAdapter';
 import { ExpressAdapter } from '@bull-board/express';
 import { env } from '../config/env.js';
 import { logger } from '../utils/logger.js';
+import { TELEGRAM_SCRAPER_CONFIG } from '../config/telegram-channels.js';
 
 // Redis connection options
 const redisOptions = {
@@ -21,6 +22,7 @@ export const scraperQueue = new Bull('scraper', redisOptions);
 export const dealVerifierQueue = new Bull('deal-verifier', redisOptions);
 export const alertProcessorQueue = new Bull('alert-processor', redisOptions);
 export const cleanupQueue = new Bull('cleanup', redisOptions);
+export const telegramScraperQueue = new Bull('telegram-scraper', redisOptions);
 
 // Bull Board setup for queue monitoring
 const serverAdapter = new ExpressAdapter();
@@ -34,6 +36,7 @@ createBullBoard({
     new BullAdapter(dealVerifierQueue),
     new BullAdapter(alertProcessorQueue),
     new BullAdapter(cleanupQueue),
+    new BullAdapter(telegramScraperQueue),
   ],
   serverAdapter,
 });
@@ -66,6 +69,7 @@ setupQueueListeners(scraperQueue, 'scraper');
 setupQueueListeners(dealVerifierQueue, 'deal-verifier');
 setupQueueListeners(alertProcessorQueue, 'alert-processor');
 setupQueueListeners(cleanupQueue, 'cleanup');
+setupQueueListeners(telegramScraperQueue, 'telegram-scraper');
 
 // Helper function to add jobs with retry policy
 export const addJob = async (
@@ -140,6 +144,17 @@ export const setupScheduledJobs = () => {
     {
       repeat: {
         cron: '0 2 * * *', // 2 AM every day
+      },
+    }
+  );
+
+  // Scrape Telegram channels (schedule configured in telegram-channels.ts)
+  telegramScraperQueue.add(
+    'scrape-telegram',
+    { limit: TELEGRAM_SCRAPER_CONFIG.dealsPerChannel },
+    {
+      repeat: {
+        cron: TELEGRAM_SCRAPER_CONFIG.scheduleCron,
       },
     }
   );

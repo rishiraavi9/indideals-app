@@ -1,4 +1,4 @@
-export type Tab = "All" | "Frontpage" | "Popular" | "New";
+export type Tab = "All" | "Hot Deals" | "Great Deals" | "Budget Buys" | "New";
 
 export type User = {
   id: string;
@@ -51,6 +51,13 @@ export type Deal = {
   festive?: boolean; // For demo mode
   trending?: boolean; // For demo mode
   verified?: boolean; // For demo mode
+  aiScore?: number | null; // AI-generated quality score 0-100
+  aiScoreBreakdown?: {
+    valueProp?: number;
+    authenticity?: number;
+    urgency?: number;
+    socialProof?: number;
+  } | null;
   merchantUrl?: string; // For demo mode
   productUrl?: string; // For demo mode
   categoryName?: string; // For demo mode

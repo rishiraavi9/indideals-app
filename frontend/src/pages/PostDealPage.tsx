@@ -203,7 +203,7 @@ export default function PostDealPage() {
               e.currentTarget.style.opacity = '1';
             }}
           >
-            🔥 <span style={{ fontWeight: 900 }}>IndiaDeals</span>
+            🔥 <span style={{ fontWeight: 900 }}>DesiDealsAI</span>
           </h1>
 
           {/* User actions */}
@@ -752,13 +752,13 @@ export default function PostDealPage() {
       <div style={{ background: '#1a1a1a', color: '#9ca3af', padding: '40px 24px', marginTop: 60 }}>
         <div style={{ maxWidth: '1400px', margin: '0 auto', textAlign: 'center' }}>
           <div style={{ fontSize: 24, fontWeight: 800, marginBottom: 12, color: '#ffffff' }}>
-            🔥 IndiaDeals
+            🔥 DesiDealsAI
           </div>
           <p style={{ margin: '0 0 20px', fontSize: 14 }}>
             AI-Powered Deal Discovery Platform
           </p>
           <div style={{ fontSize: 12, opacity: 0.7 }}>
-            © 2025 IndiaDeals. All rights reserved.
+            © 2025 DesiDealsAI. All rights reserved.
           </div>
         </div>
       </div>
