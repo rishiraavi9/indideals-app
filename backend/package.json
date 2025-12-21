@@ -6,7 +6,7 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "npx esbuild src/**/*.ts --bundle --platform=node --outdir=dist --format=esm --packages=external --sourcemap",
+    "build": "npx esbuild src/index.ts --bundle --platform=node --outfile=dist/index.js --format=esm --packages=external --sourcemap",
     "start": "node dist/index.js",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
