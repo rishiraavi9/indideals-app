@@ -66,9 +66,14 @@ const toBool = (value: string | undefined, defaultValue: boolean): boolean => {
   return value.toLowerCase() === 'true';
 };
 
+// In production, disable Bull queues by default unless explicitly enabled
+// This prevents startup issues when Redis isn't properly configured
+const isProduction = process.env.NODE_ENV === 'production';
+const defaultBullEnabled = !isProduction; // Enabled in dev, disabled in prod by default
+
 export const features: FeatureFlags = {
-  // Phase 1: Job Queue Infrastructure (COMPLETED - Default: Enabled)
-  BULL_QUEUES: toBool(process.env.FEATURE_BULL_QUEUES, true),
+  // Phase 1: Job Queue Infrastructure (COMPLETED - Default: Enabled in dev only)
+  BULL_QUEUES: toBool(process.env.FEATURE_BULL_QUEUES, defaultBullEnabled),
   PRICE_TRACKING: toBool(process.env.FEATURE_PRICE_TRACKING, true),
   DEAL_VERIFICATION: toBool(process.env.FEATURE_DEAL_VERIFICATION, true),
   EMAIL_ALERTS: toBool(process.env.FEATURE_EMAIL_ALERTS, true),
