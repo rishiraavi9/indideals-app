@@ -1,5 +1,11 @@
 // Detect platform and set appropriate API URL
 const getApiUrl = () => {
+  // First check for environment variable (set at build time for production)
+  const envApiUrl = import.meta.env.VITE_API_URL;
+  if (envApiUrl) {
+    return envApiUrl;
+  }
+
   const userAgent = navigator.userAgent.toLowerCase();
   const isAndroid = userAgent.includes('android');
   const isIOS = /iphone|ipad|ipod/.test(userAgent);
