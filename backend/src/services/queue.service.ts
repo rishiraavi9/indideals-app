@@ -6,14 +6,15 @@ import { env } from '../config/env.js';
 import { logger } from '../utils/logger.js';
 import { TELEGRAM_SCRAPER_CONFIG } from '../config/telegram-channels.js';
 
-// Redis connection options
-const redisOptions = {
-  redis: {
-    host: env.REDIS_URL ? new URL(env.REDIS_URL).hostname : 'localhost',
-    port: env.REDIS_URL ? parseInt(new URL(env.REDIS_URL).port) : 6379,
-    password: env.REDIS_PASSWORD,
-  },
-};
+// Redis connection options - use the full URL directly (works with Railway's format)
+const redisOptions = env.REDIS_URL
+  ? { redis: env.REDIS_URL }
+  : {
+      redis: {
+        host: 'localhost',
+        port: 6379,
+      },
+    };
 
 // Create queues for different job types
 export const emailQueue = new Bull('email', redisOptions);
