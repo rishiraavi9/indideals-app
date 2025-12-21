@@ -7,10 +7,11 @@ nixPkgs = ["nodejs_20"]
 cmds = ["npm ci || npm install"]
 
 [phases.build]
-cmds = ["npm run build"]
+cmds = ["npm run build && ls -la dist/"]
 
 [start]
-cmd = "npm start"
+# Build again at startup if dist doesn't exist (handles layer caching issues)
+cmd = "if [ ! -f dist/index.js ]; then npm run build; fi && npm start"
 
 [variables]
 PUPPETEER_SKIP_CHROMIUM_DOWNLOAD = "true"
