@@ -1,15 +1,33 @@
 import { Request, Response, NextFunction } from 'express';
-import DOMPurify from 'isomorphic-dompurify';
+
+/**
+ * Strip all HTML tags from a string
+ * This is a simple but effective XSS prevention for API inputs
+ */
+const stripHtml = (str: string): string => {
+  // Remove all HTML tags
+  let result = str.replace(/<[^>]*>/g, '');
+  // Decode common HTML entities
+  result = result
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, ' ');
+  // Re-escape dangerous characters for output
+  result = result
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+  return result;
+};
 
 /**
  * Recursively sanitize data to prevent XSS attacks
  */
 const sanitize = (data: any): any => {
   if (typeof data === 'string') {
-    return DOMPurify.sanitize(data, {
-      ALLOWED_TAGS: [], // Strip all HTML tags
-      ALLOWED_ATTR: [], // Strip all attributes
-    });
+    return stripHtml(data);
   }
 
   if (Array.isArray(data)) {
