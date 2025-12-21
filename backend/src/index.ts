@@ -129,8 +129,11 @@ if (env.NODE_ENV === 'production') {
   });
 }
 
-// Health check
+// Health check (both paths for flexibility)
 app.get('/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
