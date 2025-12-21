@@ -5,6 +5,13 @@ import { ExpressAdapter } from '@bull-board/express';
 import { env } from '../config/env.js';
 import { logger } from '../utils/logger.js';
 import { TELEGRAM_SCRAPER_CONFIG } from '../config/telegram-channels.js';
+import { isFeatureEnabled } from '../config/features.js';
+
+// Check if Bull queues are enabled and Redis is available
+const bullEnabled = isFeatureEnabled('BULL_QUEUES') && env.REDIS_URL && env.REDIS_URL !== 'redis://localhost:6379';
+
+// Export a function to check if Bull is enabled (for use in other modules)
+export const isBullEnabled = () => bullEnabled;
 
 // Redis connection options - use the full URL directly (works with Railway's format)
 const redisOptions = env.REDIS_URL
@@ -16,31 +23,43 @@ const redisOptions = env.REDIS_URL
       },
     };
 
+// Create queues only if Bull is properly enabled
+// Use null as a fallback to prevent crashes when Redis is not available
+const createQueue = (name: string) => {
+  if (!bullEnabled) {
+    return null as unknown as Bull.Queue;
+  }
+  return new Bull(name, redisOptions);
+};
+
 // Create queues for different job types
-export const emailQueue = new Bull('email', redisOptions);
-export const priceTrackerQueue = new Bull('price-tracker', redisOptions);
-export const scraperQueue = new Bull('scraper', redisOptions);
-export const dealVerifierQueue = new Bull('deal-verifier', redisOptions);
-export const alertProcessorQueue = new Bull('alert-processor', redisOptions);
-export const cleanupQueue = new Bull('cleanup', redisOptions);
-export const telegramScraperQueue = new Bull('telegram-scraper', redisOptions);
+export const emailQueue = createQueue('email');
+export const priceTrackerQueue = createQueue('price-tracker');
+export const scraperQueue = createQueue('scraper');
+export const dealVerifierQueue = createQueue('deal-verifier');
+export const alertProcessorQueue = createQueue('alert-processor');
+export const cleanupQueue = createQueue('cleanup');
+export const telegramScraperQueue = createQueue('telegram-scraper');
 
 // Bull Board setup for queue monitoring
 const serverAdapter = new ExpressAdapter();
 serverAdapter.setBasePath('/admin/queues');
 
-createBullBoard({
-  queues: [
-    new BullAdapter(emailQueue),
-    new BullAdapter(priceTrackerQueue),
-    new BullAdapter(scraperQueue),
-    new BullAdapter(dealVerifierQueue),
-    new BullAdapter(alertProcessorQueue),
-    new BullAdapter(cleanupQueue),
-    new BullAdapter(telegramScraperQueue),
-  ],
-  serverAdapter,
-});
+// Only setup Bull Board if queues are enabled
+if (bullEnabled) {
+  createBullBoard({
+    queues: [
+      new BullAdapter(emailQueue),
+      new BullAdapter(priceTrackerQueue),
+      new BullAdapter(scraperQueue),
+      new BullAdapter(dealVerifierQueue),
+      new BullAdapter(alertProcessorQueue),
+      new BullAdapter(cleanupQueue),
+      new BullAdapter(telegramScraperQueue),
+    ],
+    serverAdapter,
+  });
+}
 
 export const bullBoardRouter = serverAdapter.getRouter();
 
@@ -63,14 +82,16 @@ const setupQueueListeners = (queue: Bull.Queue, queueName: string) => {
   });
 };
 
-// Setup listeners for all queues
-setupQueueListeners(emailQueue, 'email');
-setupQueueListeners(priceTrackerQueue, 'price-tracker');
-setupQueueListeners(scraperQueue, 'scraper');
-setupQueueListeners(dealVerifierQueue, 'deal-verifier');
-setupQueueListeners(alertProcessorQueue, 'alert-processor');
-setupQueueListeners(cleanupQueue, 'cleanup');
-setupQueueListeners(telegramScraperQueue, 'telegram-scraper');
+// Setup listeners for all queues (only if Bull is enabled)
+if (bullEnabled) {
+  setupQueueListeners(emailQueue, 'email');
+  setupQueueListeners(priceTrackerQueue, 'price-tracker');
+  setupQueueListeners(scraperQueue, 'scraper');
+  setupQueueListeners(dealVerifierQueue, 'deal-verifier');
+  setupQueueListeners(alertProcessorQueue, 'alert-processor');
+  setupQueueListeners(cleanupQueue, 'cleanup');
+  setupQueueListeners(telegramScraperQueue, 'telegram-scraper');
+}
 
 // Helper function to add jobs with retry policy
 export const addJob = async (
@@ -94,6 +115,11 @@ export const addJob = async (
 
 // Scheduled jobs using Bull's repeat functionality
 export const setupScheduledJobs = () => {
+  if (!bullEnabled) {
+    logger.info('Bull queues disabled - skipping scheduled jobs setup');
+    return;
+  }
+
   // Process daily alerts every day at 9 AM
   alertProcessorQueue.add(
     'daily-digest',
@@ -165,6 +191,9 @@ export const setupScheduledJobs = () => {
 
 // Graceful shutdown
 export const shutdownQueues = async () => {
+  if (!bullEnabled) {
+    return;
+  }
   logger.info('Shutting down queues...');
   await Promise.all([
     emailQueue.close(),
@@ -173,6 +202,7 @@ export const shutdownQueues = async () => {
     dealVerifierQueue.close(),
     alertProcessorQueue.close(),
     cleanupQueue.close(),
+    telegramScraperQueue.close(),
   ]);
   logger.info('All queues shut down');
 };
