@@ -31,7 +31,7 @@ const logsDir = path.join(process.cwd(), 'logs');
 // Configure transports
 const transports: winston.transport[] = [];
 
-// Always log to console in development
+// Console transport for development
 if (isDevelopment) {
   transports.push(
     new winston.transports.Console({
@@ -41,34 +41,7 @@ if (isDevelopment) {
   );
 }
 
-// File transports for all environments
-transports.push(
-  // Error logs
-  new winston.transports.File({
-    filename: path.join(logsDir, 'error.log'),
-    level: 'error',
-    format: logFormat,
-    maxsize: 5242880, // 5MB
-    maxFiles: 5,
-  }),
-  // Security logs
-  new winston.transports.File({
-    filename: path.join(logsDir, 'security.log'),
-    level: 'warn',
-    format: logFormat,
-    maxsize: 5242880,
-    maxFiles: 5,
-  }),
-  // Combined logs
-  new winston.transports.File({
-    filename: path.join(logsDir, 'combined.log'),
-    format: logFormat,
-    maxsize: 5242880,
-    maxFiles: 5,
-  })
-);
-
-// Console in production (for container logs)
+// Console transport for production (container environments like Railway)
 if (isProduction) {
   transports.push(
     new winston.transports.Console({
@@ -76,6 +49,41 @@ if (isProduction) {
       level: 'info',
     })
   );
+}
+
+// File transports only for non-production environments (development/local)
+// In production containers, we rely on stdout/stderr which is captured by the platform
+if (!isProduction) {
+  try {
+    transports.push(
+      // Error logs
+      new winston.transports.File({
+        filename: path.join(logsDir, 'error.log'),
+        level: 'error',
+        format: logFormat,
+        maxsize: 5242880, // 5MB
+        maxFiles: 5,
+      }),
+      // Security logs
+      new winston.transports.File({
+        filename: path.join(logsDir, 'security.log'),
+        level: 'warn',
+        format: logFormat,
+        maxsize: 5242880,
+        maxFiles: 5,
+      }),
+      // Combined logs
+      new winston.transports.File({
+        filename: path.join(logsDir, 'combined.log'),
+        format: logFormat,
+        maxsize: 5242880,
+        maxFiles: 5,
+      })
+    );
+  } catch (error) {
+    // File logging not available, continue with console only
+    console.warn('File logging not available:', error);
+  }
 }
 
 // Create logger instance
