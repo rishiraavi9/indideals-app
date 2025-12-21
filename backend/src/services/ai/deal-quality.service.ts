@@ -526,6 +526,22 @@ export class DealQualityService {
   }
 
   /**
+   * Recalculate and save score to database
+   */
+  static async recalculateScore(dealId: string): Promise<void> {
+    const result = await this.calculateScore(dealId);
+
+    await db
+      .update(deals)
+      .set({
+        aiScore: result.totalScore,
+        aiScoreBreakdown: result.breakdown,
+        updatedAt: new Date(),
+      })
+      .where(eq(deals.id, dealId));
+  }
+
+  /**
    * Batch calculate scores
    */
   static async calculateBatchScores(dealIds: string[]): Promise<Map<string, number>> {
