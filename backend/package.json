@@ -18,6 +18,7 @@
     "create:demo-deals": "tsx src/scripts/create-demo-ai-deals.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.30.0",
     "@bull-board/api": "^6.15.0",
     "@bull-board/express": "^6.15.0",
     "@elastic/elasticsearch": "^8.11.0",
@@ -39,6 +40,7 @@
     "express-rate-limit": "^7.4.0",
     "helmet": "^7.1.0",
     "ioredis": "^5.8.2",
+    "isomorphic-dompurify": "^2.4.0",
     "jsonwebtoken": "^9.0.2",
     "multer": "^1.4.5-lts.1",
     "nodemailer": "^7.0.11",
