@@ -4,8 +4,8 @@ dotenv.config();
 
 export const env = {
   PORT: process.env.PORT || 3001,
-  DATABASE_URL: process.env.DATABASE_URL!,
-  JWT_SECRET: process.env.JWT_SECRET!,
+  DATABASE_URL: process.env.DATABASE_URL || '',
+  JWT_SECRET: process.env.JWT_SECRET || '',
   NODE_ENV: process.env.NODE_ENV || 'development',
   FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:5173',
   CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME,
@@ -25,10 +25,12 @@ export const env = {
   RATE_LIMIT_WHITELIST: process.env.RATE_LIMIT_WHITELIST, // Comma-separated list of IPs to whitelist
 };
 
-// Validate required env vars
-const required = ['DATABASE_URL', 'JWT_SECRET'];
-for (const key of required) {
-  if (!process.env[key]) {
-    throw new Error(`Missing required environment variable: ${key}`);
+// Validate required env vars at runtime (not during build)
+export function validateEnv() {
+  const required = ['DATABASE_URL', 'JWT_SECRET'];
+  for (const key of required) {
+    if (!process.env[key]) {
+      throw new Error(`Missing required environment variable: ${key}`);
+    }
   }
 }

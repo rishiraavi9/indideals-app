@@ -3,9 +3,12 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import { env } from './config/env.js';
+import { env, validateEnv } from './config/env.js';
 import passport from './config/passport.js';
 import { sanitizeInputs } from './middleware/sanitize.js';
+
+// Validate required environment variables at runtime
+validateEnv();
 
 // Routes
 import authRoutes from './routes/auth.routes.js';
