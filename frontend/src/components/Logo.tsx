@@ -27,7 +27,6 @@ export default function Logo({
 
   // Colors based on brand kit
   const textColor = darkMode ? '#ffffff' : '#1a1a1a';
-  const subtextColor = darkMode ? '#888888' : '#999999';
 
   if (variant === 'icon') {
     return (

@@ -23,7 +23,7 @@ export default function PriceHistoryChart({ dealId, currentPrice, theme = 'light
   const [data, setData] = useState<PriceHistoryResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [, setError] = useState<string | null>(null);
-  const [days, setDays] = useState(7);
+  const [days] = useState(7);
 
   useEffect(() => {
     loadPriceHistory();
