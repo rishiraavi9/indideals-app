@@ -72,6 +72,9 @@ const allowedOrigins = [
   'http://localhost:5174',
   'http://localhost:5176',
   'http://localhost:5177',
+  'https://precious-contentment-production.up.railway.app',
+  'https://desidealsai.com',
+  'https://www.desidealsai.com',
 ];
 
 app.use(cors({
