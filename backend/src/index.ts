@@ -227,9 +227,10 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 });
 
 const PORT = env.PORT;
+const HOST = '0.0.0.0'; // Bind to all interfaces (required for Railway/Docker)
 
-const server = app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+const server = app.listen(PORT, HOST, () => {
+  console.log(`🚀 Server running on http://${HOST}:${PORT}`);
   console.log(`📦 Environment: ${env.NODE_ENV}`);
   console.log(`🌐 Frontend URL: ${env.FRONTEND_URL}`);
 
