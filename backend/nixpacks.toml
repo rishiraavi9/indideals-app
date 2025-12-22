@@ -7,11 +7,12 @@ nixPkgs = ["nodejs_20"]
 cmds = ["npm ci || npm install"]
 
 [phases.build]
-cmds = ["npm run build && ls -la dist/"]
+# Build and verify output exists
+cmds = ["npm run build", "ls -la dist/", "cat dist/index.js | head -5"]
 
 [start]
-# Build again at startup if dist doesn't exist (handles layer caching issues)
-cmd = "if [ ! -f dist/index.js ]; then npm run build; fi && npm start"
+# Build at startup if dist missing (Docker layer caching workaround)
+cmd = "ls -la dist/ 2>/dev/null || npm run build && node dist/index.js"
 
 [variables]
 PUPPETEER_SKIP_CHROMIUM_DOWNLOAD = "true"
