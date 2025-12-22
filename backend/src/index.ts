@@ -37,6 +37,9 @@ import { logFeatureFlags, isFeatureEnabled } from './config/features.js';
 
 const app = express();
 
+// Trust proxy for Railway/load balancers (required for rate limiting and IP detection)
+app.set('trust proxy', 1);
+
 // Log feature flags on startup
 logFeatureFlags();
 
