@@ -118,7 +118,15 @@ const authLimiter = rateLimit({
   skip: () => !ENABLE_RATE_LIMIT,
 });
 
-// HTTPS Enforcement in Production
+// Health check (MUST be before HTTPS redirect for Railway probes)
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// HTTPS Enforcement in Production (after health checks)
 if (env.NODE_ENV === 'production') {
   app.use((req, res, next) => {
     if (req.header('x-forwarded-proto') !== 'https') {
@@ -128,14 +136,6 @@ if (env.NODE_ENV === 'production') {
     }
   });
 }
-
-// Health check (both paths for flexibility)
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
 
 // App config endpoint - exposes feature flags and config to frontend
 app.get('/api/config', (req, res) => {
