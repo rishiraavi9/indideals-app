@@ -131,6 +131,36 @@ interface MobileDealCardProps {
   showBadge?: 'popular' | 'promoted' | null;
 }
 
+// Compute AI quality score - uses real AI score if available, otherwise computes a proxy score
+function getDisplayScore(deal: Deal): number {
+  // Use real AI score if available
+  if (deal.aiScore !== null && deal.aiScore !== undefined) {
+    return deal.aiScore;
+  }
+
+  // Fallback: compute proxy score based on available metrics
+  let score = 50; // Base score
+
+  // Boost for positive votes (community validation)
+  const netVotes = (deal.upvotes || 0) - (deal.downvotes || 0);
+  score += Math.min(netVotes * 2, 30); // Max +30 from votes
+
+  // Boost for verified deals
+  if (deal.verified) score += 15;
+
+  // Boost for having comments (engagement)
+  if ((deal.commentCount || 0) > 0) score += 5;
+
+  // Boost for good discount
+  if ((deal.discountPercentage || 0) >= 50) score += 10;
+  else if ((deal.discountPercentage || 0) >= 30) score += 5;
+
+  // Penalty for expired deals
+  if (deal.isExpired) score -= 30;
+
+  return Math.max(0, Math.min(100, Math.round(score)));
+}
+
 export default function MobileDealCard({
   deal,
   onPress,
@@ -142,6 +172,9 @@ export default function MobileDealCard({
   const [isPressed, setIsPressed] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [showAITooltip, setShowAITooltip] = useState(false);
+
+  // Get display score (real AI score or computed fallback)
+  const displayScore = getDisplayScore(deal);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-IN', {
@@ -219,32 +252,30 @@ export default function MobileDealCard({
             </span>
           )}
 
-          {/* AI Score Badge - Clickable */}
-          {deal.aiScore !== null && deal.aiScore !== undefined && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                triggerHaptic('light');
-                setShowAITooltip(true);
-              }}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 3,
-                background: deal.aiScore >= 70 ? '#059669' : deal.aiScore >= 55 ? '#0891b2' : '#6b7280',
-                color: 'white',
-                fontSize: 10,
-                fontWeight: 600,
-                padding: '2px 6px',
-                borderRadius: 4,
-                border: 'none',
-                cursor: 'pointer',
-              }}
-            >
-              <span style={{ fontSize: 9 }}>✨</span>
-              {deal.aiScore}
-            </button>
-          )}
+          {/* AI Score Badge - Always shown with computed fallback */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              triggerHaptic('light');
+              setShowAITooltip(true);
+            }}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 3,
+              background: displayScore >= 70 ? '#059669' : displayScore >= 55 ? '#0891b2' : displayScore >= 40 ? '#ca8a04' : '#6b7280',
+              color: 'white',
+              fontSize: 10,
+              fontWeight: 600,
+              padding: '2px 6px',
+              borderRadius: 4,
+              border: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            <span style={{ fontSize: 9 }}>✨</span>
+            {t('aiScore.aiScoreLabel')}: {displayScore}
+          </button>
 
           {/* Popular/Promoted Badge */}
           {showBadge && (
@@ -406,8 +437,8 @@ export default function MobileDealCard({
       </div>
 
       {/* AI Score Tooltip Modal */}
-      {showAITooltip && deal.aiScore !== null && deal.aiScore !== undefined && (
-        <AIScoreTooltip score={deal.aiScore} onClose={() => setShowAITooltip(false)} />
+      {showAITooltip && (
+        <AIScoreTooltip score={displayScore} onClose={() => setShowAITooltip(false)} />
       )}
     </div>
   );
