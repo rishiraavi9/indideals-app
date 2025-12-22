@@ -6,27 +6,13 @@ const getApiUrl = () => {
     return envApiUrl;
   }
 
-  const userAgent = navigator.userAgent.toLowerCase();
-  const isAndroid = userAgent.includes('android');
-  const isIOS = /iphone|ipad|ipod/.test(userAgent);
-
-  // For web browser on localhost, always use localhost
+  // For web browser on localhost, use localhost backend
   if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
     return 'http://localhost:3001/api';
   }
 
-  // For Android emulator, use 10.0.2.2 (maps to host's localhost)
-  if (isAndroid) {
-    return 'http://10.0.2.2:3001/api';
-  }
-
-  // For iOS simulator, localhost works directly
-  if (isIOS) {
-    return 'http://localhost:3001/api';
-  }
-
-  // Fallback
-  return 'http://localhost:3001/api';
+  // For production (including native apps), use production API
+  return 'https://api.desidealsai.com/api';
 };
 
 const API_URL = getApiUrl();
