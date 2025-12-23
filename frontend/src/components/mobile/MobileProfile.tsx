@@ -389,10 +389,8 @@ export default function MobileProfile({ onClose }: MobileProfileProps) {
             zIndex: 1000,
             display: 'flex',
             alignItems: 'flex-end',
-            touchAction: 'none',
           }}
           onClick={() => setShowLanguageModal(false)}
-          onTouchMove={(e) => e.stopPropagation()}
         >
           <div
             style={{
@@ -445,9 +443,8 @@ export default function MobileProfile({ onClose }: MobileProfileProps) {
                 overflowY: 'auto',
                 WebkitOverflowScrolling: 'touch',
                 paddingBottom: 'calc(16px + env(safe-area-inset-bottom))',
-                touchAction: 'pan-y',
+                overscrollBehavior: 'contain',
               }}
-              onTouchMove={(e) => e.stopPropagation()}
             >
               {supportedLanguages.map((lang) => (
                 <button
