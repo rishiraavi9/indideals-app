@@ -19,7 +19,7 @@ export const TELEGRAM_SCRAPER_CONFIG = {
 
   // How often to run the scraper (cron expression)
   // Examples: '0 */2 * * *' = every 2 hours, '0 * * * *' = every hour, '*/30 * * * *' = every 30 mins
-  scheduleCron: '*/15 * * * *', // Every 15 minutes for testing
+  scheduleCron: '0 */2 * * *', // Every 2 hours
 
   // Delay between scraping different channels (in milliseconds)
   // Increased from 2000ms to 5000ms to reduce scraping intensity
