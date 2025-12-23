@@ -113,77 +113,61 @@ export const addJob = async (
   return queue.add(jobName, data, { ...defaultOptions, ...options });
 };
 
+// Helper to clean up old repeatable jobs before adding new ones
+const cleanAndAddRepeatable = async (
+  queue: Bull.Queue,
+  jobName: string,
+  data: any,
+  cron: string
+) => {
+  try {
+    // Get all repeatable jobs
+    const repeatableJobs = await queue.getRepeatableJobs();
+
+    // Remove any existing jobs with the same name (regardless of cron)
+    for (const job of repeatableJobs) {
+      if (job.name === jobName) {
+        await queue.removeRepeatableByKey(job.key);
+        logger.info(`Removed old repeatable job: ${jobName} (${job.cron})`);
+      }
+    }
+
+    // Add the new repeatable job
+    await queue.add(jobName, data, { repeat: { cron } });
+    logger.info(`Added repeatable job: ${jobName} (${cron})`);
+  } catch (error) {
+    logger.error(`Error setting up repeatable job ${jobName}:`, error);
+  }
+};
+
 // Scheduled jobs using Bull's repeat functionality
-export const setupScheduledJobs = () => {
+export const setupScheduledJobs = async () => {
   if (!bullEnabled) {
     logger.info('Bull queues disabled - skipping scheduled jobs setup');
     return;
   }
 
   // Process daily alerts every day at 9 AM
-  alertProcessorQueue.add(
-    'daily-digest',
-    {},
-    {
-      repeat: {
-        cron: '0 9 * * *', // 9 AM every day
-      },
-    }
-  );
+  await cleanAndAddRepeatable(alertProcessorQueue, 'daily-digest', {}, '0 9 * * *');
 
   // Process weekly alerts every Monday at 9 AM
-  alertProcessorQueue.add(
-    'weekly-digest',
-    {},
-    {
-      repeat: {
-        cron: '0 9 * * 1', // 9 AM every Monday
-      },
-    }
-  );
+  await cleanAndAddRepeatable(alertProcessorQueue, 'weekly-digest', {}, '0 9 * * 1');
 
   // Track prices every hour
-  priceTrackerQueue.add(
-    'track-all-prices',
-    {},
-    {
-      repeat: {
-        cron: '0 * * * *', // Every hour
-      },
-    }
-  );
+  await cleanAndAddRepeatable(priceTrackerQueue, 'track-all-prices', {}, '0 * * * *');
 
   // Verify deals every 6 hours
-  dealVerifierQueue.add(
-    'verify-all-deals',
-    {},
-    {
-      repeat: {
-        cron: '0 */6 * * *', // Every 6 hours
-      },
-    }
-  );
+  await cleanAndAddRepeatable(dealVerifierQueue, 'verify-all-deals', {}, '0 */6 * * *');
 
   // Cleanup old data every day at 2 AM
-  cleanupQueue.add(
-    'cleanup-old-data',
-    {},
-    {
-      repeat: {
-        cron: '0 2 * * *', // 2 AM every day
-      },
-    }
-  );
+  await cleanAndAddRepeatable(cleanupQueue, 'cleanup-old-data', {}, '0 2 * * *');
 
   // Scrape Telegram channels (schedule configured in telegram-channels.ts)
-  telegramScraperQueue.add(
+  await cleanAndAddRepeatable(
+    telegramScraperQueue,
     'scrape-telegram',
     { limit: TELEGRAM_SCRAPER_CONFIG.dealsPerChannel },
-    {
-      repeat: {
-        cron: TELEGRAM_SCRAPER_CONFIG.scheduleCron,
-      },
-    }
+    TELEGRAM_SCRAPER_CONFIG.scheduleCron
   );
 
   logger.info('Scheduled jobs configured');
