@@ -40,6 +40,9 @@ export default function HomePage() {
   const [availableMerchants, setAvailableMerchants] = useState<string[]>([]);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalDeals, setTotalDeals] = useState(0);
+  const DEALS_PER_PAGE = 150; // 25 rows x 6 columns for desktop
 
   const { isAuthenticated } = useAuth();
 
@@ -66,7 +69,9 @@ export default function HomePage() {
   }, [isAuthenticated, deals.length]);
 
   useEffect(() => {
-    loadDeals();
+    // Reset to page 1 when filters change
+    setCurrentPage(1);
+    loadDeals(false, 1);
   }, [activeTab, selectedCategory, selectedMerchant, searchQuery, sortBy]);
 
   const loadCategories = async () => {
@@ -97,7 +102,7 @@ export default function HomePage() {
     }
   };
 
-  const loadDeals = async (loadMore = false) => {
+  const loadDeals = async (loadMore = false, page?: number) => {
     if (loadMore) {
       setLoadingMore(true);
     } else {
@@ -105,18 +110,25 @@ export default function HomePage() {
       setDeals([]);
     }
 
+    // For desktop pagination, use page number; for mobile, use offset
+    const pageToLoad = page ?? currentPage;
+    const limit = isMobile ? 50 : DEALS_PER_PAGE;
+    const offset = isMobile
+      ? (loadMore ? deals.length : 0)
+      : (pageToLoad - 1) * DEALS_PER_PAGE;
+
     try {
       // Use 'new' tab when New is selected to get deals sorted by creation date from backend
       const response = await dealsApi.getDeals({
         tab: activeTab === 'New' ? 'new' : 'frontpage',
         category: selectedCategory || undefined,
         search: searchQuery || undefined,
-        limit: 50,
-        offset: loadMore ? deals.length : 0,
+        limit,
+        offset,
       });
 
       // Extract unique merchants from all deals (for dropdown) - only on initial load
-      if (!loadMore) {
+      if (!loadMore && pageToLoad === 1) {
         const merchants = [...new Set(response.deals.map(d => d.merchant))].sort();
         setAvailableMerchants(merchants);
       }
@@ -147,10 +159,17 @@ export default function HomePage() {
       // 'All' tab shows everything without filtering
 
       // Update hasMore based on pagination
-      setHasMore(response.pagination?.hasMore ?? response.deals.length === 50);
+      setHasMore(response.pagination?.hasMore ?? response.deals.length === limit);
 
-      // Apply sorting and merge with existing deals if loading more
-      if (loadMore) {
+      // Estimate total deals for pagination display (rough estimate)
+      if (response.pagination?.hasMore) {
+        setTotalDeals(Math.max(totalDeals, offset + response.deals.length + limit));
+      } else {
+        setTotalDeals(offset + response.deals.length);
+      }
+
+      // Apply sorting and merge with existing deals if loading more (mobile only)
+      if (loadMore && isMobile) {
         setDeals(prev => sortDeals([...prev, ...filteredDeals]));
       } else {
         setDeals(sortDeals(filteredDeals));
@@ -161,6 +180,13 @@ export default function HomePage() {
       setLoading(false);
       setLoadingMore(false);
     }
+  };
+
+  // Handle page change for desktop pagination
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+    loadDeals(false, newPage);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const loadPersonalizedDeals = async () => {
@@ -953,39 +979,83 @@ export default function HomePage() {
                 );
               })}
 
-              {/* Load More Button */}
-              {hasMore && (
-                <div style={{ textAlign: 'center', marginTop: 20 }}>
-                  <button
-                    onClick={() => loadDeals(true)}
-                    disabled={loadingMore}
-                    style={{
-                      padding: '14px 40px',
-                      borderRadius: 10,
-                      border: 'none',
-                      background: loadingMore ? '#d1d5db' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                      color: '#ffffff',
-                      cursor: loadingMore ? 'not-allowed' : 'pointer',
-                      fontWeight: 600,
-                      fontSize: 15,
-                      boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
-                      transition: 'transform 0.2s, box-shadow 0.2s',
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!loadingMore) {
-                        e.currentTarget.style.transform = 'translateY(-2px)';
-                        e.currentTarget.style.boxShadow = '0 6px 16px rgba(102, 126, 234, 0.4)';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.3)';
-                    }}
-                  >
-                    {loadingMore ? t('home.loadingDeals') : t('home.loadMore', 'Load More Deals')}
-                  </button>
-                </div>
-              )}
+              {/* Pagination Controls - Previous / Next like Slickdeals */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'flex-end',
+                gap: 12,
+                marginTop: 24,
+                paddingTop: 20,
+                borderTop: '1px solid #e5e7eb',
+              }}>
+                {/* Previous Button */}
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1 || loading}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '10px 20px',
+                    borderRadius: 8,
+                    border: '1px solid #d1d5db',
+                    background: currentPage === 1 ? '#f3f4f6' : '#ffffff',
+                    color: currentPage === 1 ? '#9ca3af' : '#374151',
+                    cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                    fontWeight: 600,
+                    fontSize: 14,
+                    transition: 'all 0.2s',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (currentPage !== 1) {
+                      e.currentTarget.style.background = '#f9fafb';
+                      e.currentTarget.style.borderColor = '#9ca3af';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (currentPage !== 1) {
+                      e.currentTarget.style.background = '#ffffff';
+                      e.currentTarget.style.borderColor = '#d1d5db';
+                    }
+                  }}
+                >
+                  <span style={{ fontSize: 16 }}>‹</span> Previous
+                </button>
+
+                {/* Next Button */}
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={!hasMore || loading}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '10px 20px',
+                    borderRadius: 8,
+                    border: 'none',
+                    background: !hasMore ? '#d1d5db' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    color: '#ffffff',
+                    cursor: !hasMore ? 'not-allowed' : 'pointer',
+                    fontWeight: 600,
+                    fontSize: 14,
+                    boxShadow: hasMore ? '0 2px 8px rgba(102, 126, 234, 0.3)' : 'none',
+                    transition: 'all 0.2s',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (hasMore) {
+                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.4)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (hasMore) {
+                      e.currentTarget.style.boxShadow = '0 2px 8px rgba(102, 126, 234, 0.3)';
+                    }
+                  }}
+                >
+                  Next <span style={{ fontSize: 16 }}>›</span>
+                </button>
+              </div>
             </div>
           )}
             </>
