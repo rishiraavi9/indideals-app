@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
@@ -16,6 +16,18 @@ export default function MobileProfile({ onClose }: MobileProfileProps) {
   const { triggerHaptic } = useHaptics();
   const [showLanguageModal, setShowLanguageModal] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState<LanguageCode>(i18n.language as LanguageCode);
+
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (showLanguageModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [showLanguageModal]);
 
   const handleLanguageChange = async (lang: LanguageCode) => {
     triggerHaptic('light');
@@ -377,8 +389,10 @@ export default function MobileProfile({ onClose }: MobileProfileProps) {
             zIndex: 1000,
             display: 'flex',
             alignItems: 'flex-end',
+            touchAction: 'none',
           }}
           onClick={() => setShowLanguageModal(false)}
+          onTouchMove={(e) => e.stopPropagation()}
         >
           <div
             style={{
@@ -425,12 +439,16 @@ export default function MobileProfile({ onClose }: MobileProfileProps) {
             </div>
 
             {/* Language Options */}
-            <div style={{
-              flex: 1,
-              overflowY: 'auto',
-              WebkitOverflowScrolling: 'touch',
-              paddingBottom: 'calc(16px + env(safe-area-inset-bottom))',
-            }}>
+            <div
+              style={{
+                flex: 1,
+                overflowY: 'auto',
+                WebkitOverflowScrolling: 'touch',
+                paddingBottom: 'calc(16px + env(safe-area-inset-bottom))',
+                touchAction: 'pan-y',
+              }}
+              onTouchMove={(e) => e.stopPropagation()}
+            >
               {supportedLanguages.map((lang) => (
                 <button
                   key={lang.code}
