@@ -342,7 +342,7 @@ export default function MobileHome({ activeFilter = 'all' }: MobileHomeProps) {
       const result = await dealsApi.voteDeal(dealId, voteType);
       setDeals(prev => prev.map(d =>
         d.id === dealId
-          ? { ...d, upvotes: result.upvotes, downvotes: result.downvotes, userVote: result.userVote }
+          ? { ...d, upvotes: result.upvotes, downvotes: result.downvotes, score: result.score, userVote: result.userVote }
           : d
       ));
     } catch (error) {

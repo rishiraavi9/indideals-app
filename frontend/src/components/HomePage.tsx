@@ -250,7 +250,7 @@ export default function HomePage() {
       const result = await dealsApi.voteDeal(dealId, voteType);
       const updateDeal = (d: Deal) =>
         d.id === dealId
-          ? { ...d, upvotes: result.upvotes, downvotes: result.downvotes, userVote: result.userVote }
+          ? { ...d, upvotes: result.upvotes, downvotes: result.downvotes, score: result.score, userVote: result.userVote }
           : d;
 
       setDeals((prev) => prev.map(updateDeal));
