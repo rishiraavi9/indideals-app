@@ -348,6 +348,7 @@ export const getDeals = async (req: AuthRequest, res: Response) => {
             where: and(
               eq(deals.isExpired, false),
               inArray(deals.categoryId, categoryIds),
+              gte(deals.price, 100), // Filter out placeholder prices (₹1)
               sql`(${deals.upvotes} - ${deals.downvotes}) >= 0` // Only show deals with non-negative score
             ),
             orderBy: desc(sql`(${deals.upvotes} - ${deals.downvotes})`),
@@ -403,6 +404,10 @@ export const getDeals = async (req: AuthRequest, res: Response) => {
 
     // Build WHERE conditions
     const conditions = [];
+
+    // Filter out placeholder/invalid prices (deals with price <= 100 paise = ₹1)
+    // These are deals where price extraction failed during scraping
+    conditions.push(gte(deals.price, 100));
 
     // Filter expired deals (skip this filter if we're filtering by userId to show user's expired deals too)
     if (!userId) {
@@ -536,6 +541,7 @@ async function getPersonalizedDeals(userId: string, limit: number) {
       return db.query.deals.findMany({
         where: and(
           eq(deals.isExpired, false),
+          gte(deals.price, 100), // Filter out placeholder prices (₹1)
           sql`(${deals.upvotes} - ${deals.downvotes}) >= 20`
         ),
         orderBy: desc(sql`(${deals.upvotes} - ${deals.downvotes})`),
@@ -562,6 +568,7 @@ async function getPersonalizedDeals(userId: string, limit: number) {
       where: and(
         eq(deals.isExpired, false),
         inArray(deals.categoryId, categoryIds),
+        gte(deals.price, 100), // Filter out placeholder prices (₹1)
         sql`(${deals.upvotes} - ${deals.downvotes}) >= 0` // Only show deals with non-negative score
       ),
       orderBy: desc(sql`(${deals.upvotes} - ${deals.downvotes})`),

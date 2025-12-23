@@ -44,6 +44,9 @@ export const search = async (req: Request, res: Response) => {
     // Build conditions
     const conditions: any[] = [];
 
+    // Filter out placeholder/invalid prices (deals with price <= 100 paise = ₹1)
+    conditions.push(gte(deals.price, 100));
+
     // Expired filter
     if (!showExpired) {
       conditions.push(eq(deals.isExpired, false));
