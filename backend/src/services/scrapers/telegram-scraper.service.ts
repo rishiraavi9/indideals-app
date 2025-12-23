@@ -266,25 +266,66 @@ export class TelegramScraperService {
     // Extract title - use link preview title if available, otherwise extract from text
     let title: string;
     if (linkPreviewTitle && linkPreviewTitle.length > 10) {
-      title = linkPreviewTitle;
+      // Clean link preview title too - remove URLs
+      title = linkPreviewTitle.replace(/https?:\/\/[^\s]+/g, '').trim();
     } else {
       const lines = text.split('\n').filter(l => l.trim().length > 0);
       title = this.extractTitle(lines, text);
     }
 
-    if (!title || title.length < 10) {
+    // Reject if title is empty, too short, or is just a URL
+    if (!title || title.length < 10 || title.match(/^https?:\/\//)) {
+      logger.info(`[Telegram] Skipping message - invalid title: "${title?.substring(0, 50) || 'empty'}"`);
       return null; // Invalid title
     }
 
     // Detect merchant from URL
     const merchant = this.detectMerchant(url);
 
-    // Extract image URL (check both photo wrap and link preview)
-    let imageUrl = $message.find('.tgme_widget_message_photo_wrap').css('background-image');
-    if (!imageUrl) {
-      imageUrl = $message.find('.link_preview_image').css('background-image');
+    // Extract image URL (check multiple sources)
+    let cleanImageUrl: string | null = null;
+
+    // Method 1: Check for background-image in photo wrap (common Telegram format)
+    const photoWrap = $message.find('.tgme_widget_message_photo_wrap');
+    if (photoWrap.length > 0) {
+      const style = photoWrap.attr('style') || '';
+      const bgMatch = style.match(/background-image:\s*url\(['"]?(.*?)['"]?\)/);
+      if (bgMatch && bgMatch[1]) {
+        cleanImageUrl = bgMatch[1];
+      }
     }
-    const cleanImageUrl = imageUrl ? imageUrl.replace(/url\(['"]?(.*?)['"]?\)/, '$1') : null;
+
+    // Method 2: Check link preview image
+    if (!cleanImageUrl) {
+      const linkPreviewImg = $message.find('.link_preview_image');
+      if (linkPreviewImg.length > 0) {
+        const style = linkPreviewImg.attr('style') || '';
+        const bgMatch = style.match(/background-image:\s*url\(['"]?(.*?)['"]?\)/);
+        if (bgMatch && bgMatch[1]) {
+          cleanImageUrl = bgMatch[1];
+        }
+      }
+    }
+
+    // Method 3: Check for img tags directly
+    if (!cleanImageUrl) {
+      const imgTag = $message.find('.tgme_widget_message_photo img, .link_preview_image img');
+      if (imgTag.length > 0) {
+        cleanImageUrl = imgTag.attr('src') || null;
+      }
+    }
+
+    // Method 4: Check for link preview site image
+    if (!cleanImageUrl) {
+      const siteImage = $message.find('.link_preview_site_icon');
+      if (siteImage.length > 0) {
+        const style = siteImage.attr('style') || '';
+        const bgMatch = style.match(/background-image:\s*url\(['"]?(.*?)['"]?\)/);
+        if (bgMatch && bgMatch[1]) {
+          cleanImageUrl = bgMatch[1];
+        }
+      }
+    }
 
     // Extract description - use link preview desc if available, otherwise extract from text
     let description: string | null;
@@ -322,6 +363,12 @@ export class TelegramScraperService {
         continue;
       }
 
+      // Skip lines that contain ONLY a URL (even if mixed with text)
+      // This prevents "https://amzn.to/xxx" from being used as title
+      if (line.match(/^\s*https?:\/\/[^\s]+\s*$/)) {
+        continue;
+      }
+
       // Skip very short lines
       if (line.trim().length < 10) {
         continue;
@@ -354,6 +401,11 @@ export class TelegramScraperService {
       // Clean up extra whitespace
       title = title.replace(/\s+/g, ' ').trim();
 
+      // Skip if after cleaning the title is just a URL or too short
+      if (title.match(/^https?:\/\//) || title.length < 10) {
+        continue;
+      }
+
       // Truncate if too long (keep first 200 chars)
       if (title.length > 200) {
         title = title.substring(0, 197) + '...';
@@ -362,8 +414,21 @@ export class TelegramScraperService {
       return title;
     }
 
-    // Fallback: use first 100 chars
-    return fullText.substring(0, 100).trim();
+    // Fallback: clean the full text and extract something meaningful
+    let fallbackTitle = fullText
+      .replace(/https?:\/\/[^\s]+/g, '') // Remove all URLs
+      .replace(/₹\s?[\d,]+/g, '')        // Remove prices
+      .replace(/[\d,]+\s?₹/g, '')        // Remove prices in other format
+      .replace(/🎁|🔥|🔴|⚡|💰|🛒/g, '') // Remove common emojis
+      .replace(/\s+/g, ' ')              // Normalize whitespace
+      .trim();
+
+    // If still too short or empty, this isn't a valid deal
+    if (fallbackTitle.length < 10) {
+      return ''; // Return empty to signal invalid title
+    }
+
+    return fallbackTitle.substring(0, 100).trim();
   }
 
   /**
