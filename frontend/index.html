@@ -136,20 +136,32 @@
             .then((registration) => {
               console.log('SW registered:', registration.scope);
 
+              // Check for updates periodically
+              setInterval(() => {
+                registration.update();
+              }, 60000); // Check every minute
+
               // Check for updates
               registration.addEventListener('updatefound', () => {
                 const newWorker = registration.installing;
                 newWorker.addEventListener('statechange', () => {
                   if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                    // New content available, show update prompt
-                    if (confirm('New version available! Reload to update?')) {
-                      window.location.reload();
-                    }
+                    // New content available - auto reload for seamless updates
+                    console.log('New version available, reloading...');
+                    newWorker.postMessage({ type: 'SKIP_WAITING' });
+                    window.location.reload();
                   }
                 });
               });
             })
             .catch((err) => console.log('SW registration failed:', err));
+        });
+
+        // Listen for service worker update messages
+        navigator.serviceWorker.addEventListener('message', (event) => {
+          if (event.data && event.data.type === 'SW_UPDATED') {
+            console.log('Service Worker updated to version:', event.data.version);
+          }
         });
       }
 

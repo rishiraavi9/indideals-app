@@ -38,6 +38,8 @@ export default function HomePage() {
   const [sortBy, setSortBy] = useState<'newest' | 'price_low' | 'price_high' | 'discount' | 'popular'>('newest');
   const [selectedMerchant, setSelectedMerchant] = useState<string | null>(null);
   const [availableMerchants, setAvailableMerchants] = useState<string[]>([]);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const { isAuthenticated } = useAuth();
 
@@ -95,20 +97,29 @@ export default function HomePage() {
     }
   };
 
-  const loadDeals = async () => {
-    setLoading(true);
+  const loadDeals = async (loadMore = false) => {
+    if (loadMore) {
+      setLoadingMore(true);
+    } else {
+      setLoading(true);
+      setDeals([]);
+    }
+
     try {
       // Use 'new' tab when New is selected to get deals sorted by creation date from backend
       const response = await dealsApi.getDeals({
         tab: activeTab === 'New' ? 'new' : 'frontpage',
         category: selectedCategory || undefined,
         search: searchQuery || undefined,
-        limit: 100,
+        limit: 50,
+        offset: loadMore ? deals.length : 0,
       });
 
-      // Extract unique merchants from all deals (for dropdown)
-      const merchants = [...new Set(response.deals.map(d => d.merchant))].sort();
-      setAvailableMerchants(merchants);
+      // Extract unique merchants from all deals (for dropdown) - only on initial load
+      if (!loadMore) {
+        const merchants = [...new Set(response.deals.map(d => d.merchant))].sort();
+        setAvailableMerchants(merchants);
+      }
 
       let filteredDeals = response.deals;
 
@@ -135,12 +146,20 @@ export default function HomePage() {
       }
       // 'All' tab shows everything without filtering
 
-      // Apply sorting
-      setDeals(sortDeals(filteredDeals));
+      // Update hasMore based on pagination
+      setHasMore(response.pagination?.hasMore ?? response.deals.length === 50);
+
+      // Apply sorting and merge with existing deals if loading more
+      if (loadMore) {
+        setDeals(prev => sortDeals([...prev, ...filteredDeals]));
+      } else {
+        setDeals(sortDeals(filteredDeals));
+      }
     } catch (error) {
       // Error handled silently - empty deals will be shown
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
 
@@ -344,15 +363,40 @@ export default function HomePage() {
               <p style={{ margin: '8px 0 0', fontSize: 14 }}>{t('home.beFirstToPost')}</p>
             </div>
           ) : (
-            displayDeals.map((deal) => (
-              <MobileDealCard
-                key={deal.id}
-                deal={deal}
-                onUpvote={() => handleVote(deal.id, deal.userVote === 1 ? 0 : 1)}
-                onDownvote={() => handleVote(deal.id, deal.userVote === -1 ? 0 : -1)}
-                onView={() => handleDealView(deal.id)}
-              />
-            ))
+            <>
+              {displayDeals.map((deal) => (
+                <MobileDealCard
+                  key={deal.id}
+                  deal={deal}
+                  onUpvote={() => handleVote(deal.id, deal.userVote === 1 ? 0 : 1)}
+                  onDownvote={() => handleVote(deal.id, deal.userVote === -1 ? 0 : -1)}
+                  onView={() => handleDealView(deal.id)}
+                />
+              ))}
+
+              {/* Mobile Load More Button */}
+              {hasMore && (
+                <div style={{ padding: '20px', textAlign: 'center' }}>
+                  <button
+                    onClick={() => loadDeals(true)}
+                    disabled={loadingMore}
+                    style={{
+                      width: '100%',
+                      padding: '14px 24px',
+                      borderRadius: 10,
+                      border: 'none',
+                      background: loadingMore ? '#333' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      color: '#ffffff',
+                      cursor: loadingMore ? 'not-allowed' : 'pointer',
+                      fontWeight: 600,
+                      fontSize: 15,
+                    }}
+                  >
+                    {loadingMore ? t('home.loadingDeals') : t('home.loadMore', 'Load More Deals')}
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
 
@@ -908,6 +952,40 @@ export default function HomePage() {
                   </div>
                 );
               })}
+
+              {/* Load More Button */}
+              {hasMore && (
+                <div style={{ textAlign: 'center', marginTop: 20 }}>
+                  <button
+                    onClick={() => loadDeals(true)}
+                    disabled={loadingMore}
+                    style={{
+                      padding: '14px 40px',
+                      borderRadius: 10,
+                      border: 'none',
+                      background: loadingMore ? '#d1d5db' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      color: '#ffffff',
+                      cursor: loadingMore ? 'not-allowed' : 'pointer',
+                      fontWeight: 600,
+                      fontSize: 15,
+                      boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
+                      transition: 'transform 0.2s, box-shadow 0.2s',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!loadingMore) {
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                        e.currentTarget.style.boxShadow = '0 6px 16px rgba(102, 126, 234, 0.4)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.3)';
+                    }}
+                  >
+                    {loadingMore ? t('home.loadingDeals') : t('home.loadMore', 'Load More Deals')}
+                  </button>
+                </div>
+              )}
             </div>
           )}
             </>

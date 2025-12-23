@@ -1,12 +1,13 @@
-// IndiaDeals Service Worker v1.0
-const CACHE_NAME = 'indiadeals-v1';
-const DYNAMIC_CACHE = 'indiadeals-dynamic-v1';
-const IMAGE_CACHE = 'indiadeals-images-v1';
+// DesiDealsAI Service Worker v2.0
+// IMPORTANT: Increment version number on each deployment to bust cache
+const SW_VERSION = '2.0.0';
+const CACHE_NAME = `desidealsai-${SW_VERSION}`;
+const DYNAMIC_CACHE = `desidealsai-dynamic-${SW_VERSION}`;
+const IMAGE_CACHE = `desidealsai-images-${SW_VERSION}`;
 
 // Assets to cache immediately on install
+// Note: Don't cache index.html to ensure fresh content on each visit
 const STATIC_ASSETS = [
-  '/',
-  '/index.html',
   '/manifest.json',
   '/offline.html'
 ];
@@ -22,21 +23,39 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// Activate event - clean up old caches
+// Activate event - clean up old caches and take control immediately
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
       return Promise.all(
         keys
           .filter((key) => key !== CACHE_NAME && key !== DYNAMIC_CACHE && key !== IMAGE_CACHE)
-          .map((key) => caches.delete(key))
+          .map((key) => {
+            console.log('[SW] Deleting old cache:', key);
+            return caches.delete(key);
+          })
       );
+    }).then(() => {
+      console.log('[SW] New version activated:', SW_VERSION);
+      // Notify all clients about the new version
+      return self.clients.matchAll().then(clients => {
+        clients.forEach(client => {
+          client.postMessage({ type: 'SW_UPDATED', version: SW_VERSION });
+        });
+      });
     })
   );
   self.clients.claim();
 });
 
-// Fetch event - network first for API, cache first for assets
+// Listen for skip waiting message from the page
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
+// Fetch event - network first for API and HTML/JS, cache first for images
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
@@ -44,8 +63,22 @@ self.addEventListener('fetch', (event) => {
   // Skip non-GET requests
   if (request.method !== 'GET') return;
 
+  // Skip chrome-extension and other non-http requests
+  if (!url.protocol.startsWith('http')) return;
+
   // API calls - network first with cache fallback
   if (url.pathname.startsWith('/api/')) {
+    event.respondWith(networkFirstStrategy(request));
+    return;
+  }
+
+  // HTML and JS files - always network first to get fresh content
+  // This fixes the "need to clear cache" issue
+  if (request.destination === 'document' ||
+      url.pathname.endsWith('.html') ||
+      url.pathname.endsWith('.js') ||
+      url.pathname.endsWith('.css') ||
+      url.pathname === '/') {
     event.respondWith(networkFirstStrategy(request));
     return;
   }
