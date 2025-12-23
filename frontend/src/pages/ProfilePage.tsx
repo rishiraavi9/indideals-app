@@ -25,7 +25,6 @@ export default function ProfilePage() {
   const { t, i18n } = useTranslation();
   const { user, isAuthenticated, logout } = useAuth();
   const [userDeals, setUserDeals] = useState<Deal[]>([]);
-  const [loading, setLoading] = useState(true);
   const [selectedLanguage, setSelectedLanguage] = useState<LanguageCode>(i18n.language as LanguageCode);
   const [showLanguageModal, setShowLanguageModal] = useState(false);
 
@@ -50,14 +49,11 @@ export default function ProfilePage() {
 
   const loadUserDeals = async () => {
     if (!user?.id) return;
-    setLoading(false);
     try {
       const response = await dealsApi.getDeals({ userId: user.id, limit: 100 });
       setUserDeals(response.deals);
     } catch (error) {
       console.error('Failed to load user deals:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
