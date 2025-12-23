@@ -640,6 +640,14 @@ export default function MobileDealPage() {
         {/* Posted Info */}
         <div style={{ marginTop: 12, fontSize: 14, color: '#9ca3af' }}>
           {t('dealPage.posted')} {formatDistanceToNow(new Date(deal.createdAt))}
+          {deal.user && (
+            <>
+              {' by '}
+              <span style={{ color: '#60a5fa', fontWeight: 600 }}>
+                {deal.user.username}
+              </span>
+            </>
+          )}
         </div>
 
         {/* Description */}

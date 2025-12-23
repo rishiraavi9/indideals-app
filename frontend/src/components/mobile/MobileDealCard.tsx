@@ -351,6 +351,19 @@ export default function MobileDealCard({
           >
             {t('deals.at')} {deal.merchant}
           </span>
+          {deal.user && (
+            <span
+              style={{
+                fontSize: 12,
+                color: '#9ca3af',
+              }}
+            >
+              {' • by '}
+              <span style={{ color: '#60a5fa', fontWeight: 500 }}>
+                {deal.user.username}
+              </span>
+            </span>
+          )}
         </div>
 
         {/* Bottom Row - Votes, Comments, Time */}
