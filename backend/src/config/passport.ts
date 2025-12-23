@@ -5,6 +5,15 @@ import { env } from './env.js';
 import { db, users } from '../db/index.js';
 import { eq } from 'drizzle-orm';
 
+// Determine the base URL for OAuth callbacks
+const getBaseUrl = () => {
+  if (env.NODE_ENV === 'production') {
+    // Use the API subdomain in production
+    return 'https://api.desidealsai.com';
+  }
+  return `http://localhost:${env.PORT}`;
+};
+
 // Google OAuth Strategy
 if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) {
   passport.use(
@@ -12,7 +21,7 @@ if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) {
       {
         clientID: env.GOOGLE_CLIENT_ID,
         clientSecret: env.GOOGLE_CLIENT_SECRET,
-        callbackURL: `http://localhost:${env.PORT}/api/auth/google/callback`,
+        callbackURL: `${getBaseUrl()}/api/auth/google/callback`,
       },
       async (accessToken, refreshToken, profile, done) => {
         try {
@@ -67,7 +76,7 @@ if (env.FACEBOOK_APP_ID && env.FACEBOOK_APP_SECRET) {
       {
         clientID: env.FACEBOOK_APP_ID,
         clientSecret: env.FACEBOOK_APP_SECRET,
-        callbackURL: `http://localhost:${env.PORT}/api/auth/facebook/callback`,
+        callbackURL: `${getBaseUrl()}/api/auth/facebook/callback`,
         profileFields: ['id', 'displayName', 'emails', 'photos'],
       },
       async (accessToken, refreshToken, profile, done) => {
