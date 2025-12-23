@@ -383,12 +383,12 @@ export default function MobileProfile({ onClose }: MobileProfileProps) {
           <div
             style={{
               width: '100%',
-              maxHeight: '70vh',
+              maxHeight: '80vh',
               background: '#2a2a2a',
               borderRadius: '20px 20px 0 0',
-              paddingBottom: 'env(safe-area-inset-bottom)',
               display: 'flex',
               flexDirection: 'column',
+              overflow: 'hidden',
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -425,7 +425,12 @@ export default function MobileProfile({ onClose }: MobileProfileProps) {
             </div>
 
             {/* Language Options */}
-            <div style={{ padding: '8px 0', overflowY: 'auto', flex: 1 }}>
+            <div style={{
+              flex: 1,
+              overflowY: 'auto',
+              WebkitOverflowScrolling: 'touch',
+              paddingBottom: 'calc(16px + env(safe-area-inset-bottom))',
+            }}>
               {supportedLanguages.map((lang) => (
                 <button
                   key={lang.code}
