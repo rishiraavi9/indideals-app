@@ -17,7 +17,7 @@ const getApiUrl = () => {
 };
 
 const API_URL = getApiUrl();
-console.log('[DesiDealsAI] Platform detected, using API URL:', API_URL);
+console.log('[DesiDealsAI] Using API URL:', API_URL);
 
 class ApiClient {
   private baseUrl: string;
