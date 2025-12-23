@@ -6,11 +6,13 @@ import en from './locales/en.json';
 import hi from './locales/hi.json';
 import ta from './locales/ta.json';
 import te from './locales/te.json';
+import mr from './locales/mr.json';
 
 // Supported languages
 export const supportedLanguages = [
   { code: 'en', name: 'English', nativeName: 'English' },
   { code: 'hi', name: 'Hindi', nativeName: 'हिंदी' },
+  { code: 'mr', name: 'Marathi', nativeName: 'मराठी' },
   { code: 'ta', name: 'Tamil', nativeName: 'தமிழ்' },
   { code: 'te', name: 'Telugu', nativeName: 'తెలుగు' },
 ] as const;
@@ -42,6 +44,7 @@ i18n
     resources: {
       en: { translation: en },
       hi: { translation: hi },
+      mr: { translation: mr },
       ta: { translation: ta },
       te: { translation: te },
     },

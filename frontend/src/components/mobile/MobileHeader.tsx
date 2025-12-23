@@ -45,6 +45,7 @@ export default function MobileHeader({
   const getCurrentLanguageFlag = () => {
     switch (selectedLanguage) {
       case 'hi': return 'हि';
+      case 'mr': return 'म';
       case 'ta': return 'த';
       case 'te': return 'తె';
       default: return 'EN';

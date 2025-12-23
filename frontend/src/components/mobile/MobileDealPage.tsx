@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { dealsApi } from '../../api/deals';
+import { commentsApi } from '../../api/comments';
 import * as wishlistApi from '../../api/wishlist';
 import { getDealQualityScore } from '../../api/ai';
 import { useAuth } from '../../context/AuthContext';
@@ -10,7 +11,7 @@ import { useTranslatedText } from '../../hooks/useTranslatedDeals';
 import { formatDistanceToNow } from '../../utils/date';
 import PriceHistoryChart from '../PriceHistoryChart';
 import PriceAlertModal from '../PriceAlertModal';
-import type { Deal } from '../../types';
+import type { Deal, Comment } from '../../types';
 
 export default function MobileDealPage() {
   const { dealId } = useParams<{ dealId: string }>();
@@ -27,6 +28,12 @@ export default function MobileDealPage() {
   const [aiScore, setAiScore] = useState<number | null>(null);
   const [aiBreakdown, setAiBreakdown] = useState<any>(null);
   const [imageError, setImageError] = useState(false);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [commentText, setCommentText] = useState('');
+  const [submittingComment, setSubmittingComment] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState('');
+  const commentsRef = useRef<HTMLDivElement>(null);
 
   // Translate deal title and description
   const { translatedText: translatedTitle } = useTranslatedText(deal?.title || '');
@@ -35,10 +42,60 @@ export default function MobileDealPage() {
   useEffect(() => {
     if (dealId) {
       loadDeal();
+      loadComments();
       checkWishlist();
       loadAIScore();
     }
   }, [dealId]);
+
+  const loadComments = async () => {
+    if (!dealId) return;
+    try {
+      const commentsData = await commentsApi.getComments(dealId);
+      setComments(commentsData);
+    } catch (error) {
+      console.error('Failed to load comments:', error);
+    }
+  };
+
+  const handleSubmitComment = async () => {
+    if (!commentText.trim() || !isAuthenticated || !dealId) return;
+
+    setSubmittingComment(true);
+    triggerHaptic('medium');
+    try {
+      await commentsApi.createComment(dealId, commentText);
+      setCommentText('');
+      loadComments();
+      loadDeal();
+    } catch (error) {
+      console.error('Failed to submit comment:', error);
+    } finally {
+      setSubmittingComment(false);
+    }
+  };
+
+  const handleSubmitReply = async (parentId: string) => {
+    if (!replyText.trim() || !isAuthenticated || !dealId) return;
+
+    setSubmittingComment(true);
+    triggerHaptic('medium');
+    try {
+      await commentsApi.createReply(dealId, parentId, replyText);
+      setReplyText('');
+      setReplyingTo(null);
+      loadComments();
+      loadDeal();
+    } catch (error) {
+      console.error('Failed to submit reply:', error);
+    } finally {
+      setSubmittingComment(false);
+    }
+  };
+
+  const scrollToComments = () => {
+    commentsRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   const loadAIScore = async () => {
     if (!dealId) return;
@@ -412,6 +469,7 @@ export default function MobileDealPage() {
 
         {/* Comments */}
         <button
+          onClick={scrollToComments}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -664,6 +722,250 @@ export default function MobileDealPage() {
       {/* Price History */}
       <div style={{ background: '#2a2a2a', padding: 16 }}>
         <PriceHistoryChart dealId={deal.id} currentPrice={deal.price} theme="dark" />
+      </div>
+
+      {/* Divider */}
+      <div style={{ height: 8, background: '#1a1a1a' }} />
+
+      {/* Comments Section */}
+      <div ref={commentsRef} style={{ background: '#2a2a2a', padding: 16 }}>
+        <h2 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 600, color: 'white' }}>
+          💬 {t('dealPage.communityDiscussion')} ({comments.length})
+        </h2>
+
+        {/* Comment Input */}
+        {isAuthenticated ? (
+          <div style={{ marginBottom: 16 }}>
+            <textarea
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+              placeholder={t('dealPage.sharethoughts')}
+              style={{
+                width: '100%',
+                minHeight: 80,
+                padding: 12,
+                borderRadius: 8,
+                border: '1px solid #444',
+                background: '#333',
+                color: 'white',
+                fontSize: 14,
+                resize: 'none',
+                boxSizing: 'border-box',
+                fontFamily: 'inherit',
+              }}
+            />
+            <button
+              onClick={handleSubmitComment}
+              disabled={submittingComment || !commentText.trim()}
+              style={{
+                marginTop: 8,
+                padding: '10px 20px',
+                borderRadius: 8,
+                border: 'none',
+                background: submittingComment || !commentText.trim()
+                  ? '#444'
+                  : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                color: submittingComment || !commentText.trim() ? '#6b7280' : 'white',
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: submittingComment || !commentText.trim() ? 'not-allowed' : 'pointer',
+              }}
+            >
+              {submittingComment ? t('dealPage.posting') : t('dealPage.postComment')}
+            </button>
+          </div>
+        ) : (
+          <div
+            style={{
+              padding: 12,
+              borderRadius: 8,
+              background: 'rgba(251, 191, 36, 0.1)',
+              border: '1px solid rgba(251, 191, 36, 0.3)',
+              color: '#fbbf24',
+              fontSize: 14,
+              marginBottom: 16,
+              textAlign: 'center',
+            }}
+            onClick={() => navigate('/login')}
+          >
+            {t('dealPage.loginToComment')}
+          </div>
+        )}
+
+        {/* Comments List */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {comments.length === 0 ? (
+            <p style={{ color: '#6b7280', textAlign: 'center', padding: 16, fontSize: 14 }}>
+              {t('dealPage.noComments')}
+            </p>
+          ) : (
+            comments.map((comment) => (
+              <div
+                key={comment.id}
+                style={{
+                  padding: 12,
+                  borderRadius: 8,
+                  background: '#333',
+                  border: '1px solid #444',
+                }}
+              >
+                {/* Comment Header */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                  <div
+                    style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: '50%',
+                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: 12,
+                      fontWeight: 700,
+                      color: 'white',
+                    }}
+                  >
+                    {comment.user?.username?.charAt(0).toUpperCase() || 'U'}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: 'white' }}>
+                      {comment.user?.username || 'User'}
+                    </div>
+                    <div style={{ fontSize: 11, color: '#6b7280' }}>
+                      {formatDistanceToNow(new Date(comment.createdAt))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Comment Content */}
+                <p style={{ margin: 0, fontSize: 14, color: '#d1d5db', lineHeight: 1.5 }}>
+                  {comment.content}
+                </p>
+
+                {/* Reply Button */}
+                <button
+                  onClick={() => {
+                    if (!isAuthenticated) {
+                      navigate('/login');
+                      return;
+                    }
+                    setReplyingTo(replyingTo === comment.id ? null : comment.id);
+                    setReplyText('');
+                  }}
+                  style={{
+                    marginTop: 8,
+                    padding: 0,
+                    border: 'none',
+                    background: 'transparent',
+                    color: '#667eea',
+                    fontSize: 13,
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {t('dealPage.reply')}
+                </button>
+
+                {/* Reply Input */}
+                {replyingTo === comment.id && (
+                  <div style={{ marginTop: 12 }}>
+                    <textarea
+                      value={replyText}
+                      onChange={(e) => setReplyText(e.target.value)}
+                      placeholder={t('dealPage.writeReply')}
+                      style={{
+                        width: '100%',
+                        minHeight: 60,
+                        padding: 10,
+                        borderRadius: 6,
+                        border: '1px solid #444',
+                        background: '#2a2a2a',
+                        color: 'white',
+                        fontSize: 13,
+                        resize: 'none',
+                        boxSizing: 'border-box',
+                        fontFamily: 'inherit',
+                      }}
+                    />
+                    <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                      <button
+                        onClick={() => handleSubmitReply(comment.id)}
+                        disabled={submittingComment || !replyText.trim()}
+                        style={{
+                          padding: '8px 16px',
+                          borderRadius: 6,
+                          border: 'none',
+                          background: submittingComment || !replyText.trim() ? '#444' : '#667eea',
+                          color: submittingComment || !replyText.trim() ? '#6b7280' : 'white',
+                          fontSize: 13,
+                          fontWeight: 600,
+                          cursor: submittingComment || !replyText.trim() ? 'not-allowed' : 'pointer',
+                        }}
+                      >
+                        {t('dealPage.postReply')}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setReplyingTo(null);
+                          setReplyText('');
+                        }}
+                        style={{
+                          padding: '8px 16px',
+                          borderRadius: 6,
+                          border: '1px solid #444',
+                          background: 'transparent',
+                          color: '#9ca3af',
+                          fontSize: 13,
+                          fontWeight: 500,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {t('dealPage.cancel')}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Nested Replies */}
+                {comment.replies && comment.replies.length > 0 && (
+                  <div style={{ marginTop: 12, marginLeft: 16, borderLeft: '2px solid #444', paddingLeft: 12 }}>
+                    {comment.replies.map((reply) => (
+                      <div key={reply.id} style={{ marginBottom: 12 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                          <div
+                            style={{
+                              width: 22,
+                              height: 22,
+                              borderRadius: '50%',
+                              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: 10,
+                              fontWeight: 700,
+                              color: 'white',
+                            }}
+                          >
+                            {reply.user?.username?.charAt(0).toUpperCase() || 'U'}
+                          </div>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: 'white' }}>
+                            {reply.user?.username || 'User'}
+                          </span>
+                          <span style={{ fontSize: 10, color: '#6b7280' }}>
+                            {formatDistanceToNow(new Date(reply.createdAt))}
+                          </span>
+                        </div>
+                        <p style={{ margin: 0, fontSize: 13, color: '#d1d5db', lineHeight: 1.4 }}>
+                          {reply.content}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+        </div>
       </div>
 
       {/* Bottom Action Bar */}
