@@ -389,18 +389,18 @@ export default function MobileProfile({ onClose }: MobileProfileProps) {
             zIndex: 1000,
             display: 'flex',
             alignItems: 'flex-end',
+            paddingBottom: 'calc(60px + env(safe-area-inset-bottom))',
           }}
           onClick={() => setShowLanguageModal(false)}
         >
           <div
             style={{
               width: '100%',
-              maxHeight: '80vh',
+              maxHeight: '60vh',
               background: '#2a2a2a',
               borderRadius: '20px 20px 0 0',
               display: 'flex',
               flexDirection: 'column',
-              overflow: 'hidden',
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -439,11 +439,10 @@ export default function MobileProfile({ onClose }: MobileProfileProps) {
             {/* Language Options */}
             <div
               style={{
-                flex: 1,
                 overflowY: 'auto',
                 WebkitOverflowScrolling: 'touch',
-                paddingBottom: 'calc(16px + env(safe-area-inset-bottom))',
                 overscrollBehavior: 'contain',
+                paddingBottom: 16,
               }}
             >
               {supportedLanguages.map((lang) => (
