@@ -77,6 +77,7 @@ const allowedOrigins = [
   'https://api.desidealsai.com',
   // Railway domains (fallback while custom domain DNS propagates)
   'https://indideals-app-production.up.railway.app',
+  'https://precious-contentment-production.up.railway.app',
 ];
 
 app.use(cors({
