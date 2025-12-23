@@ -66,10 +66,9 @@ const toBool = (value: string | undefined, defaultValue: boolean): boolean => {
   return value.toLowerCase() === 'true';
 };
 
-// In production, disable Bull queues by default unless explicitly enabled
-// This prevents startup issues when Redis isn't properly configured
-const isProduction = process.env.NODE_ENV === 'production';
-const defaultBullEnabled = !isProduction; // Enabled in dev, disabled in prod by default
+// Enable Bull queues by default (required for Telegram scraping and background jobs)
+// Redis is now properly configured in production
+const defaultBullEnabled = true;
 
 export const features: FeatureFlags = {
   // Phase 1: Job Queue Infrastructure (COMPLETED - Default: Enabled in dev only)
@@ -92,9 +91,9 @@ export const features: FeatureFlags = {
   PUSH_NOTIFICATIONS: toBool(process.env.FEATURE_PUSH_NOTIFICATIONS, false),
   CASHBACK_DISPLAY: toBool(process.env.FEATURE_CASHBACK_DISPLAY, false),
 
-  // Phase 3: Advanced Features (NOT IMPLEMENTED - Default: Disabled)
+  // Phase 3: Advanced Features
   WEBSOCKETS: toBool(process.env.FEATURE_WEBSOCKETS, false),
-  MERCHANT_SCRAPERS: toBool(process.env.FEATURE_MERCHANT_SCRAPERS, false),
+  MERCHANT_SCRAPERS: toBool(process.env.FEATURE_MERCHANT_SCRAPERS, true), // Enabled for Telegram scraping
   ML_RECOMMENDATIONS: toBool(process.env.FEATURE_ML_RECOMMENDATIONS, false),
   ADMIN_DASHBOARD: toBool(process.env.FEATURE_ADMIN_DASHBOARD, false),
   REAL_TIME_UPDATES: toBool(process.env.FEATURE_REAL_TIME_UPDATES, false),
