@@ -194,9 +194,12 @@ export default function MobileHeader({
           <div
             style={{
               width: '100%',
+              maxHeight: '70vh',
               background: '#2a2a2a',
               borderRadius: '20px 20px 0 0',
               paddingBottom: 'env(safe-area-inset-bottom)',
+              display: 'flex',
+              flexDirection: 'column',
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -208,6 +211,7 @@ export default function MobileHeader({
                 justifyContent: 'space-between',
                 padding: '16px 20px',
                 borderBottom: '1px solid #333',
+                flexShrink: 0,
               }}
             >
               <h3 style={{ margin: 0, fontSize: 18, fontWeight: 600, color: 'white' }}>
@@ -229,7 +233,7 @@ export default function MobileHeader({
             </div>
 
             {/* Language Options */}
-            <div style={{ padding: '8px 0' }}>
+            <div style={{ padding: '8px 0', overflowY: 'auto', flex: 1 }}>
               {supportedLanguages.map((lang) => (
                 <button
                   key={lang.code}
