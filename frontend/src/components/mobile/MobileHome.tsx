@@ -463,7 +463,7 @@ export default function MobileHome({ activeFilter = 'all' }: MobileHomeProps) {
               <MobileDealCard
                 deal={deal}
                 onPress={() => handleDealClick(deal)}
-                onVote={(voteType) => handleVote(deal.id, deal.userVote === voteType ? 0 : voteType)}
+                onVote={(voteType) => handleVote(deal.id, voteType)}
                 showBadge={getBadgeForDeal(deal, index)}
               />
               {/* Show ad after every 4 deals if ads are enabled */}

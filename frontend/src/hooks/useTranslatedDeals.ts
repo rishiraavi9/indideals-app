@@ -26,11 +26,34 @@ export function useTranslatedDeals<T extends TranslatableDeal>(
   // Track the last translated state to avoid unnecessary re-translations
   const lastTranslatedRef = useRef<{ lang: string; dealIds: string }>({ lang: '', dealIds: '' });
 
+  // Sync non-translatable fields (votes, comments, etc.) immediately when deals change
+  useEffect(() => {
+    setTranslatedDeals(prevTranslated => {
+      // If we have translated deals, merge in the updated non-translatable fields
+      if (prevTranslated.length > 0 && prevTranslated !== deals) {
+        const dealMap = new Map(deals.map(d => [d.id, d]));
+        return prevTranslated.map(translated => {
+          const updated = dealMap.get(translated.id);
+          if (updated) {
+            // Preserve translated title/description, but sync other fields
+            return {
+              ...updated,
+              title: translated.title,
+              description: translated.description,
+            };
+          }
+          return translated;
+        });
+      }
+      return prevTranslated;
+    });
+  }, [deals]);
+
   useEffect(() => {
     const currentLang = i18n.language;
     const dealIds = deals.map(d => d.id).join(',');
 
-    // Skip if nothing changed
+    // Skip if nothing changed (for translation purposes - IDs and language)
     if (
       lastTranslatedRef.current.lang === currentLang &&
       lastTranslatedRef.current.dealIds === dealIds

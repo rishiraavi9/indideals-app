@@ -133,10 +133,10 @@ export default function MobileSearch() {
 
   const handleVote = async (dealId: string, voteType: number) => {
     try {
-      await dealsApi.voteDeal(dealId, voteType);
+      const result = await dealsApi.voteDeal(dealId, voteType);
       setResults(prev => prev.map(d =>
         d.id === dealId
-          ? { ...d, userVote: d.userVote === voteType ? 0 : voteType }
+          ? { ...d, upvotes: result.upvotes, downvotes: result.downvotes, userVote: result.userVote }
           : d
       ));
     } catch (error) {
