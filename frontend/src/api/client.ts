@@ -12,7 +12,7 @@ const getApiUrl = () => {
   }
 
   // For production (including native apps), use production API
-  // Temporary: Using Railway domain until api.desidealsai.com DNS propagates
+  // Using Railway domain directly until custom domain DNS is fully configured
   return 'https://indideals-app-production.up.railway.app/api';
 };
 
