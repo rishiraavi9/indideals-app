@@ -158,9 +158,41 @@ app.get('/api/config', (req, res) => {
   });
 });
 
-// Bull Board (queue monitoring dashboard) - feature flag protected
+// Bull Board (queue monitoring dashboard) - feature flag protected with basic auth
 if (isFeatureEnabled('BULL_BOARD_DASHBOARD')) {
-  app.use('/admin/queues', bullBoardRouter);
+  // Basic HTTP Authentication middleware for admin dashboard
+  const adminAuth = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    // Check if admin password is configured
+    if (!env.ADMIN_PASSWORD) {
+      // In development without password, allow access with warning
+      if (env.NODE_ENV !== 'production') {
+        console.warn('⚠️  Admin dashboard accessible without authentication (ADMIN_PASSWORD not set)');
+        return next();
+      }
+      // In production without password, deny access
+      return res.status(503).json({ error: 'Admin dashboard not configured' });
+    }
+
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith('Basic ')) {
+      res.setHeader('WWW-Authenticate', 'Basic realm="Admin Dashboard"');
+      return res.status(401).send('Authentication required');
+    }
+
+    const base64Credentials = authHeader.split(' ')[1];
+    const credentials = Buffer.from(base64Credentials, 'base64').toString('utf-8');
+    const [username, password] = credentials.split(':');
+
+    if (username === env.ADMIN_USERNAME && password === env.ADMIN_PASSWORD) {
+      return next();
+    }
+
+    res.setHeader('WWW-Authenticate', 'Basic realm="Admin Dashboard"');
+    return res.status(401).send('Invalid credentials');
+  };
+
+  app.use('/admin/queues', adminAuth, bullBoardRouter);
 }
 
 // Apply rate limiters

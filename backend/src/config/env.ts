@@ -23,6 +23,10 @@ export const env = {
   // Rate Limiting Configuration
   ENABLE_RATE_LIMIT: process.env.ENABLE_RATE_LIMIT, // Set to 'true' to enable in development
   RATE_LIMIT_WHITELIST: process.env.RATE_LIMIT_WHITELIST, // Comma-separated list of IPs to whitelist
+
+  // Admin Dashboard Authentication
+  ADMIN_USERNAME: process.env.ADMIN_USERNAME || 'admin',
+  ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || '', // Must be set in production
 };
 
 // Validate required env vars at runtime (not during build)
