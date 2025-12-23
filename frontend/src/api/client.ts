@@ -12,7 +12,8 @@ const getApiUrl = () => {
   }
 
   // For production (including native apps), use production API
-  return 'https://api.desidealsai.com/api';
+  // Temporary: Using Railway domain until api.desidealsai.com DNS propagates
+  return 'https://indideals-app-production.up.railway.app/api';
 };
 
 const API_URL = getApiUrl();
