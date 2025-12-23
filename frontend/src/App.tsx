@@ -4,6 +4,7 @@ import HomePage from './components/HomePage';
 import DealPage from './components/DealPage';
 import WishlistPage from './components/WishlistPage';
 import AlertsPage from './components/AlertsPage';
+import AdminDashboard from './components/AdminDashboard';
 import PopularDealsPage from './pages/PopularDealsPage';
 import CategoryPage from './pages/CategoryPage';
 import LoginPage from './pages/LoginPage';
@@ -65,6 +66,7 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignUpPage />} />
         <Route path="/post-deal" element={<PostDealPage />} />
+        <Route path="/admin" element={<AdminDashboard />} />
       </Routes>
     );
   }
@@ -82,6 +84,7 @@ export default function App() {
       <Route path="/signup" element={<SignUpPage />} />
       <Route path="/profile" element={<ProfilePage />} />
       <Route path="/post-deal" element={<PostDealPage />} />
+      <Route path="/admin" element={<AdminDashboard />} />
     </Routes>
   );
 }

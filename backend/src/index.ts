@@ -27,6 +27,7 @@ import priceHistoryRoutes from './routes/price-history.routes.js';
 import couponsRoutes from './routes/coupons.routes.js';
 import aiRoutes from './routes/ai.routes.js';
 import notificationsRoutes from './routes/notifications.routes.js';
+import adminRoutes from './routes/admin.routes.js';
 
 // Job queue
 import { bullBoardRouter, shutdownQueues } from './services/queue.service.js';
@@ -226,6 +227,9 @@ app.use('/api/ai', aiRoutes);
 
 // Notifications
 app.use('/api/notifications', notificationsRoutes);
+
+// Admin Dashboard API
+app.use('/api/admin', adminRoutes);
 
 // Image proxy endpoint (Option 3 - proxy-cache strategy)
 app.get('/api/image-proxy', async (req, res) => {
