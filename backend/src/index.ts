@@ -109,7 +109,7 @@ const ENABLE_RATE_LIMIT = IS_PRODUCTION || env.ENABLE_RATE_LIMIT === 'true';
 
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: IS_PRODUCTION ? 1000 : 10000, // Much higher limits for production
+  max: IS_PRODUCTION ? 5000 : 10000, // Higher limits for shared IPs in India
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
