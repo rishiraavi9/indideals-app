@@ -1069,6 +1069,8 @@ export default function HomePage() {
           )}
           </>
           )}
+                </>
+              )}
             </div>
 
             {/* Ad Sidebar */}

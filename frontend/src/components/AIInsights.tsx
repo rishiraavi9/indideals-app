@@ -17,8 +17,8 @@ interface AIInsightsProps {
   originalPrice?: number | null;
 }
 
-export default function AIInsights({ dealId, currentPrice, originalPrice }: AIInsightsProps) {
-  const { t } = useTranslation();
+export default function AIInsights({ dealId, currentPrice, originalPrice: _originalPrice }: AIInsightsProps) {
+  const { t: _t } = useTranslation();
   const { isAuthenticated } = useAuth();
   const [prediction, setPrediction] = useState<PricePrediction | null>(null);
   const [summary, setSummary] = useState<DealSummary | null>(null);

@@ -13,7 +13,7 @@ interface ForYouTabProps {
 }
 
 export default function ForYouTab({ onVote, onView }: ForYouTabProps) {
-  const { t } = useTranslation();
+  const { t: _t } = useTranslation();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const [loading, setLoading] = useState(true);
