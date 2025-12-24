@@ -43,6 +43,7 @@ export interface FeatureFlags {
   CDN_INTEGRATION: boolean;
   RATE_LIMITING_ADVANCED: boolean;
   MONITORING: boolean;
+  ELASTICSEARCH: boolean;
 
   // Image Handling
   IMAGE_FALLBACK: boolean;
@@ -103,6 +104,7 @@ export const features: FeatureFlags = {
   CDN_INTEGRATION: toBool(process.env.FEATURE_CDN_INTEGRATION, false),
   RATE_LIMITING_ADVANCED: toBool(process.env.FEATURE_RATE_LIMITING_ADVANCED, false),
   MONITORING: toBool(process.env.FEATURE_MONITORING, false),
+  ELASTICSEARCH: toBool(process.env.FEATURE_ELASTICSEARCH, false), // Disabled by default - requires Elasticsearch instance
 
   // Image Handling (Default: Enabled for fallback strategies)
   IMAGE_FALLBACK: toBool(process.env.FEATURE_IMAGE_FALLBACK, true),

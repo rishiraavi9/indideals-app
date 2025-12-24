@@ -9,6 +9,7 @@ import { MlDeduplicationService } from '../ml-deduplication.service.js';
 import { DealQualityService } from '../ai/deal-quality.service.js';
 import { getEnabledChannels, TELEGRAM_SCRAPER_CONFIG } from '../../config/telegram-channels.js';
 import { indexDeal, deleteDeal as deleteFromElasticsearch } from '../elasticsearch.service.js';
+import { isFeatureEnabled } from '../../config/features.js';
 
 /**
  * Generate 7 days of realistic demo price history for a deal
@@ -821,43 +822,45 @@ export class TelegramScraperService {
           logger.error(`[Telegram] Failed to calculate AI score: ${err.message}`);
         }
 
-        // Index in Elasticsearch for search functionality
-        try {
-          await indexDeal({
-            id: insertedDeal.id,
-            title: insertedDeal.title,
-            description: insertedDeal.description,
-            price: insertedDeal.price,
-            originalPrice: insertedDeal.originalPrice,
-            discountPercentage: insertedDeal.discountPercentage,
-            merchant: insertedDeal.merchant,
-            url: insertedDeal.url,
-            imageUrl: insertedDeal.imageUrl,
-            categoryId: insertedDeal.categoryId,
-            categoryName: null, // Will be populated on next reindex
-            userId: insertedDeal.userId,
-            username: 'deals-admin',
-            upvotes: 0,
-            downvotes: 0,
-            score: 0,
-            commentCount: 0,
-            viewCount: 0,
-            isExpired: false,
-            festiveTags: null,
-            seasonalTag: null,
-            createdAt: insertedDeal.createdAt,
-            updatedAt: insertedDeal.updatedAt,
-          });
-          logger.info(`[Telegram] ✅ Deal indexed in Elasticsearch`);
-        } catch (err: any) {
-          logger.error(`[Telegram] Failed to index in Elasticsearch: ${err.message}`);
-        }
+        // Index in Elasticsearch for search functionality (if enabled)
+        if (isFeatureEnabled('ELASTICSEARCH')) {
+          try {
+            await indexDeal({
+              id: insertedDeal.id,
+              title: insertedDeal.title,
+              description: insertedDeal.description,
+              price: insertedDeal.price,
+              originalPrice: insertedDeal.originalPrice,
+              discountPercentage: insertedDeal.discountPercentage,
+              merchant: insertedDeal.merchant,
+              url: insertedDeal.url,
+              imageUrl: insertedDeal.imageUrl,
+              categoryId: insertedDeal.categoryId,
+              categoryName: null, // Will be populated on next reindex
+              userId: insertedDeal.userId,
+              username: 'deals-admin',
+              upvotes: 0,
+              downvotes: 0,
+              score: 0,
+              commentCount: 0,
+              viewCount: 0,
+              isExpired: false,
+              festiveTags: null,
+              seasonalTag: null,
+              createdAt: insertedDeal.createdAt,
+              updatedAt: insertedDeal.updatedAt,
+            });
+            logger.info(`[Telegram] ✅ Deal indexed in Elasticsearch`);
+          } catch (err: any) {
+            logger.error(`[Telegram] Failed to index in Elasticsearch: ${err.message}`);
+          }
 
-        // If replacing an old deal, delete it from Elasticsearch
-        if (replacingDealId) {
-          deleteFromElasticsearch(replacingDealId).catch((err) => {
-            logger.error(`[Telegram] Failed to delete old deal from Elasticsearch: ${err.message}`);
-          });
+          // If replacing an old deal, delete it from Elasticsearch
+          if (replacingDealId) {
+            deleteFromElasticsearch(replacingDealId).catch((err) => {
+              logger.error(`[Telegram] Failed to delete old deal from Elasticsearch: ${err.message}`);
+            });
+          }
         }
 
         // Record that we've processed this message successfully

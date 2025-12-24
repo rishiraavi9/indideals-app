@@ -1,6 +1,7 @@
 import { db } from '../db/index.js';
 import { redis } from '../services/cache.service.js';
 import { esClient } from '../services/elasticsearch.service.js';
+import { isFeatureEnabled } from '../config/features.js';
 
 export interface HealthCheckResult {
   status: 'healthy' | 'degraded' | 'unhealthy';
@@ -9,7 +10,7 @@ export interface HealthCheckResult {
   services: {
     database: ServiceHealth;
     redis: ServiceHealth;
-    elasticsearch: ServiceHealth;
+    elasticsearch?: ServiceHealth;
   };
   version: string;
   environment: string;
@@ -92,21 +93,23 @@ async function checkElasticsearch(): Promise<ServiceHealth> {
  * Perform comprehensive health check
  */
 export async function performHealthCheck(): Promise<HealthCheckResult> {
+  const elasticsearchEnabled = isFeatureEnabled('ELASTICSEARCH');
+
   const [database, redisHealth, elasticsearch] = await Promise.all([
     checkDatabase(),
     checkRedis(),
-    checkElasticsearch(),
+    elasticsearchEnabled ? checkElasticsearch() : Promise.resolve(undefined),
   ]);
 
   const allServicesUp =
     database.status === 'up' &&
     redisHealth.status === 'up' &&
-    elasticsearch.status === 'up';
+    (!elasticsearchEnabled || elasticsearch?.status === 'up');
 
   const someServicesDown =
     database.status === 'down' ||
     redisHealth.status === 'down' ||
-    elasticsearch.status === 'down';
+    (elasticsearchEnabled && elasticsearch?.status === 'down');
 
   let overallStatus: 'healthy' | 'degraded' | 'unhealthy';
   if (allServicesUp) {
@@ -121,15 +124,20 @@ export async function performHealthCheck(): Promise<HealthCheckResult> {
     overallStatus = 'healthy';
   }
 
+  const services: HealthCheckResult['services'] = {
+    database,
+    redis: redisHealth,
+  };
+
+  if (elasticsearchEnabled && elasticsearch) {
+    services.elasticsearch = elasticsearch;
+  }
+
   return {
     status: overallStatus,
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
-    services: {
-      database,
-      redis: redisHealth,
-      elasticsearch,
-    },
+    services,
     version: process.env.npm_package_version || '1.0.0',
     environment: process.env.NODE_ENV || 'development',
   };

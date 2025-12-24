@@ -4,6 +4,7 @@ import { db, deals, votes, users, userActivity, priceHistory } from '../db/index
 import { eq, desc, sql, and, or, ilike, gte, inArray, isNotNull } from 'drizzle-orm';
 import type { AuthRequest } from '../middleware/auth.js';
 import { indexDeal, updateDeal, deleteDeal } from '../services/elasticsearch.service.js';
+import { isFeatureEnabled } from '../config/features.js';
 import {
   cacheAside,
   CachePrefix,
@@ -240,8 +241,8 @@ export const createDeal = async (req: AuthRequest, res: Response) => {
       console.error('Failed to calculate AI score for new deal:', err);
     }
 
-    // Index in Elasticsearch asynchronously
-    if (dealWithUser) {
+    // Index in Elasticsearch asynchronously (if enabled)
+    if (dealWithUser && isFeatureEnabled('ELASTICSEARCH')) {
       indexDeal({
         id: dealWithUser.id,
         title: dealWithUser.title,
@@ -269,7 +270,9 @@ export const createDeal = async (req: AuthRequest, res: Response) => {
       }).catch((err) => {
         console.error('Failed to index deal in Elasticsearch:', err);
       });
+    }
 
+    if (dealWithUser) {
       // Invalidate deals cache
       invalidateDealsCache().catch((err) => {
         console.error('Failed to invalidate deals cache:', err);
@@ -723,8 +726,8 @@ export const voteDeal = async (req: AuthRequest, res: Response) => {
       where: eq(deals.id, id),
     });
 
-    // Update Elasticsearch asynchronously with new vote counts
-    if (updatedDeal) {
+    // Update Elasticsearch asynchronously with new vote counts (if enabled)
+    if (updatedDeal && isFeatureEnabled('ELASTICSEARCH')) {
       updateDeal(id, {
         upvotes: updatedDeal.upvotes,
         downvotes: updatedDeal.downvotes,
@@ -732,7 +735,9 @@ export const voteDeal = async (req: AuthRequest, res: Response) => {
       }).catch((err) => {
         console.error('Failed to update deal votes in Elasticsearch:', err);
       });
+    }
 
+    if (updatedDeal) {
       // Invalidate cache for this deal and deals lists
       invalidateDealCache(id).catch((err) => {
         console.error('Failed to invalidate deal cache:', err);
@@ -787,18 +792,20 @@ export const trackActivity = async (req: AuthRequest, res: Response) => {
         .set({ viewCount: sql`${deals.viewCount} + 1` })
         .where(eq(deals.id, id));
 
-      // Update view count in Elasticsearch asynchronously
-      const updatedDeal = await db.query.deals.findFirst({
-        where: eq(deals.id, id),
-        columns: { viewCount: true },
-      });
-
-      if (updatedDeal) {
-        updateDeal(id, {
-          viewCount: updatedDeal.viewCount,
-        }).catch((err) => {
-          console.error('Failed to update view count in Elasticsearch:', err);
+      // Update view count in Elasticsearch asynchronously (if enabled)
+      if (isFeatureEnabled('ELASTICSEARCH')) {
+        const updatedDeal = await db.query.deals.findFirst({
+          where: eq(deals.id, id),
+          columns: { viewCount: true },
         });
+
+        if (updatedDeal) {
+          updateDeal(id, {
+            viewCount: updatedDeal.viewCount,
+          }).catch((err) => {
+            console.error('Failed to update view count in Elasticsearch:', err);
+          });
+        }
       }
     }
 
