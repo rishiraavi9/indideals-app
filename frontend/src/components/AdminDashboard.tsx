@@ -81,6 +81,8 @@ export default function AdminDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [credentials, setCredentials] = useState({ username: '', password: '' });
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [healthStatus, setHealthStatus] = useState<{ status: string; timestamp: string } | null>(null);
+  const [healthLoading, setHealthLoading] = useState(false);
 
   const fetchStats = async (username: string, password: string) => {
     try {
@@ -148,6 +150,20 @@ export default function AdminDashboard() {
       const decoded = atob(savedAuth);
       const [username, password] = decoded.split(':');
       fetchStats(username, password);
+    }
+  };
+
+  const checkHealth = async () => {
+    setHealthLoading(true);
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+      const response = await fetch(`${apiUrl}/health`);
+      const data = await response.json();
+      setHealthStatus(data);
+    } catch (err) {
+      setHealthStatus({ status: 'error', timestamp: new Date().toISOString() });
+    } finally {
+      setHealthLoading(false);
     }
   };
 
@@ -740,10 +756,9 @@ export default function AdminDashboard() {
               <div style={{ fontSize: 12, color: '#6b7280' }}>Monitor background jobs</div>
             </div>
           </a>
-          <a
-            href={`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/health`}
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            onClick={checkHealth}
+            disabled={healthLoading}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -754,14 +769,27 @@ export default function AdminDashboard() {
               border: '1px solid #e5e7eb',
               textDecoration: 'none',
               color: '#1f2937',
+              cursor: healthLoading ? 'wait' : 'pointer',
+              textAlign: 'left',
+              width: '100%',
             }}
           >
-            <span style={{ fontSize: 24 }}>💚</span>
-            <div>
+            <span style={{ fontSize: 24 }}>
+              {healthStatus?.status === 'ok' ? '💚' : healthStatus?.status === 'error' ? '❌' : '💚'}
+            </span>
+            <div style={{ flex: 1 }}>
               <div style={{ fontWeight: 600 }}>Health Check</div>
-              <div style={{ fontSize: 12, color: '#6b7280' }}>API & services status</div>
+              {healthLoading ? (
+                <div style={{ fontSize: 12, color: '#6b7280' }}>Checking...</div>
+              ) : healthStatus ? (
+                <div style={{ fontSize: 12, color: healthStatus.status === 'ok' ? '#10b981' : '#dc2626' }}>
+                  Status: {healthStatus.status.toUpperCase()} • {new Date(healthStatus.timestamp).toLocaleTimeString()}
+                </div>
+              ) : (
+                <div style={{ fontSize: 12, color: '#6b7280' }}>Click to check API status</div>
+              )}
             </div>
-          </a>
+          </button>
         </div>
       </div>
     </Layout>
