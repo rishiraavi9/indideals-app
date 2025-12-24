@@ -51,19 +51,19 @@ export const createPriceAlert = async (dealId: string, targetPrice: number): Pro
  * Get user's price alerts
  */
 export const getPriceAlerts = async (activeOnly: boolean = true): Promise<{ alerts: PriceAlert[] }> => {
-  return await apiClient.get<{ alerts: PriceAlert[] }>(`/price-alerts?active=${activeOnly}`);
+  return await apiClient.get<{ alerts: PriceAlert[] }>(`/price-history/alerts?active=${activeOnly}`);
 };
 
 /**
  * Delete a price alert
  */
 export const deletePriceAlert = async (alertId: string): Promise<void> => {
-  await apiClient.delete(`/price-alerts/${alertId}`);
+  await apiClient.delete(`/price-history/alerts/${alertId}`);
 };
 
 /**
  * Update a price alert
  */
 export const updatePriceAlert = async (alertId: string, updates: { targetPrice?: number; isActive?: boolean }): Promise<{ alert: PriceAlert }> => {
-  return await apiClient.patch<{ alert: PriceAlert }>(`/price-alerts/${alertId}`, updates);
+  return await apiClient.patch<{ alert: PriceAlert }>(`/price-history/alerts/${alertId}`, updates);
 };
