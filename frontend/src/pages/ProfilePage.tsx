@@ -2,10 +2,9 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
-import { dealsApi } from '../api/deals';
+import { getWishlist, type SavedDeal } from '../api/wishlist';
 import Layout from '../components/Layout';
 import { supportedLanguages, changeLanguage, type LanguageCode } from '../i18n';
-import type { Deal } from '../types';
 
 interface MenuItem {
   icon: string;
@@ -24,7 +23,7 @@ export default function ProfilePage() {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const { user, isAuthenticated, logout } = useAuth();
-  const [userDeals, setUserDeals] = useState<Deal[]>([]);
+  const [wishlistItems, setWishlistItems] = useState<SavedDeal[]>([]);
   const [selectedLanguage, setSelectedLanguage] = useState<LanguageCode>(i18n.language as LanguageCode);
   const [showLanguageModal, setShowLanguageModal] = useState(false);
 
@@ -44,16 +43,16 @@ export default function ProfilePage() {
       navigate('/login');
       return;
     }
-    loadUserDeals();
+    loadWishlist();
   }, [isAuthenticated, navigate]);
 
-  const loadUserDeals = async () => {
+  const loadWishlist = async () => {
     if (!user?.id) return;
     try {
-      const response = await dealsApi.getDeals({ userId: user.id, limit: 100 });
-      setUserDeals(response.deals);
+      const response = await getWishlist(100, 0);
+      setWishlistItems(response.wishlist);
     } catch (error) {
-      console.error('Failed to load user deals:', error);
+      console.error('Failed to load wishlist:', error);
     }
   };
 
@@ -96,8 +95,9 @@ export default function ProfilePage() {
     },
   ];
 
-  // Calculate stats
-  const totalSavings = userDeals.reduce((sum, deal) => {
+  // Calculate stats from wishlist items
+  const totalSavings = wishlistItems.reduce((sum, item) => {
+    const deal = item.deal;
     if (deal.originalPrice && deal.price) {
       return sum + (deal.originalPrice - deal.price);
     }
@@ -177,7 +177,7 @@ export default function ProfilePage() {
               }}
             >
               {[
-                { label: t('profile.dealsSaved'), value: userDeals.length.toString() },
+                { label: t('profile.dealsSaved'), value: wishlistItems.length.toString() },
                 { label: t('profile.alertsActive'), value: '0' },
                 { label: t('profile.totalSavings'), value: `₹${(totalSavings / 100).toFixed(0)}` },
               ].map((stat) => (
