@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { db } from '../db/index.js';
-import { users, deals, comments, votes, affiliateClicks, alerts, priceHistory } from '../db/schema.js';
-import { sql, eq, gte, and, desc, count } from 'drizzle-orm';
+import { users, deals, comments, votes, affiliateClicks, alerts, priceHistory, telegramMessages } from '../db/schema.js';
+import { sql, eq, gte, and, desc, count, isNotNull, isNull } from 'drizzle-orm';
 import { env } from '../config/env.js';
 
 // Get comprehensive admin stats
@@ -62,6 +62,79 @@ export const getAdminStats = async (req: Request, res: Response, next: NextFunct
       };
     } catch (e) {
       console.error('Error fetching alert stats:', e);
+    }
+
+    // Telegram Scraper Stats (with error handling)
+    let telegramStats = {
+      totalProcessed: 0,
+      dealsCreated: 0,
+      skipped: 0,
+      processedToday: 0,
+      processedThisWeek: 0,
+      byChannel: [] as { channel: string; count: number }[],
+      skipReasons: [] as { reason: string; count: number }[]
+    };
+    try {
+      const [totalProcessed] = await db.select({ count: count() }).from(telegramMessages);
+      const [dealsCreated] = await db.select({ count: count() }).from(telegramMessages).where(isNotNull(telegramMessages.dealId));
+      const [skipped] = await db.select({ count: count() }).from(telegramMessages).where(isNotNull(telegramMessages.skippedReason));
+      const [processedToday] = await db.select({ count: count() }).from(telegramMessages).where(gte(telegramMessages.createdAt, today));
+      const [processedThisWeek] = await db.select({ count: count() }).from(telegramMessages).where(gte(telegramMessages.createdAt, weekAgo));
+
+      // Messages by channel
+      const byChannel = await db.select({
+        channel: telegramMessages.channelUsername,
+        count: count(),
+      })
+      .from(telegramMessages)
+      .groupBy(telegramMessages.channelUsername)
+      .orderBy(desc(count()))
+      .limit(10);
+
+      // Skip reasons breakdown
+      const skipReasons = await db.select({
+        reason: telegramMessages.skippedReason,
+        count: count(),
+      })
+      .from(telegramMessages)
+      .where(isNotNull(telegramMessages.skippedReason))
+      .groupBy(telegramMessages.skippedReason)
+      .orderBy(desc(count()));
+
+      telegramStats = {
+        totalProcessed: totalProcessed?.count || 0,
+        dealsCreated: dealsCreated?.count || 0,
+        skipped: skipped?.count || 0,
+        processedToday: processedToday?.count || 0,
+        processedThisWeek: processedThisWeek?.count || 0,
+        byChannel: byChannel.map(c => ({ channel: c.channel, count: c.count })),
+        skipReasons: skipReasons.map(r => ({ reason: r.reason || 'unknown', count: r.count })),
+      };
+    } catch (e) {
+      console.error('Error fetching telegram stats:', e);
+    }
+
+    // Deal Source Stats (Telegram vs User-submitted)
+    let dealSourceStats = { telegram: 0, userSubmitted: 0, expiredDeals: 0 };
+    try {
+      // Deals linked to telegram messages
+      const [telegramDeals] = await db.select({ count: count() })
+        .from(telegramMessages)
+        .where(isNotNull(telegramMessages.dealId));
+
+      // Expired deals count
+      const [expiredDeals] = await db.select({ count: count() }).from(deals).where(eq(deals.isExpired, true));
+
+      const totalDealCount = totalDeals?.count || 0;
+      const telegramDealCount = telegramDeals?.count || 0;
+
+      dealSourceStats = {
+        telegram: telegramDealCount,
+        userSubmitted: totalDealCount - telegramDealCount,
+        expiredDeals: expiredDeals?.count || 0,
+      };
+    } catch (e) {
+      console.error('Error fetching deal source stats:', e);
     }
 
     // Top Deals (by score)
@@ -160,6 +233,8 @@ export const getAdminStats = async (req: Request, res: Response, next: NextFunct
         totalCommission: affiliateStats.totalCommission,
       },
       alerts: alertStats,
+      telegram: telegramStats,
+      dealSources: dealSourceStats,
       topDeals,
       recentDeals,
       dealsByMerchant,

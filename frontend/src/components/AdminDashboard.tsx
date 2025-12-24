@@ -32,6 +32,20 @@ interface AdminStats {
     total: number;
     active: number;
   };
+  telegram: {
+    totalProcessed: number;
+    dealsCreated: number;
+    skipped: number;
+    processedToday: number;
+    processedThisWeek: number;
+    byChannel: Array<{ channel: string; count: number }>;
+    skipReasons: Array<{ reason: string; count: number }>;
+  };
+  dealSources: {
+    telegram: number;
+    userSubmitted: number;
+    expiredDeals: number;
+  };
   topDeals: Array<{
     id: string;
     title: string;
@@ -424,6 +438,106 @@ export default function AdminDashboard() {
               <div style={{ fontSize: 12, opacity: 0.7 }}>of {stats.alerts.total} total</div>
             </div>
           </div>
+        </div>
+
+        {/* Telegram Scraper Stats */}
+        <div style={{
+          background: '#ffffff',
+          borderRadius: 16,
+          padding: 24,
+          marginBottom: 32,
+          border: '1px solid #e5e7eb',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+        }}>
+          <h2 style={{ margin: '0 0 20px', fontSize: 20, fontWeight: 700, color: '#1f2937', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span>📱</span> Telegram Scraper
+          </h2>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+            gap: 24,
+            marginBottom: 24,
+          }}>
+            <div style={{ padding: 16, background: '#f0fdf4', borderRadius: 12 }}>
+              <div style={{ fontSize: 13, color: '#166534' }}>Deals Created</div>
+              <div style={{ fontSize: 28, fontWeight: 700, color: '#15803d' }}>{formatNumber(stats.telegram?.dealsCreated || 0)}</div>
+              <div style={{ fontSize: 12, color: '#166534' }}>
+                {stats.dealSources?.telegram > 0 && stats.deals.total > 0
+                  ? `${((stats.dealSources.telegram / stats.deals.total) * 100).toFixed(1)}% of all deals`
+                  : 'from Telegram channels'}
+              </div>
+            </div>
+            <div style={{ padding: 16, background: '#eff6ff', borderRadius: 12 }}>
+              <div style={{ fontSize: 13, color: '#1e40af' }}>Messages Processed</div>
+              <div style={{ fontSize: 28, fontWeight: 700, color: '#1d4ed8' }}>{formatNumber(stats.telegram?.totalProcessed || 0)}</div>
+              <div style={{ fontSize: 12, color: '#1e40af' }}>+{stats.telegram?.processedToday || 0} today</div>
+            </div>
+            <div style={{ padding: 16, background: '#fef3c7', borderRadius: 12 }}>
+              <div style={{ fontSize: 13, color: '#92400e' }}>Skipped</div>
+              <div style={{ fontSize: 28, fontWeight: 700, color: '#b45309' }}>{formatNumber(stats.telegram?.skipped || 0)}</div>
+              <div style={{ fontSize: 12, color: '#92400e' }}>duplicates/invalid</div>
+            </div>
+            <div style={{ padding: 16, background: '#fae8ff', borderRadius: 12 }}>
+              <div style={{ fontSize: 13, color: '#86198f' }}>User Submitted</div>
+              <div style={{ fontSize: 28, fontWeight: 700, color: '#a21caf' }}>{formatNumber(stats.dealSources?.userSubmitted || 0)}</div>
+              <div style={{ fontSize: 12, color: '#86198f' }}>manual posts</div>
+            </div>
+            <div style={{ padding: 16, background: '#fef2f2', borderRadius: 12 }}>
+              <div style={{ fontSize: 13, color: '#991b1b' }}>Expired Deals</div>
+              <div style={{ fontSize: 28, fontWeight: 700, color: '#dc2626' }}>{formatNumber(stats.dealSources?.expiredDeals || 0)}</div>
+              <div style={{ fontSize: 12, color: '#991b1b' }}>no longer active</div>
+            </div>
+          </div>
+
+          {/* Channel Breakdown */}
+          {stats.telegram?.byChannel && stats.telegram.byChannel.length > 0 && (
+            <div style={{ marginTop: 16 }}>
+              <h4 style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 600, color: '#374151' }}>
+                Messages by Channel
+              </h4>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {stats.telegram.byChannel.map((channel) => (
+                  <div
+                    key={channel.channel}
+                    style={{
+                      padding: '6px 12px',
+                      background: '#f3f4f6',
+                      borderRadius: 16,
+                      fontSize: 13,
+                      color: '#374151',
+                    }}
+                  >
+                    @{channel.channel}: <strong>{channel.count}</strong>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Skip Reasons */}
+          {stats.telegram?.skipReasons && stats.telegram.skipReasons.length > 0 && (
+            <div style={{ marginTop: 16 }}>
+              <h4 style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 600, color: '#374151' }}>
+                Skip Reasons
+              </h4>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {stats.telegram.skipReasons.map((item) => (
+                  <div
+                    key={item.reason}
+                    style={{
+                      padding: '6px 12px',
+                      background: '#fef3c7',
+                      borderRadius: 16,
+                      fontSize: 13,
+                      color: '#92400e',
+                    }}
+                  >
+                    {item.reason}: <strong>{item.count}</strong>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Two Column Layout */}
