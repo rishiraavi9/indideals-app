@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
-import { db } from '../db';
-import { users, deals, comments, votes, affiliateClicks, alerts, priceHistory } from '../db/schema';
+import { db } from '../db/index.js';
+import { users, deals, comments, votes, affiliateClicks, alerts, priceHistory } from '../db/schema.js';
 import { sql, eq, gte, and, desc, count } from 'drizzle-orm';
+import { env } from '../config/env.js';
 
 // Get comprehensive admin stats
 export const getAdminStats = async (req: Request, res: Response, next: NextFunction) => {
@@ -154,6 +155,17 @@ export const getAdminStats = async (req: Request, res: Response, next: NextFunct
 export const adminAuth = (req: Request, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
 
+  // Check if admin password is configured
+  if (!env.ADMIN_PASSWORD) {
+    // In development, allow with warning
+    if (env.NODE_ENV !== 'production') {
+      console.warn('⚠️  Admin dashboard accessible without authentication (ADMIN_PASSWORD not set)');
+      return next();
+    }
+    // In production without password, deny access
+    return res.status(503).json({ error: 'Admin dashboard not configured. Set ADMIN_PASSWORD environment variable.' });
+  }
+
   if (!authHeader || !authHeader.startsWith('Basic ')) {
     res.setHeader('WWW-Authenticate', 'Basic realm="Admin Dashboard"');
     return res.status(401).json({ error: 'Authentication required' });
@@ -163,12 +175,10 @@ export const adminAuth = (req: Request, res: Response, next: NextFunction) => {
   const credentials = Buffer.from(base64Credentials, 'base64').toString('utf8');
   const [username, password] = credentials.split(':');
 
-  const adminUsername = process.env.ADMIN_USERNAME || 'admin';
-  const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
-
-  if (username === adminUsername && password === adminPassword) {
+  if (username === env.ADMIN_USERNAME && password === env.ADMIN_PASSWORD) {
     next();
   } else {
+    console.log(`Admin login failed for user: ${username}`);
     res.setHeader('WWW-Authenticate', 'Basic realm="Admin Dashboard"');
     return res.status(401).json({ error: 'Invalid credentials' });
   }
