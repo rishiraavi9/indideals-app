@@ -85,7 +85,7 @@ export const registerJobProcessors = async () => {
 
     // Cleanup
     if (isFeatureEnabled('DATABASE_CLEANUP') && cleanupQueue) {
-      cleanupQueue.process(async (job) => {
+      cleanupQueue.process('cleanup-old-data', async (job) => {
         try {
           await processCleanup(job);
         } catch (error) {
