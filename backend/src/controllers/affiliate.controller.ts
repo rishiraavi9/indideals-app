@@ -28,7 +28,7 @@ export const trackClick = async (req: Request, res: Response) => {
       .limit(1);
 
     // Extract user info from the authenticated request (if available)
-    const userId = (req.user as any)?.id || null;
+    const userId = (req as any).userId || null;
 
     // Generate anonymous ID for non-logged-in users (from cookie or generate new)
     const anonymousId = req.cookies?.anonymousId || `anon_${Date.now()}_${Math.random().toString(36).substring(2)}`;

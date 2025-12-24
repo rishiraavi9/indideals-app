@@ -113,7 +113,7 @@ export const searchCoupons = async (req: Request, res: Response) => {
  */
 export const createCoupon = async (req: Request, res: Response) => {
   try {
-    const userId = (req.user as any)?.id;
+    const userId = (req as any).userId;
     const {
       code,
       merchant,
@@ -186,7 +186,7 @@ export const createCoupon = async (req: Request, res: Response) => {
  */
 export const verifyCoupon = async (req: Request, res: Response) => {
   try {
-    const userId = (req.user as any)?.id;
+    const userId = (req as any).userId;
     const { couponId } = req.params;
     const { worked, feedback } = req.body;
 
@@ -281,7 +281,7 @@ export const getCouponStats = async (req: Request, res: Response) => {
  */
 export const deleteCoupon = async (req: Request, res: Response) => {
   try {
-    const userId = (req.user as any)?.id;
+    const userId = (req as any).userId;
     const { couponId } = req.params;
 
     // Check if user is the creator (for now, allow anyone to delete their own)

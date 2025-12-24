@@ -122,7 +122,7 @@ export const resetPassword = async (req: Request, res: Response) => {
 // Send email verification
 export const sendEmailVerification = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.id;
+    const userId = (req as any).userId;
     if (!userId) {
       res.status(401).json({ error: 'Unauthorized' });
       return;

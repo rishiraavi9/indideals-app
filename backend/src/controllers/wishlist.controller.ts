@@ -10,7 +10,7 @@ import { logger } from '../utils/logger.js';
  */
 export const saveDeal = async (req: Request, res: Response) => {
   try {
-    const userId = (req.user as any).id;
+    const userId = (req as any).userId;
     const { dealId, notes } = req.body;
 
     if (!dealId) {
@@ -63,7 +63,7 @@ export const saveDeal = async (req: Request, res: Response) => {
  */
 export const getWishlist = async (req: Request, res: Response) => {
   try {
-    const userId = (req.user as any).id;
+    const userId = (req as any).userId;
     const { limit = '20', offset = '0' } = req.query;
 
     const wishlist = await db
@@ -107,7 +107,7 @@ export const getWishlist = async (req: Request, res: Response) => {
  */
 export const removeDeal = async (req: Request, res: Response) => {
   try {
-    const userId = (req.user as any).id;
+    const userId = (req as any).userId;
     const { dealId } = req.params;
 
     const result = await db
@@ -139,7 +139,7 @@ export const removeDeal = async (req: Request, res: Response) => {
  */
 export const updateNotes = async (req: Request, res: Response) => {
   try {
-    const userId = (req.user as any).id;
+    const userId = (req as any).userId;
     const { dealId } = req.params;
     const { notes } = req.body;
 
@@ -175,12 +175,11 @@ export const updateNotes = async (req: Request, res: Response) => {
 export const checkWishlist = async (req: Request, res: Response) => {
   try {
     // Return false if user is not logged in
-    if (!req.user) {
+    const userId = (req as any).userId;
+    if (!userId) {
       res.json({ inWishlist: false, saved: null });
       return;
     }
-
-    const userId = (req.user as any).id;
     const { dealId } = req.params;
 
     const saved = await db.query.savedDeals.findFirst({
