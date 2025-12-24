@@ -686,12 +686,14 @@ export default function AdminDashboard() {
                     <td style={{
                       padding: '12px 8px',
                       fontSize: 14,
-                      maxWidth: 300,
+                      maxWidth: 400,
+                      minWidth: 200,
                       whiteSpace: 'nowrap',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
+                      color: '#1f2937',
                     }}>
-                      {deal.title}
+                      {deal.title || 'Untitled Deal'}
                     </td>
                     <td style={{ padding: '12px 8px', fontSize: 14, color: '#6b7280' }}>
                       {deal.merchant}
