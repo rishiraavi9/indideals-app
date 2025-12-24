@@ -28,6 +28,7 @@ export default function AIInsights({ dealId, currentPrice, originalPrice: _origi
   const [targetPrice, setTargetPrice] = useState<string>('');
   const [creatingAlert, setCreatingAlert] = useState(false);
   const [alertCreated, setAlertCreated] = useState(false);
+  const [alertError, setAlertError] = useState<string | null>(null);
 
   useEffect(() => {
     loadAIData();
@@ -66,12 +67,18 @@ export default function AIInsights({ dealId, currentPrice, originalPrice: _origi
   const handleCreateAlert = async () => {
     if (!targetPrice || !isAuthenticated) return;
     setCreatingAlert(true);
+    setAlertError(null);
     try {
-      await createSmartAlert(dealId, parseInt(targetPrice));
-      setAlertCreated(true);
-      setTimeout(() => setAlertCreated(false), 3000);
-    } catch (error) {
+      const result = await createSmartAlert(dealId, parseInt(targetPrice));
+      if (result && result.alertId) {
+        setAlertCreated(true);
+        setTimeout(() => setAlertCreated(false), 5000);
+      } else {
+        setAlertError('Failed to create alert. Please try again.');
+      }
+    } catch (error: any) {
       console.error('Failed to create alert:', error);
+      setAlertError(error.message || 'Failed to create alert. Please try again.');
     } finally {
       setCreatingAlert(false);
     }
@@ -579,6 +586,7 @@ export default function AIInsights({ dealId, currentPrice, originalPrice: _origi
 
             {/* Create Alert Button */}
             {isAuthenticated ? (
+              <>
               <button
                 onClick={handleCreateAlert}
                 disabled={creatingAlert || alertCreated}
@@ -608,6 +616,20 @@ export default function AIInsights({ dealId, currentPrice, originalPrice: _origi
                   <>🔔 Create Smart Alert</>
                 )}
               </button>
+              {alertError && (
+                <div style={{
+                  marginTop: 12,
+                  padding: '10px 12px',
+                  borderRadius: 8,
+                  background: '#fee2e2',
+                  border: '1px solid #fecaca',
+                  color: '#991b1b',
+                  fontSize: 13,
+                }}>
+                  {alertError}
+                </div>
+              )}
+            </>
             ) : (
               <div style={{
                 background: '#f9fafb',

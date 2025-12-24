@@ -337,6 +337,7 @@ export class SmartAlertsService {
         userId,
         dealId,
         targetPrice,
+        isActive: true,
         alertType: suggestion.alertType,
         dropProbability: suggestion.dropProbability,
         suggestedWaitDays: suggestion.suggestedWaitDays,
