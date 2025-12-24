@@ -69,28 +69,28 @@ export default function ProfilePage() {
     {
       section: t('profile.myAccount'),
       items: [
-        { icon: '📦', label: t('profile.myOrders'), path: '/orders' },
         { icon: '❤️', label: t('profile.wishlist'), path: '/wishlist' },
         { icon: '🔔', label: t('profile.priceAlerts'), path: '/alerts' },
-        { icon: '📊', label: t('profile.dealHistory'), path: '/history' },
+        { icon: '📦', label: t('profile.myOrders'), path: '', currentValue: 'Coming Soon' },
+        { icon: '📊', label: t('profile.dealHistory'), path: '', currentValue: 'Coming Soon' },
       ],
     },
     {
       section: t('profile.settings'),
       items: [
-        { icon: '👤', label: t('profile.editProfile'), path: '/profile/edit' },
-        { icon: '🔐', label: t('profile.changePassword'), path: '/profile/password' },
-        { icon: '📧', label: t('profile.emailPreferences'), path: '/profile/notifications' },
         { icon: '🌐', label: t('profile.language'), path: '', action: 'language', currentValue: getCurrentLanguageName() },
+        { icon: '👤', label: t('profile.editProfile'), path: '', currentValue: 'Coming Soon' },
+        { icon: '🔐', label: t('profile.changePassword'), path: '', currentValue: 'Coming Soon' },
+        { icon: '📧', label: t('profile.emailPreferences'), path: '', currentValue: 'Coming Soon' },
       ],
     },
     {
       section: t('profile.helpSupport'),
       items: [
-        { icon: '❓', label: t('profile.faqs'), path: '/help/faq' },
-        { icon: '💬', label: t('profile.contactUs'), path: '/help/contact' },
-        { icon: '📜', label: t('profile.termsOfService'), path: '/terms' },
-        { icon: '🔒', label: t('profile.privacyPolicy'), path: '/privacy' },
+        { icon: '❓', label: t('profile.faqs'), path: '', currentValue: 'Coming Soon' },
+        { icon: '💬', label: t('profile.contactUs'), path: '', currentValue: 'Coming Soon' },
+        { icon: '📜', label: t('profile.termsOfService'), path: '', currentValue: 'Coming Soon' },
+        { icon: '🔒', label: t('profile.privacyPolicy'), path: '', currentValue: 'Coming Soon' },
       ],
     },
   ];
