@@ -30,20 +30,39 @@ export const getAdminStats = async (req: Request, res: Response, next: NextFunct
     const [totalVotes] = await db.select({ count: count() }).from(votes);
     const [votesToday] = await db.select({ count: count() }).from(votes).where(gte(votes.createdAt, today));
 
-    // Affiliate Stats
-    const [totalClicks] = await db.select({ count: count() }).from(affiliateClicks);
-    const [clicksToday] = await db.select({ count: count() }).from(affiliateClicks).where(gte(affiliateClicks.clickedAt, today));
-    const [totalConversions] = await db.select({ count: count() }).from(affiliateClicks).where(eq(affiliateClicks.converted, true));
+    // Affiliate Stats (with error handling)
+    let affiliateStats = { totalClicks: 0, clicksToday: 0, totalConversions: 0, totalCommission: 0 };
+    try {
+      const [totalClicks] = await db.select({ count: count() }).from(affiliateClicks);
+      const [clicksToday] = await db.select({ count: count() }).from(affiliateClicks).where(gte(affiliateClicks.clickedAt, today));
+      const [totalConversions] = await db.select({ count: count() }).from(affiliateClicks).where(eq(affiliateClicks.converted, true));
 
-    // Commission calculation
-    const commissionResult = await db.select({
-      total: sql<number>`COALESCE(SUM(${affiliateClicks.estimatedCommission}), 0)`
-    }).from(affiliateClicks).where(eq(affiliateClicks.converted, true));
-    const totalCommission = commissionResult[0]?.total || 0;
+      const commissionResult = await db.select({
+        total: sql<number>`COALESCE(SUM(${affiliateClicks.estimatedCommission}), 0)`
+      }).from(affiliateClicks).where(eq(affiliateClicks.converted, true));
 
-    // Alert Stats
-    const [totalAlerts] = await db.select({ count: count() }).from(alerts);
-    const [activeAlerts] = await db.select({ count: count() }).from(alerts).where(eq(alerts.isActive, true));
+      affiliateStats = {
+        totalClicks: totalClicks?.count || 0,
+        clicksToday: clicksToday?.count || 0,
+        totalConversions: totalConversions?.count || 0,
+        totalCommission: commissionResult[0]?.total || 0,
+      };
+    } catch (e) {
+      console.error('Error fetching affiliate stats:', e);
+    }
+
+    // Alert Stats (with error handling)
+    let alertStats = { total: 0, active: 0 };
+    try {
+      const [totalAlerts] = await db.select({ count: count() }).from(alerts);
+      const [activeAlerts] = await db.select({ count: count() }).from(alerts).where(eq(alerts.isActive, true));
+      alertStats = {
+        total: totalAlerts?.count || 0,
+        active: activeAlerts?.count || 0,
+      };
+    } catch (e) {
+      console.error('Error fetching alert stats:', e);
+    }
 
     // Top Deals (by score)
     const topDeals = await db.select({
@@ -58,7 +77,7 @@ export const getAdminStats = async (req: Request, res: Response, next: NextFunct
     })
     .from(deals)
     .where(eq(deals.status, 'active'))
-    .orderBy(desc(sql`${deals.upvotes} - ${deals.downvotes}`))
+    .orderBy(desc(sql`COALESCE(${deals.upvotes}, 0) - COALESCE(${deals.downvotes}, 0)`))
     .limit(10);
 
     // Recent Deals
@@ -83,70 +102,72 @@ export const getAdminStats = async (req: Request, res: Response, next: NextFunct
     .orderBy(desc(count()))
     .limit(10);
 
-    // User growth (last 7 days)
-    const userGrowth = await db.execute(sql`
-      SELECT
-        DATE(created_at) as date,
-        COUNT(*) as count
-      FROM users
-      WHERE created_at >= ${weekAgo}
-      GROUP BY DATE(created_at)
-      ORDER BY date ASC
-    `);
-
-    // Deal growth (last 7 days)
-    const dealGrowth = await db.execute(sql`
-      SELECT
-        DATE(created_at) as date,
-        COUNT(*) as count
-      FROM deals
-      WHERE created_at >= ${weekAgo}
-      GROUP BY DATE(created_at)
-      ORDER BY date ASC
-    `);
+    // Growth stats (simplified - skip if errors)
+    let growthStats = { users: [], deals: [] };
+    try {
+      const userGrowthResult = await db.execute(sql`
+        SELECT
+          DATE(created_at) as date,
+          COUNT(*)::int as count
+        FROM users
+        WHERE created_at >= ${weekAgo}
+        GROUP BY DATE(created_at)
+        ORDER BY date ASC
+      `);
+      const dealGrowthResult = await db.execute(sql`
+        SELECT
+          DATE(created_at) as date,
+          COUNT(*)::int as count
+        FROM deals
+        WHERE created_at >= ${weekAgo}
+        GROUP BY DATE(created_at)
+        ORDER BY date ASC
+      `);
+      growthStats = {
+        users: (userGrowthResult.rows || []) as any,
+        deals: (dealGrowthResult.rows || []) as any,
+      };
+    } catch (e) {
+      console.error('Error fetching growth stats:', e);
+    }
 
     res.json({
       users: {
-        total: totalUsers.count,
-        today: usersToday.count,
-        thisWeek: usersThisWeek.count,
-        thisMonth: usersThisMonth.count,
+        total: totalUsers?.count || 0,
+        today: usersToday?.count || 0,
+        thisWeek: usersThisWeek?.count || 0,
+        thisMonth: usersThisMonth?.count || 0,
       },
       deals: {
-        total: totalDeals.count,
-        active: activeDeals.count,
-        today: dealsToday.count,
-        thisWeek: dealsThisWeek.count,
+        total: totalDeals?.count || 0,
+        active: activeDeals?.count || 0,
+        today: dealsToday?.count || 0,
+        thisWeek: dealsThisWeek?.count || 0,
       },
       engagement: {
-        totalComments: totalComments.count,
-        commentsToday: commentsToday.count,
-        totalVotes: totalVotes.count,
-        votesToday: votesToday.count,
+        totalComments: totalComments?.count || 0,
+        commentsToday: commentsToday?.count || 0,
+        totalVotes: totalVotes?.count || 0,
+        votesToday: votesToday?.count || 0,
       },
       affiliate: {
-        totalClicks: totalClicks.count,
-        clicksToday: clicksToday.count,
-        totalConversions: totalConversions.count,
-        conversionRate: totalClicks.count > 0
-          ? ((totalConversions.count / totalClicks.count) * 100).toFixed(2)
+        totalClicks: affiliateStats.totalClicks,
+        clicksToday: affiliateStats.clicksToday,
+        totalConversions: affiliateStats.totalConversions,
+        conversionRate: affiliateStats.totalClicks > 0
+          ? ((affiliateStats.totalConversions / affiliateStats.totalClicks) * 100).toFixed(2)
           : '0.00',
-        totalCommission: totalCommission,
+        totalCommission: affiliateStats.totalCommission,
       },
-      alerts: {
-        total: totalAlerts.count,
-        active: activeAlerts.count,
-      },
+      alerts: alertStats,
       topDeals,
       recentDeals,
       dealsByMerchant,
-      growth: {
-        users: userGrowth.rows || [],
-        deals: dealGrowth.rows || [],
-      },
+      growth: growthStats,
       generatedAt: new Date().toISOString(),
     });
   } catch (error) {
+    console.error('Admin stats error:', error);
     next(error);
   }
 };
