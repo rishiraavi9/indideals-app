@@ -326,11 +326,47 @@ export class SmartAlertsService {
     userId: string,
     dealId: string,
     targetPrice: number
-  ): Promise<{ alertId: string; suggestion: SmartAlertSuggestion }> {
+  ): Promise<{ alertId: string; suggestion: SmartAlertSuggestion; updated?: boolean }> {
+    // Check if user already has an active alert for this deal
+    const existingAlert = await db
+      .select()
+      .from(priceAlerts)
+      .where(
+        and(
+          eq(priceAlerts.userId, userId),
+          eq(priceAlerts.dealId, dealId),
+          eq(priceAlerts.isActive, true)
+        )
+      )
+      .limit(1);
+
     // Get smart suggestion
     const suggestion = await this.suggestAlertStrategy(dealId, targetPrice);
 
-    // Create the alert
+    // If alert exists, update it instead of creating a new one
+    if (existingAlert.length > 0) {
+      const [updated] = await db
+        .update(priceAlerts)
+        .set({
+          targetPrice,
+          alertType: suggestion.alertType,
+          dropProbability: suggestion.dropProbability,
+          suggestedWaitDays: suggestion.suggestedWaitDays,
+          predictedDropDate: suggestion.suggestedWaitDays
+            ? new Date(Date.now() + suggestion.suggestedWaitDays * 24 * 60 * 60 * 1000)
+            : null,
+        } as any)
+        .where(eq(priceAlerts.id, existingAlert[0].id))
+        .returning();
+
+      return {
+        alertId: updated.id,
+        suggestion,
+        updated: true,
+      };
+    }
+
+    // Create new alert
     const [alert] = await db
       .insert(priceAlerts)
       .values({
