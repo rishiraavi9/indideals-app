@@ -55,7 +55,7 @@ export const getPriceHistory = async (req: Request, res: Response) => {
  */
 export const createPriceAlert = async (req: Request, res: Response) => {
   try {
-    const userId = (req.user as any).id;
+    const userId = (req as any).userId;
     const { dealId } = req.params;
     const { targetPrice } = req.body;
 
@@ -114,7 +114,7 @@ export const createPriceAlert = async (req: Request, res: Response) => {
  */
 export const getPriceAlerts = async (req: Request, res: Response) => {
   try {
-    const userId = (req.user as any).id;
+    const userId = (req as any).userId;
     const { active = 'true' } = req.query;
 
     const whereConditions = [eq(priceAlerts.userId, userId)];
@@ -150,7 +150,7 @@ export const getPriceAlerts = async (req: Request, res: Response) => {
  */
 export const deletePriceAlert = async (req: Request, res: Response) => {
   try {
-    const userId = (req.user as any).id;
+    const userId = (req as any).userId;
     const { alertId } = req.params;
 
     const result = await db
@@ -182,7 +182,7 @@ export const deletePriceAlert = async (req: Request, res: Response) => {
  */
 export const updatePriceAlert = async (req: Request, res: Response) => {
   try {
-    const userId = (req.user as any).id;
+    const userId = (req as any).userId;
     const { alertId } = req.params;
     const { targetPrice, isActive } = req.body;
 
