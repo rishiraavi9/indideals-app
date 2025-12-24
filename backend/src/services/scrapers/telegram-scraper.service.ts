@@ -7,6 +7,7 @@ import { logger } from '../../utils/logger.js';
 import { AffiliateService } from '../affiliate.service.js';
 import { MlDeduplicationService } from '../ml-deduplication.service.js';
 import { DealQualityService } from '../ai/deal-quality.service.js';
+import { FraudDetectionService } from '../ai/fraud-detection.service.js';
 import { getEnabledChannels, TELEGRAM_SCRAPER_CONFIG } from '../../config/telegram-channels.js';
 import { indexDeal, deleteDeal as deleteFromElasticsearch } from '../elasticsearch.service.js';
 import { isFeatureEnabled } from '../../config/features.js';
@@ -844,6 +845,23 @@ export class TelegramScraperService {
           logger.info(`[Telegram] ✅ AI Score calculated: ${aiResult.totalScore}`);
         } catch (err: any) {
           logger.error(`[Telegram] Failed to calculate AI score: ${err.message}`);
+        }
+
+        // Run fraud detection analysis (cost-free, local algorithms)
+        try {
+          const fraudResult = await FraudDetectionService.analyzeAndSave(insertedDeal.id);
+
+          // Log high-risk deals for monitoring
+          if (fraudResult.overallRiskScore >= 60) {
+            logger.warn(`[Telegram] ⚠️ High-risk deal detected: ${insertedDeal.id}`);
+            logger.warn(`[Telegram]   Risk Score: ${fraudResult.overallRiskScore}`);
+            logger.warn(`[Telegram]   Flags: ${fraudResult.flags.join(', ')}`);
+            logger.warn(`[Telegram]   Action: ${fraudResult.autoAction}`);
+          } else {
+            logger.info(`[Telegram] ✅ Fraud check passed: Risk score ${fraudResult.overallRiskScore}`);
+          }
+        } catch (err: any) {
+          logger.error(`[Telegram] Failed to run fraud detection: ${err.message}`);
         }
 
         // Index in Elasticsearch for search functionality (if enabled)

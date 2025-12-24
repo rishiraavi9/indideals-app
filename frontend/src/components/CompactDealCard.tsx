@@ -4,6 +4,7 @@ import type { Deal } from '../types';
 import { affiliateApi } from '../api/affiliate';
 import AIQualityBadgeInline from './AIQualityBadgeInline';
 import AIQualityBadge from './AIQualityBadge';
+import AIPriceTrendBadge from './AIPriceTrendBadge';
 
 export default function CompactDealCard({
   deal,
@@ -233,6 +234,8 @@ export default function CompactDealCard({
               Save ₹{savings.toLocaleString('en-IN')}
             </div>
           )}
+          {/* AI Price Trend Badge */}
+          <AIPriceTrendBadge dealId={deal.id} compact style={{ marginTop: 6 }} />
         </div>
 
         {/* Merchant & User */}

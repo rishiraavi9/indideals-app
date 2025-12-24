@@ -16,6 +16,7 @@ import { dealsApi } from '../api/deals';
 import { categoriesApi } from '../api/categories';
 import type { Deal, Tab, Category } from '../types';
 import { trackBrowsingActivity, getPreferredCategories } from '../utils/anonymousTracking';
+import ForYouTab from './ForYouTab';
 
 export default function HomePage() {
   const { t } = useTranslation();
@@ -815,7 +816,7 @@ export default function HomePage() {
 
               {/* Tabs */}
               <div style={{ display: 'flex', gap: 10 }}>
-                {(['All', 'Hot Deals', 'Great Deals', 'Budget Buys', 'New'] as Tab[]).map((tab) => {
+                {(['All', 'For You', 'Hot Deals', 'Great Deals', 'Budget Buys', 'New'] as Tab[]).map((tab) => {
                   const active = activeTab === tab;
                   return (
                     <button
@@ -909,6 +910,14 @@ export default function HomePage() {
             </div>
           </div>
 
+          {/* For You Tab - AI Personalized Recommendations */}
+          {activeTab === 'For You' ? (
+            <ForYouTab
+              onVote={handleVote}
+              onView={handleDealView}
+            />
+          ) : (
+          <>
           {/* Deals Grid */}
           {loading ? (
             <div

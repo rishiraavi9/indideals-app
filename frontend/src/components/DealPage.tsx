@@ -12,6 +12,7 @@ import { commentsApi } from '../api/comments';
 import { getDealQualityScore } from '../api/ai';
 import type { Deal, Comment } from '../types';
 import { useAuth } from '../context/AuthContext';
+import AIInsights from './AIInsights';
 
 export default function DealPage() {
   const { t } = useTranslation();
@@ -502,6 +503,15 @@ export default function DealPage() {
           {/* Price History Section */}
           <div style={{ marginBottom: 24 }}>
             <PriceHistoryChart dealId={deal.id} currentPrice={deal.price} />
+          </div>
+
+          {/* AI Insights Section */}
+          <div style={{ marginBottom: 24 }}>
+            <AIInsights
+              dealId={deal.id}
+              currentPrice={deal.price}
+              originalPrice={deal.originalPrice}
+            />
           </div>
 
           {/* Comments Section */}

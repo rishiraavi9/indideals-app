@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { formatDistanceToNow } from '../../utils/date';
 import { useHaptics } from '../../hooks/useHaptics';
 import type { Deal } from '../../types';
+import MobilePriceTrendBadge from './MobilePriceTrendBadge';
 
 // AI Score tooltip component
 function AIScoreTooltip({ score, onClose }: { score: number; onClose: () => void }) {
@@ -365,6 +366,9 @@ export default function MobileDealCard({
             </span>
           )}
         </div>
+
+        {/* AI Price Trend Badge */}
+        <MobilePriceTrendBadge dealId={deal.id} style={{ marginTop: 6 }} />
 
         {/* Bottom Row - Votes, Comments, Time */}
         <div

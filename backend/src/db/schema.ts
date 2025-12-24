@@ -1,4 +1,4 @@
-import { pgTable, text, integer, timestamp, boolean, uuid, varchar, index, jsonb, unique } from 'drizzle-orm/pg-core';
+import { pgTable, text, integer, timestamp, boolean, uuid, varchar, index, jsonb, unique, real } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
 // Users table
@@ -75,6 +75,13 @@ export const deals = pgTable('deals', {
   aiScore: integer('ai_score'), // Overall score 0-100
   aiScoreBreakdown: jsonb('ai_score_breakdown'), // { valueProp, authenticity, urgency, socialProof }
 
+  // AI Summary (generated algorithmically)
+  aiSummary: jsonb('ai_summary'), // { headline, valuePoints, priceAnalysis, buyRecommendation }
+  aiSummaryUpdatedAt: timestamp('ai_summary_updated_at'),
+
+  // Fraud Risk Score
+  fraudRiskScore: integer('fraud_risk_score'), // 0-100, higher = more risky
+
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 }, (table) => ({
@@ -85,6 +92,7 @@ export const deals = pgTable('deals', {
   isFeaturedIdx: index('deals_is_featured_idx').on(table.isFeatured),
   verificationStatusIdx: index('deals_verification_status_idx').on(table.verificationStatus),
   verifiedIdx: index('deals_verified_idx').on(table.verified),
+  fraudRiskScoreIdx: index('deals_fraud_risk_score_idx').on(table.fraudRiskScore),
 }));
 
 // Votes table (tracks individual user votes)
@@ -359,10 +367,17 @@ export const priceAlerts = pgTable('price_alerts', {
   isActive: boolean('is_active').notNull().default(true),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   notifiedAt: timestamp('notified_at'),
+
+  // Smart Alert Fields (AI-powered)
+  alertType: varchar('alert_type', { length: 20 }).default('fixed').notNull(), // 'fixed', 'smart', 'flash_sale'
+  predictedDropDate: timestamp('predicted_drop_date'), // AI-predicted date for price drop
+  dropProbability: integer('drop_probability'), // 0-100 percentage
+  suggestedWaitDays: integer('suggested_wait_days'), // How long to wait for better price
 }, (table) => ({
   userIdIdx: index('price_alerts_user_id_idx').on(table.userId),
   dealIdIdx: index('price_alerts_deal_id_idx').on(table.dealId),
   activeIdx: index('price_alerts_active_idx').on(table.isActive),
+  alertTypeIdx: index('price_alerts_type_idx').on(table.alertType),
 }));
 
 // Saved Deals (Wishlist)
@@ -537,4 +552,133 @@ export const telegramMessages = pgTable('telegram_messages', {
   messageIdIdx: index('telegram_messages_message_id_idx').on(table.messageId),
   channelIdx: index('telegram_messages_channel_idx').on(table.channelUsername),
   postedAtIdx: index('telegram_messages_posted_at_idx').on(table.postedAt),
+}));
+
+// ============================================
+// AI Features Tables (Cost-Free, Local Algorithms)
+// ============================================
+
+// Fraud Analysis - Store fraud detection results for each deal
+export const fraudAnalysis = pgTable('fraud_analysis', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  dealId: uuid('deal_id').notNull().references(() => deals.id, { onDelete: 'cascade' }).unique(),
+  overallRiskScore: integer('overall_risk_score').notNull(), // 0-100, higher = more risky
+  priceAnomalyScore: integer('price_anomaly_score'), // Z-score based
+  titleSuspicionScore: integer('title_suspicion_score'), // Pattern matching score
+  velocityScore: integer('velocity_score'), // Too many similar deals score
+  merchantRiskScore: integer('merchant_risk_score'), // Merchant history score
+  flags: jsonb('flags').default([]), // Array of detected flags
+  autoAction: varchar('auto_action', { length: 20 }), // 'none', 'flag', 'hide', 'delete'
+  reviewedBy: uuid('reviewed_by').references(() => users.id, { onDelete: 'set null' }),
+  reviewedAt: timestamp('reviewed_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => ({
+  dealIdIdx: index('fraud_analysis_deal_id_idx').on(table.dealId),
+  riskScoreIdx: index('fraud_analysis_risk_score_idx').on(table.overallRiskScore),
+  autoActionIdx: index('fraud_analysis_auto_action_idx').on(table.autoAction),
+}));
+
+// Merchant Risk Profiles - Track merchant trustworthiness
+export const merchantRiskProfiles = pgTable('merchant_risk_profiles', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  merchantName: varchar('merchant_name', { length: 100 }).notNull().unique(),
+  riskScore: integer('risk_score').notNull().default(50), // 0-100, lower = more trustworthy
+  totalDeals: integer('total_deals').default(0).notNull(),
+  flaggedDeals: integer('flagged_deals').default(0).notNull(),
+  expiredQuickly: integer('expired_quickly').default(0).notNull(), // Deals expired within 24h
+  avgDealLifetimeHours: integer('avg_deal_lifetime_hours'),
+  verificationSuccessRate: integer('verification_success_rate'), // Percentage 0-100
+  lastDealAt: timestamp('last_deal_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => ({
+  merchantNameIdx: index('merchant_risk_merchant_name_idx').on(table.merchantName),
+  riskScoreIdx: index('merchant_risk_score_idx').on(table.riskScore),
+}));
+
+// Price Predictions - AI-generated price forecasts
+export const pricePredictions = pgTable('price_predictions', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  dealId: uuid('deal_id').notNull().references(() => deals.id, { onDelete: 'cascade' }).unique(),
+  currentPrice: integer('current_price').notNull(),
+  predictedPrice: integer('predicted_price'), // Predicted price in 7 days
+  predictedDate: timestamp('predicted_date'), // When prediction is for
+  confidence: integer('confidence').notNull(), // 0-100 percentage
+  trend: varchar('trend', { length: 20 }).notNull(), // 'up', 'down', 'stable'
+  trendStrength: integer('trend_strength'), // 0-100, how strong the trend
+  bestBuyDay: varchar('best_buy_day', { length: 20 }), // 'Monday', 'Tuesday', etc.
+  flashSalePattern: boolean('flash_sale_pattern').default(false).notNull(),
+  nextFlashSaleDate: timestamp('next_flash_sale_date'),
+  priceVolatility: integer('price_volatility'), // 0-100, how volatile prices are
+  lowestPriceLast30Days: integer('lowest_price_last_30_days'),
+  highestPriceLast30Days: integer('highest_price_last_30_days'),
+  recommendation: varchar('recommendation', { length: 20 }), // 'buy_now', 'wait', 'skip'
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => ({
+  dealIdIdx: index('price_predictions_deal_id_idx').on(table.dealId),
+  trendIdx: index('price_predictions_trend_idx').on(table.trend),
+  recommendationIdx: index('price_predictions_recommendation_idx').on(table.recommendation),
+}));
+
+// User Profiles for Personalization - Cached user preferences
+export const userProfiles = pgTable('user_profiles', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }).unique(),
+  preferredCategories: jsonb('preferred_categories').default([]), // [{categoryId, weight}]
+  preferredMerchants: jsonb('preferred_merchants').default([]), // [{merchant, weight}]
+  preferredPriceRange: jsonb('preferred_price_range').default({}), // {min, max, avg}
+  avgLikedDiscount: integer('avg_liked_discount'), // Average discount % of upvoted deals
+  activityVector: jsonb('activity_vector'), // Normalized feature vector for similarity
+  totalInteractions: integer('total_interactions').default(0).notNull(),
+  lastActivityAt: timestamp('last_activity_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index('user_profiles_user_id_idx').on(table.userId),
+}));
+
+// User Similarity Cache - Pre-computed similar users for recommendations
+export const userSimilarityCache = pgTable('user_similarity_cache', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  similarUserId: uuid('similar_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  similarityScore: integer('similarity_score').notNull(), // 0-100 percentage
+  commonCategories: integer('common_categories').default(0).notNull(),
+  commonMerchants: integer('common_merchants').default(0).notNull(),
+  voteAgreement: integer('vote_agreement'), // Percentage of votes that agree
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index('user_similarity_user_id_idx').on(table.userId),
+  similarUserIdx: index('user_similarity_similar_user_idx').on(table.similarUserId),
+  scoreIdx: index('user_similarity_score_idx').on(table.similarityScore),
+  uniquePair: unique().on(table.userId, table.similarUserId),
+}));
+
+// Relations for new AI tables
+export const fraudAnalysisRelations = relations(fraudAnalysis, ({ one }) => ({
+  deal: one(deals, {
+    fields: [fraudAnalysis.dealId],
+    references: [deals.id],
+  }),
+  reviewer: one(users, {
+    fields: [fraudAnalysis.reviewedBy],
+    references: [users.id],
+  }),
+}));
+
+export const pricePredictionsRelations = relations(pricePredictions, ({ one }) => ({
+  deal: one(deals, {
+    fields: [pricePredictions.dealId],
+    references: [deals.id],
+  }),
+}));
+
+export const userProfilesRelations = relations(userProfiles, ({ one }) => ({
+  user: one(users, {
+    fields: [userProfiles.userId],
+    references: [users.id],
+  }),
 }));

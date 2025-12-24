@@ -14,6 +14,7 @@ import {
 } from '../services/cache.service.js';
 import { DealQualityService } from '../services/ai/deal-quality.service.js';
 import { MlDeduplicationService } from '../services/ml-deduplication.service.js';
+import { FraudDetectionService } from '../services/ai/fraud-detection.service.js';
 
 /**
  * Generate demo price history for a newly created deal
@@ -239,6 +240,26 @@ export const createDeal = async (req: AuthRequest, res: Response) => {
       }
     } catch (err) {
       console.error('Failed to calculate AI score for new deal:', err);
+    }
+
+    // Run fraud detection analysis (cost-free, local algorithms)
+    try {
+      const fraudResult = await FraudDetectionService.analyzeAndSave(deal.id);
+
+      // Update the response object with fraud score
+      if (dealWithUser) {
+        (dealWithUser as any).fraudRiskScore = fraudResult.overallRiskScore;
+      }
+
+      // Log high-risk deals for monitoring
+      if (fraudResult.overallRiskScore >= 60) {
+        console.log(`[Fraud Detection] ⚠️ High-risk deal detected: ${deal.id}`);
+        console.log(`[Fraud Detection]   Risk Score: ${fraudResult.overallRiskScore}`);
+        console.log(`[Fraud Detection]   Flags: ${fraudResult.flags.join(', ')}`);
+        console.log(`[Fraud Detection]   Action: ${fraudResult.autoAction}`);
+      }
+    } catch (err) {
+      console.error('Failed to run fraud detection for new deal:', err);
     }
 
     // Index in Elasticsearch asynchronously (if enabled)

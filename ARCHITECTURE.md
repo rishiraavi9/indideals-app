@@ -1,8 +1,8 @@
 # Architecture Overview - DesiDealsAI
 
 **Domain**: desidealsai.com
-**Last Updated**: December 21, 2025
-**Version**: 2.6.0 (AI-Powered Deal Platform with Rebranding, i18n, PWA & Mobile-First Architecture)
+**Last Updated**: December 23, 2025
+**Version**: 2.7.0 (AI-Powered Deal Platform with Cost-Free AI Features, i18n, PWA & Mobile-First Architecture)
 
 ---
 
@@ -1817,6 +1817,323 @@ Social Proof (0-100):
 - ❤️ Community Favorite - Social ≥75
 - 🌟 Trending - 50+ upvotes
 - 🆕 New - Posted <24 hours ago
+
+---
+
+## Cost-Free AI Features (v2.7.0) 🤖
+
+All features run locally using statistical algorithms - **NO external API calls**, completely cost-free.
+
+### AI Services Overview
+
+| Feature | File | Purpose |
+|---------|------|---------|
+| Fraud Detection | `fraud-detection.service.ts` | Detect fake/spam deals |
+| Price Prediction | `price-prediction.service.ts` | Forecast price trends |
+| Smart Alerts | `smart-alerts.service.ts` | Intelligent price drop alerts |
+| Deal Summarizer | `deal-summarizer.service.ts` | Generate deal summaries |
+| Personalization | `personalization.service.ts` | User recommendations |
+
+Located in: `backend/src/services/ai/`
+
+---
+
+### 1. Fraud Detection Service
+
+Detects fake, spam, and suspicious deals using multiple signals.
+
+**Algorithms:**
+- **Z-Score Analysis**: Detect price anomalies vs merchant/category averages
+- **Pattern Matching**: Regex detection of spam indicators (urgency spam, fake discounts, suspicious claims)
+- **Velocity Detection**: Flag users posting >5 similar deals/hour
+- **Merchant Risk Profiling**: Track flagged/expired deal ratios per merchant
+
+**Risk Score Components:**
+```
+Overall Risk = weighted(Price Anomaly, Title Suspicion, Velocity, Merchant Risk)
+
+Price Anomaly Score (0-100):
+├─ Z-score deviation from category average
+├─ Comparison to merchant price history
+└─ Suspicious discount patterns (95%+ off = red flag)
+
+Title Suspicion Score (0-100):
+├─ Urgency spam ("hurry", "limited", "grab now")
+├─ Fake discount claims ("99% off")
+├─ Suspicious formatting (!!!!, excessive emojis)
+└─ All-caps abuse, repetitive text
+
+Velocity Score (0-100):
+├─ Similar deals from same user in last hour
+├─ Title similarity using Jaccard coefficient
+└─ Same merchant/category flood detection
+
+Merchant Risk Score (0-100):
+├─ Historical flag rate
+├─ Quick expiration rate
+└─ Verification success rate
+```
+
+**Auto Actions:**
+| Risk Score | Action |
+|------------|--------|
+| 80-100 | Hide deal, manual review required |
+| 60-79 | Flag for review |
+| 40-59 | Allow with monitoring |
+| 0-39 | Allow (low risk) |
+
+**Integration:**
+- Runs automatically on deal creation
+- Integrated in `deals.controller.ts` and `telegram-scraper.service.ts`
+
+**API Endpoints:**
+- `GET /api/ai/fraud-analysis/:dealId` - Get fraud analysis for a deal
+- `GET /api/ai/high-risk-deals?minRisk=60` - List high-risk deals
+
+---
+
+### 2. Price Prediction Service
+
+Predicts future prices using historical data and statistical models.
+
+**Algorithms:**
+- **Linear Regression**: Calculate trend slope for next 7 days
+- **Simple Moving Average (SMA)**: 7-day and 14-day averages
+- **Exponential Moving Average (EMA)**: Weight recent prices more
+- **Day-of-Week Analysis**: Find best days to buy
+- **Flash Sale Detection**: Identify sudden drops that recover quickly
+
+**Prediction Output:**
+```
+{
+  currentPrice: 12999,
+  predictedPrice: 11499,        // Expected in 7 days
+  trend: "down",                // up, down, stable
+  trendStrength: 75,            // 0-100 confidence
+  bestBuyDay: "Monday",         // Best day historically
+  flashSalePattern: true,       // Flash sales detected
+  nextFlashSaleDate: "2025-01-15",
+  priceVolatility: 35,          // 0-100 volatility score
+  lowestPriceLast30Days: 10999,
+  highestPriceLast30Days: 15999,
+  recommendation: "wait"        // buy_now, wait, skip
+}
+```
+
+**Trend Detection:**
+| Slope | Trend | Strength |
+|-------|-------|----------|
+| > 0.01 | Rising | Based on R² |
+| < -0.01 | Falling | Based on R² |
+| -0.01 to 0.01 | Stable | High if flat |
+
+**API Endpoints:**
+- `GET /api/ai/price-prediction/:dealId` - Get full prediction
+- `GET /api/ai/best-buy-time/:dealId` - Get buy timing recommendation
+- `GET /api/ai/dropping-prices` - Deals likely to drop soon
+
+---
+
+### 3. Smart Alerts Service
+
+Enhances traditional price alerts with AI-powered predictions.
+
+**Features:**
+- **Drop Probability**: Calculate chance of hitting target price
+- **Flash Sale Alerts**: Notify when flash sale pattern detected
+- **Buy Timing Suggestions**: Wait vs buy now recommendations
+
+**Alert Types:**
+| Type | Description |
+|------|-------------|
+| `fixed` | Traditional - alert when price ≤ target |
+| `smart` | AI-powered with drop predictions |
+| `flash_sale` | Alert when flash sale expected |
+
+**Drop Probability Calculation:**
+```
+Base Probability = 30%
+
+Factors:
+├─ Trend down: +25%
+├─ Trend up: -20%
+├─ Flash sale pattern: +20%
+├─ High volatility: +15%
+├─ Target near historical low: +15%
+├─ Target way below historical low: -20%
+└─ Required drop >50%: -30%
+```
+
+**Recommendations:**
+| Condition | Recommendation |
+|-----------|----------------|
+| Current ≤ Target | Buy Now |
+| Drop < 5% needed | Buy Now |
+| Flash sale in <14 days | Wait |
+| Strong downward trend | Wait |
+| Drop probability ≥70% | Wait |
+| Unrealistic target | Suggest realistic price |
+
+**API Endpoints:**
+- `POST /api/ai/smart-alert/suggest` - Get smart alert suggestion
+- `POST /api/ai/smart-alert/create` - Create smart alert (auth required)
+
+---
+
+### 4. Deal Summarizer Service
+
+Generates human-readable deal summaries using template-based text generation.
+
+**Features:**
+- Product name extraction (removes noise, prices, emojis)
+- Value point detection (free shipping, bank offers, etc.)
+- Quality tier classification
+- Buy recommendation generation
+
+**Value Points Detected:**
+- Free Shipping
+- No-Cost EMI
+- Bank Offers
+- Exchange Offer
+- Cashback
+- Prime/Plus benefits
+- Extended Warranty
+- Bundle Deal
+- Limited Time
+
+**Summary Templates:**
+```javascript
+excellent: "{{product}} at {{discount}}% off - {{priceStatus}}!"
+good: "Save ₹{{savings}} on {{product}} - {{priceStatus}}"
+average: "{{product}} at ₹{{price}} ({{discount}}% off)"
+```
+
+**Output:**
+```json
+{
+  "headline": "Sony WH-1000XM5 at 35% off - Lowest Price Ever!",
+  "productName": "Sony WH-1000XM5 Headphones",
+  "valuePoints": ["Free Shipping", "No-Cost EMI", "Bank Offer 10%"],
+  "priceAnalysis": {
+    "currentPrice": 22990,
+    "savings": 12000,
+    "discountPercent": 34,
+    "priceStatus": "Lowest Price"
+  },
+  "buyRecommendation": {
+    "action": "buy",
+    "confidence": 85,
+    "reasoning": "Best price with excellent value"
+  },
+  "qualityTier": "excellent"
+}
+```
+
+**API Endpoints:**
+- `GET /api/ai/summary/:dealId` - Get deal summary
+- `POST /api/ai/summaries` - Batch generate summaries (max 20)
+
+---
+
+### 5. Personalization Service
+
+Provides personalized deal recommendations using collaborative and content-based filtering.
+
+**Algorithms:**
+- **User Profile Building**: Aggregate preferences from votes, views, saved deals
+- **Cosine Similarity**: Find users with similar preference vectors
+- **Content-Based Scoring**: Match deal attributes to user preferences
+- **Hybrid Ranking**: 60% collaborative + 40% content-based
+
+**User Profile Components:**
+```
+Preference Vector (20 dimensions):
+├─ [0-9]: Category weights (top 10 categories)
+├─ [10-14]: Merchant weights (top 5 merchants)
+├─ [15]: Average price preference (normalized)
+├─ [16]: Price range width preference
+├─ [17]: Discount preference (normalized)
+└─ [18-19]: Reserved
+```
+
+**Scoring Formula:**
+```
+Content Score =
+  (Category Match × 0.4) +
+  (Merchant Match × 0.3) +
+  (Price Range Match × 0.2) +
+  (Discount Match × 0.1)
+
+Collaborative Score = Σ(similarity × liked_deal_score)
+
+Hybrid Score = (Collaborative × 0.6) + (Content × 0.4) + Popularity Boost
+```
+
+**API Endpoints (all require auth):**
+- `GET /api/ai/personalized-deals` - Get personalized recommendations
+- `GET /api/ai/user-profile` - Get user's preference profile
+- `GET /api/ai/similar-users` - Find similar users
+- `GET /api/ai/explain-recommendation/:dealId` - Explain why deal was recommended
+
+---
+
+### Database Schema for AI Features
+
+**New Tables:**
+```sql
+-- Fraud Analysis
+fraud_analysis (
+  id, deal_id, overall_risk_score,
+  price_anomaly_score, title_suspicion_score,
+  velocity_score, merchant_risk_score,
+  flags[], auto_action, reviewed_by, reviewed_at
+)
+
+-- Merchant Risk Profiles
+merchant_risk_profiles (
+  id, merchant_name, risk_score,
+  total_deals, flagged_deals, expired_quickly,
+  verification_success_rate, last_deal_at
+)
+
+-- Price Predictions
+price_predictions (
+  id, deal_id, current_price, predicted_price,
+  predicted_date, confidence, trend, trend_strength,
+  best_buy_day, flash_sale_pattern, next_flash_sale_date,
+  price_volatility, lowest_price_last_30_days,
+  highest_price_last_30_days, recommendation
+)
+
+-- User Profiles
+user_profiles (
+  id, user_id, preferred_categories[],
+  preferred_merchants[], preferred_price_range{},
+  avg_liked_discount, activity_vector[],
+  total_interactions, last_activity_at
+)
+
+-- User Similarity Cache
+user_similarity_cache (
+  id, user_id, similar_user_id,
+  similarity_score, common_categories,
+  common_merchants, vote_agreement
+)
+```
+
+**Enhanced Columns:**
+```sql
+-- Added to deals table
+ai_summary JSONB,
+ai_summary_updated_at TIMESTAMP,
+fraud_risk_score INTEGER
+
+-- Added to price_alerts table
+alert_type VARCHAR(20),  -- 'fixed', 'smart', 'flash_sale'
+predicted_drop_date TIMESTAMP,
+drop_probability INTEGER,
+suggested_wait_days INTEGER
+```
 
 ---
 

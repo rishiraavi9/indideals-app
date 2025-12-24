@@ -1,4 +1,4 @@
-export type Tab = "All" | "Hot Deals" | "Great Deals" | "Budget Buys" | "New";
+export type Tab = "All" | "For You" | "Hot Deals" | "Great Deals" | "Budget Buys" | "New";
 
 export type User = {
   id: string;
