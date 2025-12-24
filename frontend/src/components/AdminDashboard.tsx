@@ -719,7 +719,7 @@ export default function AdminDashboard() {
           gap: 16,
         }}>
           <a
-            href="/admin/queues"
+            href={`${(import.meta.env.VITE_API_URL || 'http://localhost:3001/api').replace('/api', '')}/admin/queues`}
             target="_blank"
             rel="noopener noreferrer"
             style={{
@@ -741,7 +741,7 @@ export default function AdminDashboard() {
             </div>
           </a>
           <a
-            href="/api/health"
+            href={`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/health`}
             target="_blank"
             rel="noopener noreferrer"
             style={{
