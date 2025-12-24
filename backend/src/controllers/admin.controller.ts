@@ -178,12 +178,14 @@ export const getAdminStats = async (req: Request, res: Response, next: NextFunct
     // Growth stats (simplified - skip if errors)
     let growthStats = { users: [], deals: [] };
     try {
+      // Convert date to ISO string for raw SQL queries
+      const weekAgoStr = weekAgo.toISOString();
       const userGrowthResult = await db.execute(sql`
         SELECT
           DATE(created_at) as date,
           COUNT(*)::int as count
         FROM users
-        WHERE created_at >= ${weekAgo}
+        WHERE created_at >= ${weekAgoStr}::timestamp
         GROUP BY DATE(created_at)
         ORDER BY date ASC
       `);
@@ -192,7 +194,7 @@ export const getAdminStats = async (req: Request, res: Response, next: NextFunct
           DATE(created_at) as date,
           COUNT(*)::int as count
         FROM deals
-        WHERE created_at >= ${weekAgo}
+        WHERE created_at >= ${weekAgoStr}::timestamp
         GROUP BY DATE(created_at)
         ORDER BY date ASC
       `);
