@@ -6,6 +6,9 @@ import { SmartAlertsService } from '../services/ai/smart-alerts.service.js';
 import { DealSummarizerService } from '../services/ai/deal-summarizer.service.js';
 import { PersonalizationService } from '../services/ai/personalization.service.js';
 import { logger } from '../utils/logger.js';
+import { db } from '../db/index.js';
+import { deals } from '../db/schema.js';
+import { eq } from 'drizzle-orm';
 
 /**
  * AI Controller - Endpoints for AI-powered features
@@ -418,12 +421,32 @@ export const getDealSummary = async (req: Request, res: Response) => {
   try {
     const { dealId } = req.params;
 
+    // Get the deal for price info
+    const [deal] = await db.select().from(deals).where(eq(deals.id, dealId)).limit(1);
+
+    if (!deal) {
+      return res.status(404).json({
+        success: false,
+        error: 'Deal not found',
+      });
+    }
+
     const summary = await DealSummarizerService.generateSummary(dealId);
+
+    // Enrich priceAnalysis with actual price data for frontend
+    const enrichedPriceAnalysis = {
+      ...summary.priceAnalysis,
+      currentPrice: deal.price,
+      savings: deal.originalPrice ? deal.originalPrice - deal.price : null,
+      discountPercent: deal.discountPercentage || null,
+      priceStatus: summary.priceAnalysis.message,
+    };
 
     return res.json({
       success: true,
       dealId,
       ...summary,
+      priceAnalysis: enrichedPriceAnalysis,
     });
   } catch (error: any) {
     logger.error('Error getting deal summary:', error);

@@ -234,8 +234,28 @@ export interface DealSummary {
  * Get AI-generated summary for a deal
  */
 export const getDealSummary = async (dealId: string): Promise<DealSummary> => {
-  const response = await apiClient.get<DealSummary & { success: boolean }>(`/ai/summary/${dealId}`);
-  return response;
+  const response = await apiClient.get<any>(`/ai/summary/${dealId}`);
+
+  // Transform backend response to match frontend interface
+  return {
+    headline: response.headline || '',
+    productName: response.productName || response.headline || '',
+    valuePoints: response.valuePoints || response.highlights || [],
+    priceAnalysis: {
+      currentPrice: response.priceAnalysis?.currentPrice || 0,
+      savings: response.priceAnalysis?.savings || null,
+      discountPercent: response.priceAnalysis?.discountPercent || null,
+      priceStatus: response.priceAnalysis?.priceStatus || response.priceAnalysis?.message || 'Price information unavailable',
+    },
+    buyRecommendation: {
+      action: (typeof response.buyRecommendation === 'string'
+        ? (response.buyRecommendation === 'buy_now' ? 'buy' : response.buyRecommendation as 'wait' | 'skip')
+        : response.buyRecommendation?.action) || 'buy',
+      confidence: response.buyRecommendation?.confidence || 75,
+      reasoning: response.buyRecommendation?.reasoning || response.recommendationReason || 'Based on price analysis',
+    },
+    qualityTier: response.qualityTier || 'good',
+  };
 };
 
 /**
