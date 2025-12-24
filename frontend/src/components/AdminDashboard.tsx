@@ -73,8 +73,8 @@ export default function AdminDashboard() {
       setLoading(true);
       setError(null);
 
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-      const response = await fetch(`${apiUrl}/api/admin/stats`, {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+      const response = await fetch(`${apiUrl}/admin/stats`, {
         headers: {
           'Authorization': `Basic ${btoa(`${username}:${password}`)}`,
         },
