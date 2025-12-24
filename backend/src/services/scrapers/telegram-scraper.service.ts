@@ -243,17 +243,41 @@ export class TelegramScraperService {
       ? `${linkPreviewTitle} ${linkPreviewDesc || ''} ${text}`
       : text;
 
-    // Extract prices (₹499, ₹1,299, etc.) from full text including link preview
-    const priceMatches = fullText.match(/₹\s?[\d,]+/g);
+    // Extract prices (₹499, ₹1,299, Rs.499, Rs 1299, etc.) from full text including link preview
+    const priceMatches = fullText.match(/(?:₹|Rs\.?\s?)\s?[\d,]+/gi);
 
     let price: number;
     let originalPrice: number | null = null;
 
     if (priceMatches && priceMatches.length > 0) {
       // Parse prices from message
-      const prices = priceMatches.map(p => parseInt(p.replace(/[₹,\s]/g, '')));
+      const prices = priceMatches.map(p => parseInt(p.replace(/[₹Rs,.\s]/gi, ''))).filter(p => p > 0);
       price = Math.min(...prices); // Current price is usually the lowest mentioned
       originalPrice = prices.length > 1 ? Math.max(...prices) : null;
+
+      // Additional check: Look for MRP/original price patterns
+      const mrpMatch = fullText.match(/(?:MRP|M\.R\.P\.?|was|original|list\s*price)[\s:]*(?:₹|Rs\.?\s?)\s?([\d,]+)/i);
+      if (mrpMatch) {
+        const mrp = parseInt(mrpMatch[1].replace(/,/g, ''));
+        if (mrp > price && mrp < 1000000) {
+          originalPrice = mrp;
+        }
+      }
+
+      // Look for discount percentage and calculate MRP if not found
+      if (!originalPrice && price > 0) {
+        const discountMatch = fullText.match(/(\d+)\s*%\s*(?:off|discount)/i);
+        if (discountMatch) {
+          const discountPct = parseInt(discountMatch[1]);
+          if (discountPct > 0 && discountPct < 95) {
+            const calculatedMrp = Math.round(price / (1 - discountPct / 100));
+            if (calculatedMrp > price && calculatedMrp < 1000000) {
+              originalPrice = calculatedMrp;
+              logger.info(`[Telegram] Calculated MRP from ${discountPct}% discount: ₹${originalPrice}`);
+            }
+          }
+        }
+      }
     } else if (url) {
       // No price in message - we'll extract it from the merchant website later
       // Use placeholder price of 1 rupee for now

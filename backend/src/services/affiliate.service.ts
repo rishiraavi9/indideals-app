@@ -382,36 +382,96 @@ export class AffiliateService {
         }
       }
 
-      // Try multiple selectors for MRP/original price
+      // Try multiple selectors for MRP/original price (2024-2025 Amazon India selectors)
       let originalPrice: number | null = null;
       const mrpSelectors = [
+        // New 2024-2025 selectors
         '.a-price[data-a-strike="true"] .a-offscreen',
+        '.a-text-price[data-a-strike="true"] .a-offscreen',
         '.a-text-price .a-offscreen',
-        '#priceblock_dealprice + .a-text-price',
         '.basisPrice .a-offscreen',
+        '.a-price.a-text-price .a-offscreen',
+        // Strikethrough price selectors
+        'span.a-price.a-text-price span.a-offscreen',
+        '.a-section .a-text-price .a-offscreen',
+        // Legacy selectors
+        '#priceblock_dealprice + .a-text-price',
+        '#listPrice',
+        '#priceblock_saleprice',
+        // Savings row selectors
+        '.savingsPercentage',
+        '#dealprice_savings .a-offscreen',
       ];
 
       for (const selector of mrpSelectors) {
         const mrpText = $(selector).first().text().trim();
         if (mrpText) {
-          const price = parseInt(mrpText.replace(/[₹,.\s]/g, ''));
+          const price = parseInt(mrpText.replace(/[₹,.\s%\-off]/gi, ''));
           // Sanity check: MRP should be higher than current price and reasonable (< 1 million)
-          if (price && price > currentPrice! && price < 1000000) {
+          if (price && currentPrice && price > currentPrice && price < 1000000) {
             originalPrice = price;
             break;
           }
         }
       }
 
-      // If no MRP found with selectors, look for "M.R.P." text pattern
+      // Method 2: Look for savings percentage and calculate MRP
+      if (!originalPrice && currentPrice) {
+        const savingsText = $('.savingsPercentage, .a-color-price').text();
+        const savingsMatch = savingsText.match(/(\d+)%/);
+        if (savingsMatch) {
+          const discountPct = parseInt(savingsMatch[1]);
+          if (discountPct > 0 && discountPct < 95) {
+            // Calculate original price: current = original * (1 - discount/100)
+            // original = current / (1 - discount/100)
+            const calculatedMrp = Math.round(currentPrice / (1 - discountPct / 100));
+            if (calculatedMrp > currentPrice && calculatedMrp < 1000000) {
+              originalPrice = calculatedMrp;
+              logger.info(`[Amazon] Calculated MRP from ${discountPct}% discount: ₹${originalPrice}`);
+            }
+          }
+        }
+      }
+
+      // Method 3: Look for "M.R.P." text pattern in HTML
       if (!originalPrice && currentPrice) {
         const bodyText = $('body').text();
-        const mrpMatch = bodyText.match(/M\.R\.P\.?\s*:?\s*₹\s*([\d,]+)/i);
+        const mrpMatch = bodyText.match(/M\.?R\.?P\.?\s*:?\s*₹?\s*([\d,]+)/i);
         if (mrpMatch) {
           const price = parseInt(mrpMatch[1].replace(/,/g, ''));
           if (price > currentPrice && price < 1000000) {
             originalPrice = price;
           }
+        }
+      }
+
+      // Method 4: Look for "was ₹" pattern
+      if (!originalPrice && currentPrice) {
+        const bodyText = $('body').text();
+        const wasMatch = bodyText.match(/was\s*₹?\s*([\d,]+)/i);
+        if (wasMatch) {
+          const price = parseInt(wasMatch[1].replace(/,/g, ''));
+          if (price > currentPrice && price < 1000000) {
+            originalPrice = price;
+          }
+        }
+      }
+
+      // Method 5: Extract from structured data (JSON-LD)
+      if (!originalPrice && currentPrice) {
+        try {
+          const jsonLdScript = $('script[type="application/ld+json"]').html();
+          if (jsonLdScript) {
+            const jsonData = JSON.parse(jsonLdScript);
+            if (jsonData.offers?.highPrice || jsonData.offers?.price) {
+              const highPrice = parseInt(String(jsonData.offers?.highPrice || '0').replace(/[^\d]/g, ''));
+              if (highPrice > currentPrice && highPrice < 1000000) {
+                originalPrice = highPrice;
+              }
+            }
+          }
+        } catch {
+          // JSON parsing failed, continue
         }
       }
 
