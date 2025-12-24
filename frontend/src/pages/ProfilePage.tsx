@@ -79,9 +79,9 @@ export default function ProfilePage() {
       section: t('profile.settings'),
       items: [
         { icon: '🌐', label: t('profile.language'), path: '', action: 'language', currentValue: getCurrentLanguageName() },
-        { icon: '👤', label: t('profile.editProfile'), path: '', currentValue: 'Coming Soon' },
-        { icon: '🔐', label: t('profile.changePassword'), path: '', currentValue: 'Coming Soon' },
-        { icon: '📧', label: t('profile.emailPreferences'), path: '', currentValue: 'Coming Soon' },
+        { icon: '👤', label: t('profile.editProfile'), path: '/profile/edit' },
+        { icon: '🔐', label: t('profile.changePassword'), path: '/profile/password' },
+        { icon: '📧', label: t('profile.emailPreferences'), path: '/profile/email' },
       ],
     },
     {

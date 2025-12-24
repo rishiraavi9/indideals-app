@@ -10,6 +10,9 @@ import CategoryPage from './pages/CategoryPage';
 import LoginPage from './pages/LoginPage';
 import SignUpPage from './pages/SignUpPage';
 import ProfilePage from './pages/ProfilePage';
+import EditProfilePage from './pages/EditProfilePage';
+import ChangePasswordPage from './pages/ChangePasswordPage';
+import EmailPreferencesPage from './pages/EmailPreferencesPage';
 import PostDealPage from './pages/PostDealPage';
 import { initializeCapacitor } from './utils/capacitor';
 
@@ -63,6 +66,9 @@ export default function App() {
         <Route path="/wishlist" element={<MobileApp />} />
         <Route path="/alerts" element={<MobileApp />} />
         <Route path="/profile" element={<MobileProfile onClose={() => window.history.back()} />} />
+        <Route path="/profile/edit" element={<EditProfilePage />} />
+        <Route path="/profile/password" element={<ChangePasswordPage />} />
+        <Route path="/profile/email" element={<EmailPreferencesPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignUpPage />} />
         <Route path="/post-deal" element={<PostDealPage />} />
@@ -83,6 +89,9 @@ export default function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignUpPage />} />
       <Route path="/profile" element={<ProfilePage />} />
+      <Route path="/profile/edit" element={<EditProfilePage />} />
+      <Route path="/profile/password" element={<ChangePasswordPage />} />
+      <Route path="/profile/email" element={<EmailPreferencesPage />} />
       <Route path="/post-deal" element={<PostDealPage />} />
       <Route path="/admin" element={<AdminDashboard />} />
     </Routes>
