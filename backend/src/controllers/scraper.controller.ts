@@ -44,6 +44,8 @@ function isValidImageUrl(url: string | null | undefined): boolean {
     'images-na.ssl-images-amazon.com',
     'rukminim1.flixcart.com',
     'rukminim2.flixcart.com',
+    'rukmini1.flixcart.com',
+    'rukmini2.flixcart.com',
     'assets.myntassets.com',
     'static.nike.com',
     'images.samsung.com',
@@ -202,7 +204,8 @@ export const fetchImageFromUrl = async (req: Request, res: Response) => {
 
     if (isFlipkart) {
       // Flipkart-specific: Look for product images
-      const flipkartImageMatch = html.match(/["'](https?:\/\/rukminim[12]\.flixcart\.com[^"']+)["']/i);
+      // Flipkart uses both rukmini1/rukmini2 and rukminim1/rukminim2 CDN domains
+      const flipkartImageMatch = html.match(/["'](https?:\/\/rukmini?m?[12]\.flixcart\.com[^"']+)["']/i);
       if (flipkartImageMatch && isValidImageUrl(flipkartImageMatch[1])) {
         imageUrl = flipkartImageMatch[1];
       }
