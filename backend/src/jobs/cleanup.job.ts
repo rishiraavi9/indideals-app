@@ -7,8 +7,9 @@ import {
   refreshTokens,
   passwordResetTokens,
   emailVerificationTokens,
+  deals,
 } from '../db/schema.js';
-import { lt, sql } from 'drizzle-orm';
+import { lt, sql, eq, and, or, lte } from 'drizzle-orm';
 import { logger } from '../utils/logger.js';
 
 export const processCleanup = async (job: Job) => {
@@ -59,6 +60,40 @@ export const processCleanup = async (job: Job) => {
       .where(lt(emailVerificationTokens.expiresAt, new Date()));
 
     logger.info('Deleted expired email verification tokens');
+
+    // Mark deals as expired after 7 days (auto-expiration)
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const expiredByAge = await db
+      .update(deals)
+      .set({ isExpired: true })
+      .where(
+        and(
+          eq(deals.isExpired, false),
+          lt(deals.createdAt, sevenDaysAgo)
+        )
+      )
+      .returning({ id: deals.id });
+
+    if (expiredByAge.length > 0) {
+      logger.info(`Marked ${expiredByAge.length} deals as expired (older than 7 days)`);
+    }
+
+    // Also mark deals as expired if expiresAt date has passed
+    const now = new Date();
+    const expiredByDate = await db
+      .update(deals)
+      .set({ isExpired: true })
+      .where(
+        and(
+          eq(deals.isExpired, false),
+          lte(deals.expiresAt, now)
+        )
+      )
+      .returning({ id: deals.id });
+
+    if (expiredByDate.length > 0) {
+      logger.info(`Marked ${expiredByDate.length} deals as expired (past expiresAt date)`);
+    }
 
     logger.info('Database cleanup completed successfully');
   } catch (error) {
