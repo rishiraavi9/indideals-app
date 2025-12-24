@@ -361,7 +361,7 @@ export default function AIInsights({ dealId, currentPrice, originalPrice: _origi
             </div>
 
             {/* Value Points */}
-            {summary.valuePoints.length > 0 && (
+            {summary.valuePoints && summary.valuePoints.length > 0 && (
               <div style={{ marginBottom: 16 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: '#374151', marginBottom: 8 }}>
                   Key Benefits
@@ -387,72 +387,84 @@ export default function AIInsights({ dealId, currentPrice, originalPrice: _origi
             )}
 
             {/* Price Analysis */}
-            <div style={{
-              background: '#f9fafb',
-              borderRadius: 8,
-              padding: 16,
-              marginBottom: 16,
-            }}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: '#374151', marginBottom: 12 }}>
-                Price Analysis
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
-                <div>
-                  <div style={{ fontSize: 12, color: '#6b7280' }}>Current Price</div>
-                  <div style={{ fontWeight: 700, color: '#10b981', fontSize: 18 }}>
-                    ₹{summary.priceAnalysis.currentPrice.toLocaleString('en-IN')}
-                  </div>
+            {summary.priceAnalysis && (
+              <div style={{
+                background: '#f9fafb',
+                borderRadius: 8,
+                padding: 16,
+                marginBottom: 16,
+              }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: '#374151', marginBottom: 12 }}>
+                  Price Analysis
                 </div>
-                {summary.priceAnalysis.savings && (
-                  <div>
-                    <div style={{ fontSize: 12, color: '#6b7280' }}>You Save</div>
-                    <div style={{ fontWeight: 700, color: '#10b981', fontSize: 18 }}>
-                      ₹{summary.priceAnalysis.savings.toLocaleString('en-IN')}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+                  {summary.priceAnalysis.currentPrice != null && (
+                    <div>
+                      <div style={{ fontSize: 12, color: '#6b7280' }}>Current Price</div>
+                      <div style={{ fontWeight: 700, color: '#10b981', fontSize: 18 }}>
+                        ₹{summary.priceAnalysis.currentPrice.toLocaleString('en-IN')}
+                      </div>
                     </div>
+                  )}
+                  {summary.priceAnalysis.savings != null && summary.priceAnalysis.savings > 0 && (
+                    <div>
+                      <div style={{ fontSize: 12, color: '#6b7280' }}>You Save</div>
+                      <div style={{ fontWeight: 700, color: '#10b981', fontSize: 18 }}>
+                        ₹{summary.priceAnalysis.savings.toLocaleString('en-IN')}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                {summary.priceAnalysis.priceStatus && (
+                  <div style={{
+                    marginTop: 12,
+                    padding: '8px 12px',
+                    background: summary.priceAnalysis.priceStatus.includes('Lowest') ? '#dcfce7' : '#f3f4f6',
+                    borderRadius: 6,
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: summary.priceAnalysis.priceStatus.includes('Lowest') ? '#15803d' : '#374151',
+                  }}>
+                    {summary.priceAnalysis.priceStatus}
                   </div>
                 )}
               </div>
-              <div style={{
-                marginTop: 12,
-                padding: '8px 12px',
-                background: summary.priceAnalysis.priceStatus.includes('Lowest') ? '#dcfce7' : '#f3f4f6',
-                borderRadius: 6,
-                fontSize: 14,
-                fontWeight: 600,
-                color: summary.priceAnalysis.priceStatus.includes('Lowest') ? '#15803d' : '#374151',
-              }}>
-                {summary.priceAnalysis.priceStatus}
-              </div>
-            </div>
+            )}
 
             {/* Buy Recommendation */}
-            <div style={{
-              background: getRecommendationStyle(summary.buyRecommendation.action).bg,
-              borderRadius: 8,
-              padding: 16,
-            }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-                <span style={{ fontSize: 32 }}>
-                  {getRecommendationStyle(summary.buyRecommendation.action).icon}
-                </span>
-                <div>
-                  <div style={{
-                    fontWeight: 700,
-                    color: getRecommendationStyle(summary.buyRecommendation.action).color,
-                    fontSize: 16,
-                    textTransform: 'capitalize',
-                  }}>
-                    {summary.buyRecommendation.action === 'buy' ? 'Recommended Buy' : summary.buyRecommendation.action}
-                  </div>
-                  <div style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>
-                    {summary.buyRecommendation.reasoning}
-                  </div>
-                  <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 4 }}>
-                    {summary.buyRecommendation.confidence}% confidence
+            {summary.buyRecommendation && (
+              <div style={{
+                background: getRecommendationStyle(summary.buyRecommendation.action).bg,
+                borderRadius: 8,
+                padding: 16,
+              }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                  <span style={{ fontSize: 32 }}>
+                    {getRecommendationStyle(summary.buyRecommendation.action).icon}
+                  </span>
+                  <div>
+                    <div style={{
+                      fontWeight: 700,
+                      color: getRecommendationStyle(summary.buyRecommendation.action).color,
+                      fontSize: 16,
+                      textTransform: 'capitalize',
+                    }}>
+                      {summary.buyRecommendation.action === 'buy' ? 'Recommended Buy' : summary.buyRecommendation.action}
+                    </div>
+                    {summary.buyRecommendation.reasoning && (
+                      <div style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>
+                        {summary.buyRecommendation.reasoning}
+                      </div>
+                    )}
+                    {summary.buyRecommendation.confidence != null && (
+                      <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 4 }}>
+                        {summary.buyRecommendation.confidence}% confidence
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         )}
 
