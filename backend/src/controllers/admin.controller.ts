@@ -20,7 +20,7 @@ export const getAdminStats = async (req: Request, res: Response, next: NextFunct
 
     // Deal Stats
     const [totalDeals] = await db.select({ count: count() }).from(deals);
-    const [activeDeals] = await db.select({ count: count() }).from(deals).where(eq(deals.status, 'active'));
+    const [activeDeals] = await db.select({ count: count() }).from(deals).where(eq(deals.isExpired, false));
     const [dealsToday] = await db.select({ count: count() }).from(deals).where(gte(deals.createdAt, today));
     const [dealsThisWeek] = await db.select({ count: count() }).from(deals).where(gte(deals.createdAt, weekAgo));
 
@@ -76,7 +76,7 @@ export const getAdminStats = async (req: Request, res: Response, next: NextFunct
       viewCount: deals.viewCount,
     })
     .from(deals)
-    .where(eq(deals.status, 'active'))
+    .where(eq(deals.isExpired, false))
     .orderBy(desc(sql`COALESCE(${deals.upvotes}, 0) - COALESCE(${deals.downvotes}, 0)`))
     .limit(10);
 
