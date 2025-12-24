@@ -11,6 +11,7 @@ import { useTranslatedText } from '../../hooks/useTranslatedDeals';
 import { formatDistanceToNow } from '../../utils/date';
 import PriceHistoryChart from '../PriceHistoryChart';
 import PriceAlertModal from '../PriceAlertModal';
+import AIInsights from '../AIInsights';
 import type { Deal, Comment } from '../../types';
 
 export default function MobileDealPage() {
@@ -722,6 +723,18 @@ export default function MobileDealPage() {
       {/* Price History */}
       <div style={{ background: '#2a2a2a', padding: 16 }}>
         <PriceHistoryChart dealId={deal.id} currentPrice={deal.price} theme="dark" />
+      </div>
+
+      {/* Divider */}
+      <div style={{ height: 8, background: '#1a1a1a' }} />
+
+      {/* AI Insights */}
+      <div style={{ background: '#2a2a2a', padding: 16 }}>
+        <AIInsights
+          dealId={deal.id}
+          currentPrice={deal.price}
+          originalPrice={deal.originalPrice}
+        />
       </div>
 
       {/* Divider */}
