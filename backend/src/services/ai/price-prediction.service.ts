@@ -72,7 +72,8 @@ export class PricePredictionService {
       trend,
       confidence,
       priceRange.lowestPrice,
-      flashSaleInfo.hasPattern
+      flashSaleInfo.hasPattern,
+      priceRange.percentileRank
     );
 
     const reasoning = this.generateReasoning(
@@ -333,28 +334,28 @@ export class PricePredictionService {
     trend: string,
     confidence: number,
     lowestPrice: number | null,
-    hasFlashSalePattern: boolean
+    hasFlashSalePattern: boolean,
+    percentileRank: number
   ): 'buy_now' | 'wait' | 'skip' {
     // Buy now if:
     // - At or near lowest price ever
-    // - Price is rising with high confidence
-    // - Current price is significantly below predicted
+    // - Price is in the lowest 30% of historical prices
     if (lowestPrice && currentPrice <= lowestPrice * 1.05) {
       return 'buy_now';
     }
 
-    if (trend === 'up' && confidence >= 60) {
-      return 'buy_now';
-    }
-
-    if (predictedPrice && currentPrice < predictedPrice * 0.9) {
+    if (percentileRank <= 30) {
       return 'buy_now';
     }
 
     // Wait if:
+    // - Price is above average (percentile > 50)
     // - Price is dropping with reasonable confidence
-    // - Flash sale pattern detected and expected soon
-    // - Current price is above average
+    // - Flash sale pattern detected
+    if (percentileRank > 50) {
+      return 'wait';
+    }
+
     if (trend === 'down' && confidence >= 40) {
       return 'wait';
     }
@@ -367,7 +368,12 @@ export class PricePredictionService {
       return 'wait';
     }
 
-    // Default: buy if you need it
+    // Price is between 30-50 percentile - reasonable to buy
+    if (trend === 'up' && confidence >= 60) {
+      return 'buy_now';
+    }
+
+    // Default: price is around average, okay to buy if needed
     return 'buy_now';
   }
 
