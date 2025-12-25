@@ -6,6 +6,7 @@ import './i18n'; // Initialize i18n
 import App from './App.tsx';
 import { AuthProvider } from './context/AuthContext.tsx';
 import { ErrorBoundary } from './components/ErrorBoundary.tsx';
+import { AnalyticsProvider } from './components/AnalyticsProvider.tsx';
 
 console.log('[DesiDealsAI] App starting...');
 console.log('[DesiDealsAI] API URL:', import.meta.env.VITE_API_URL);
@@ -20,7 +21,9 @@ try {
         <ErrorBoundary>
           <BrowserRouter>
             <AuthProvider>
-              <App />
+              <AnalyticsProvider>
+                <App />
+              </AnalyticsProvider>
             </AuthProvider>
           </BrowserRouter>
         </ErrorBoundary>

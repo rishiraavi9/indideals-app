@@ -682,3 +682,91 @@ export const userProfilesRelations = relations(userProfiles, ({ one }) => ({
     references: [users.id],
   }),
 }));
+
+// ==================== ANALYTICS TABLES ====================
+
+// Page Views - Track every page visit
+export const pageViews = pgTable('page_views', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  sessionId: varchar('session_id', { length: 64 }).notNull(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+  path: varchar('path', { length: 500 }).notNull(),
+  referrer: text('referrer'),
+  userAgent: text('user_agent'),
+  ipAddress: varchar('ip_address', { length: 45 }),
+  country: varchar('country', { length: 2 }),
+  city: varchar('city', { length: 100 }),
+  deviceType: varchar('device_type', { length: 20 }), // 'desktop', 'mobile', 'tablet'
+  browser: varchar('browser', { length: 50 }),
+  os: varchar('os', { length: 50 }),
+  duration: integer('duration'), // Time on page in seconds (updated on exit)
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+  sessionIdx: index('page_views_session_idx').on(table.sessionId),
+  userIdIdx: index('page_views_user_id_idx').on(table.userId),
+  pathIdx: index('page_views_path_idx').on(table.path),
+  createdAtIdx: index('page_views_created_at_idx').on(table.createdAt),
+}));
+
+// Analytics Events - Track user interactions
+export const analyticsEvents = pgTable('analytics_events', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  sessionId: varchar('session_id', { length: 64 }).notNull(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+  eventType: varchar('event_type', { length: 50 }).notNull(), // 'click', 'scroll', 'search', 'share'
+  eventName: varchar('event_name', { length: 100 }).notNull(), // 'get_deal_click', 'save_deal', 'create_alert'
+  dealId: uuid('deal_id').references(() => deals.id, { onDelete: 'set null' }),
+  metadata: jsonb('metadata'), // Additional event-specific data
+  path: varchar('path', { length: 500 }),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+  sessionIdx: index('analytics_events_session_idx').on(table.sessionId),
+  eventTypeIdx: index('analytics_events_event_type_idx').on(table.eventType),
+  eventNameIdx: index('analytics_events_event_name_idx').on(table.eventName),
+  dealIdIdx: index('analytics_events_deal_id_idx').on(table.dealId),
+  createdAtIdx: index('analytics_events_created_at_idx').on(table.createdAt),
+}));
+
+// Daily Analytics Summary - Pre-aggregated daily stats
+export const dailyAnalytics = pgTable('daily_analytics', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  date: timestamp('date').notNull(),
+  uniqueVisitors: integer('unique_visitors').notNull().default(0),
+  totalPageViews: integer('total_page_views').notNull().default(0),
+  totalSessions: integer('total_sessions').notNull().default(0),
+  avgSessionDuration: integer('avg_session_duration').default(0), // in seconds
+  bounceRate: real('bounce_rate').default(0), // percentage
+  newUsers: integer('new_users').notNull().default(0),
+  returningUsers: integer('returning_users').notNull().default(0),
+  dealClicks: integer('deal_clicks').notNull().default(0),
+  searchCount: integer('search_count').notNull().default(0),
+  signups: integer('signups').notNull().default(0),
+  topPages: jsonb('top_pages'), // Array of {path, views}
+  topReferrers: jsonb('top_referrers'), // Array of {referrer, count}
+  deviceBreakdown: jsonb('device_breakdown'), // {desktop: x, mobile: y, tablet: z}
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+  dateIdx: index('daily_analytics_date_idx').on(table.date),
+  dateUnique: unique('daily_analytics_date_unique').on(table.date),
+}));
+
+// Sessions - Track user sessions
+export const sessions = pgTable('sessions', {
+  id: varchar('id', { length: 64 }).primaryKey(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+  startedAt: timestamp('started_at').defaultNow().notNull(),
+  lastActivityAt: timestamp('last_activity_at').defaultNow().notNull(),
+  pageViews: integer('page_views').notNull().default(1),
+  ipAddress: varchar('ip_address', { length: 45 }),
+  userAgent: text('user_agent'),
+  deviceType: varchar('device_type', { length: 20 }),
+  browser: varchar('browser', { length: 50 }),
+  os: varchar('os', { length: 50 }),
+  referrer: text('referrer'),
+  landingPage: varchar('landing_page', { length: 500 }),
+  exitPage: varchar('exit_page', { length: 500 }),
+  country: varchar('country', { length: 2 }),
+}, (table) => ({
+  userIdIdx: index('sessions_user_id_idx').on(table.userId),
+  startedAtIdx: index('sessions_started_at_idx').on(table.startedAt),
+}));

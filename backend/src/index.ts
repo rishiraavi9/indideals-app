@@ -29,6 +29,7 @@ import aiRoutes from './routes/ai.routes.js';
 import notificationsRoutes from './routes/notifications.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import profileRoutes from './routes/profile.routes.js';
+import analyticsRoutes from './routes/analytics.routes.js';
 
 // Job queue
 import { bullBoardRouter, shutdownQueues } from './services/queue.service.js';
@@ -234,6 +235,9 @@ app.use('/api/admin', adminRoutes);
 
 // User Profile
 app.use('/api/profile', profileRoutes);
+
+// Analytics
+app.use('/api/analytics', analyticsRoutes);
 
 // Image proxy endpoint (Option 3 - proxy-cache strategy)
 app.get('/api/image-proxy', async (req, res) => {

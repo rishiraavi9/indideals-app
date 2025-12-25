@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from './Layout';
+import AnalyticsDashboard from './AnalyticsDashboard';
 
 interface AdminStats {
   users: {
@@ -790,6 +791,11 @@ export default function AdminDashboard() {
               )}
             </div>
           </button>
+        </div>
+
+        {/* Site Analytics Section */}
+        <div style={{ marginTop: 32 }}>
+          <AnalyticsDashboard credentials={credentials} />
         </div>
       </div>
     </Layout>
