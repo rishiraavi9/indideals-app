@@ -75,12 +75,22 @@ export default function AnalyticsDashboard({ credentials }: AnalyticsDashboardPr
 
   if (loading && !data) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="animate-pulse">
-          <div className="h-6 bg-gray-200 rounded w-1/4 mb-4"></div>
-          <div className="grid grid-cols-4 gap-4">
+      <div style={{
+        background: '#ffffff',
+        borderRadius: 12,
+        padding: 24,
+        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+        border: '1px solid #e5e7eb',
+      }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ height: 24, background: '#e5e7eb', borderRadius: 6, width: '25%' }} />
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(4, 1fr)',
+            gap: 16,
+          }}>
             {[1, 2, 3, 4].map(i => (
-              <div key={i} className="h-24 bg-gray-200 rounded"></div>
+              <div key={i} style={{ height: 96, background: '#e5e7eb', borderRadius: 8 }} />
             ))}
           </div>
         </div>
@@ -90,8 +100,14 @@ export default function AnalyticsDashboard({ credentials }: AnalyticsDashboardPr
 
   if (error) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="text-red-500">{error}</div>
+      <div style={{
+        background: '#ffffff',
+        borderRadius: 12,
+        padding: 24,
+        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+        border: '1px solid #e5e7eb',
+      }}>
+        <div style={{ color: '#dc2626' }}>{error}</div>
       </div>
     );
   }
@@ -106,100 +122,186 @@ export default function AnalyticsDashboard({ credentials }: AnalyticsDashboardPr
   };
 
   return (
-    <div className="space-y-6">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       {/* Header with period selector */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg shadow-md p-6 text-white">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold flex items-center gap-2">
+      <div style={{
+        background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
+        borderRadius: 16,
+        padding: 24,
+        color: 'white',
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <h2 style={{ margin: 0, fontSize: 24, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
             <span>📊</span> Site Analytics
           </h2>
           <select
             value={period}
             onChange={(e) => setPeriod(e.target.value)}
-            className="bg-white/20 border border-white/30 rounded-lg px-3 py-2 text-white"
+            style={{
+              background: 'rgba(255,255,255,0.2)',
+              border: '1px solid rgba(255,255,255,0.3)',
+              borderRadius: 8,
+              padding: '8px 12px',
+              color: 'white',
+              fontSize: 14,
+              cursor: 'pointer',
+            }}
           >
-            <option value="24h" className="text-gray-800">Last 24 Hours</option>
-            <option value="7d" className="text-gray-800">Last 7 Days</option>
-            <option value="30d" className="text-gray-800">Last 30 Days</option>
-            <option value="90d" className="text-gray-800">Last 90 Days</option>
+            <option value="24h" style={{ color: '#1f2937' }}>Last 24 Hours</option>
+            <option value="7d" style={{ color: '#1f2937' }}>Last 7 Days</option>
+            <option value="30d" style={{ color: '#1f2937' }}>Last 30 Days</option>
+            <option value="90d" style={{ color: '#1f2937' }}>Last 90 Days</option>
           </select>
         </div>
 
         {/* Real-time indicator */}
-        <div className="flex items-center gap-2 text-white/80">
-          <span className="animate-pulse w-2 h-2 bg-green-400 rounded-full"></span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, opacity: 0.9 }}>
+          <span style={{
+            width: 8,
+            height: 8,
+            background: '#4ade80',
+            borderRadius: '50%',
+            animation: 'pulse 2s infinite',
+          }} />
           <span>{data.realtime.activeVisitors} active visitors right now</span>
         </div>
       </div>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-blue-100 rounded-lg">
-              <span className="text-2xl">👥</span>
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+        gap: 16,
+      }}>
+        <div style={{
+          background: '#ffffff',
+          borderRadius: 12,
+          padding: 20,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+          border: '1px solid #e5e7eb',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{
+              padding: 12,
+              background: '#dbeafe',
+              borderRadius: 12,
+            }}>
+              <span style={{ fontSize: 24 }}>👥</span>
             </div>
             <div>
-              <p className="text-gray-500 text-sm">Unique Visitors</p>
-              <p className="text-2xl font-bold text-gray-800">{data.uniqueVisitors.toLocaleString()}</p>
+              <p style={{ margin: 0, fontSize: 13, color: '#6b7280' }}>Unique Visitors</p>
+              <p style={{ margin: 0, fontSize: 24, fontWeight: 700, color: '#1f2937' }}>{data.uniqueVisitors.toLocaleString()}</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-green-100 rounded-lg">
-              <span className="text-2xl">📄</span>
+        <div style={{
+          background: '#ffffff',
+          borderRadius: 12,
+          padding: 20,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+          border: '1px solid #e5e7eb',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{
+              padding: 12,
+              background: '#dcfce7',
+              borderRadius: 12,
+            }}>
+              <span style={{ fontSize: 24 }}>📄</span>
             </div>
             <div>
-              <p className="text-gray-500 text-sm">Page Views</p>
-              <p className="text-2xl font-bold text-gray-800">{data.totalPageViews.toLocaleString()}</p>
+              <p style={{ margin: 0, fontSize: 13, color: '#6b7280' }}>Page Views</p>
+              <p style={{ margin: 0, fontSize: 24, fontWeight: 700, color: '#1f2937' }}>{data.totalPageViews.toLocaleString()}</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-purple-100 rounded-lg">
-              <span className="text-2xl">🔗</span>
+        <div style={{
+          background: '#ffffff',
+          borderRadius: 12,
+          padding: 20,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+          border: '1px solid #e5e7eb',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{
+              padding: 12,
+              background: '#f3e8ff',
+              borderRadius: 12,
+            }}>
+              <span style={{ fontSize: 24 }}>🔗</span>
             </div>
             <div>
-              <p className="text-gray-500 text-sm">Sessions</p>
-              <p className="text-2xl font-bold text-gray-800">{data.totalSessions.toLocaleString()}</p>
+              <p style={{ margin: 0, fontSize: 13, color: '#6b7280' }}>Sessions</p>
+              <p style={{ margin: 0, fontSize: 24, fontWeight: 700, color: '#1f2937' }}>{data.totalSessions.toLocaleString()}</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-orange-100 rounded-lg">
-              <span className="text-2xl">⏱️</span>
+        <div style={{
+          background: '#ffffff',
+          borderRadius: 12,
+          padding: 20,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+          border: '1px solid #e5e7eb',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{
+              padding: 12,
+              background: '#ffedd5',
+              borderRadius: 12,
+            }}>
+              <span style={{ fontSize: 24 }}>⏱️</span>
             </div>
             <div>
-              <p className="text-gray-500 text-sm">Avg. Session Duration</p>
-              <p className="text-2xl font-bold text-gray-800">{formatDuration(data.avgSessionDuration)}</p>
+              <p style={{ margin: 0, fontSize: 13, color: '#6b7280' }}>Avg. Session Duration</p>
+              <p style={{ margin: 0, fontSize: 24, fontWeight: 700, color: '#1f2937' }}>{formatDuration(data.avgSessionDuration)}</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
+        gap: 24,
+      }}>
         {/* Daily Traffic Chart */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Daily Traffic</h3>
-          <div className="h-48 flex items-end gap-1">
+        <div style={{
+          background: '#ffffff',
+          borderRadius: 12,
+          padding: 20,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+          border: '1px solid #e5e7eb',
+        }}>
+          <h3 style={{ margin: '0 0 16px', fontSize: 18, fontWeight: 600, color: '#1f2937' }}>Daily Traffic</h3>
+          <div style={{ height: 192, display: 'flex', alignItems: 'flex-end', gap: 4 }}>
             {data.dailyStats.slice(-14).map((day, index) => {
               const maxViews = Math.max(...data.dailyStats.map(d => d.pageViews));
               const height = maxViews ? (day.pageViews / maxViews) * 100 : 0;
               return (
-                <div key={index} className="flex-1 flex flex-col items-center">
+                <div key={index} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                   <div
-                    className="w-full bg-blue-500 rounded-t transition-all hover:bg-blue-600"
-                    style={{ height: `${height}%`, minHeight: day.pageViews > 0 ? '4px' : '0' }}
+                    style={{
+                      width: '100%',
+                      background: '#3b82f6',
+                      borderRadius: '4px 4px 0 0',
+                      transition: 'all 0.2s',
+                      height: `${height}%`,
+                      minHeight: day.pageViews > 0 ? 4 : 0,
+                    }}
                     title={`${day.date}: ${day.pageViews} views, ${day.visitors} visitors`}
-                  ></div>
-                  <span className="text-xs text-gray-400 mt-1 rotate-45 origin-left">
+                  />
+                  <span style={{
+                    fontSize: 10,
+                    color: '#9ca3af',
+                    marginTop: 4,
+                    transform: 'rotate(45deg)',
+                    transformOrigin: 'left',
+                    whiteSpace: 'nowrap',
+                  }}>
                     {new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                   </span>
                 </div>
@@ -209,43 +311,58 @@ export default function AnalyticsDashboard({ credentials }: AnalyticsDashboardPr
         </div>
 
         {/* Device Breakdown */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Device Breakdown</h3>
-          <div className="space-y-4">
+        <div style={{
+          background: '#ffffff',
+          borderRadius: 12,
+          padding: 20,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+          border: '1px solid #e5e7eb',
+        }}>
+          <h3 style={{ margin: '0 0 16px', fontSize: 18, fontWeight: 600, color: '#1f2937' }}>Device Breakdown</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div>
-              <div className="flex justify-between text-sm mb-1">
-                <span className="text-gray-600">💻 Desktop</span>
-                <span className="font-medium">{devicePercentages.desktop}%</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, marginBottom: 4 }}>
+                <span style={{ color: '#4b5563' }}>💻 Desktop</span>
+                <span style={{ fontWeight: 500, color: '#1f2937' }}>{devicePercentages.desktop}%</span>
               </div>
-              <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-blue-500 rounded-full transition-all"
-                  style={{ width: `${devicePercentages.desktop}%` }}
-                ></div>
+              <div style={{ height: 12, background: '#e5e7eb', borderRadius: 6, overflow: 'hidden' }}>
+                <div style={{
+                  width: `${devicePercentages.desktop}%`,
+                  height: '100%',
+                  background: '#3b82f6',
+                  borderRadius: 6,
+                  transition: 'all 0.3s',
+                }} />
               </div>
             </div>
             <div>
-              <div className="flex justify-between text-sm mb-1">
-                <span className="text-gray-600">📱 Mobile</span>
-                <span className="font-medium">{devicePercentages.mobile}%</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, marginBottom: 4 }}>
+                <span style={{ color: '#4b5563' }}>📱 Mobile</span>
+                <span style={{ fontWeight: 500, color: '#1f2937' }}>{devicePercentages.mobile}%</span>
               </div>
-              <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-green-500 rounded-full transition-all"
-                  style={{ width: `${devicePercentages.mobile}%` }}
-                ></div>
+              <div style={{ height: 12, background: '#e5e7eb', borderRadius: 6, overflow: 'hidden' }}>
+                <div style={{
+                  width: `${devicePercentages.mobile}%`,
+                  height: '100%',
+                  background: '#10b981',
+                  borderRadius: 6,
+                  transition: 'all 0.3s',
+                }} />
               </div>
             </div>
             <div>
-              <div className="flex justify-between text-sm mb-1">
-                <span className="text-gray-600">📟 Tablet</span>
-                <span className="font-medium">{devicePercentages.tablet}%</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, marginBottom: 4 }}>
+                <span style={{ color: '#4b5563' }}>📟 Tablet</span>
+                <span style={{ fontWeight: 500, color: '#1f2937' }}>{devicePercentages.tablet}%</span>
               </div>
-              <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-purple-500 rounded-full transition-all"
-                  style={{ width: `${devicePercentages.tablet}%` }}
-                ></div>
+              <div style={{ height: 12, background: '#e5e7eb', borderRadius: 6, overflow: 'hidden' }}>
+                <div style={{
+                  width: `${devicePercentages.tablet}%`,
+                  height: '100%',
+                  background: '#8b5cf6',
+                  borderRadius: 6,
+                  transition: 'all 0.3s',
+                }} />
               </div>
             </div>
           </div>
@@ -253,48 +370,74 @@ export default function AnalyticsDashboard({ credentials }: AnalyticsDashboardPr
       </div>
 
       {/* Tables Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
+        gap: 24,
+      }}>
         {/* Top Pages */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Top Pages</h3>
-          <div className="space-y-3">
+        <div style={{
+          background: '#ffffff',
+          borderRadius: 12,
+          padding: 20,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+          border: '1px solid #e5e7eb',
+        }}>
+          <h3 style={{ margin: '0 0 16px', fontSize: 18, fontWeight: 600, color: '#1f2937' }}>Top Pages</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {data.topPages.slice(0, 8).map((page, index) => (
-              <div key={index} className="flex justify-between items-center">
-                <span className="text-gray-600 truncate flex-1" title={page.path}>
+              <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: '#4b5563', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }} title={page.path}>
                   {formatPath(page.path)}
                 </span>
-                <span className="font-medium text-gray-800 ml-4">{page.views.toLocaleString()}</span>
+                <span style={{ fontWeight: 500, color: '#1f2937', marginLeft: 16 }}>{page.views.toLocaleString()}</span>
               </div>
             ))}
             {data.topPages.length === 0 && (
-              <p className="text-gray-400 text-center py-4">No data yet</p>
+              <p style={{ textAlign: 'center', color: '#9ca3af', padding: 16 }}>No data yet</p>
             )}
           </div>
         </div>
 
         {/* Top Referrers */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Traffic Sources</h3>
-          <div className="space-y-3">
+        <div style={{
+          background: '#ffffff',
+          borderRadius: 12,
+          padding: 20,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+          border: '1px solid #e5e7eb',
+        }}>
+          <h3 style={{ margin: '0 0 16px', fontSize: 18, fontWeight: 600, color: '#1f2937' }}>Traffic Sources</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {data.topReferrers.slice(0, 8).map((ref, index) => (
-              <div key={index} className="flex justify-between items-center">
-                <span className="text-gray-600 truncate flex-1" title={ref.referrer}>
+              <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: '#4b5563', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }} title={ref.referrer}>
                   {ref.referrer === 'Direct' ? '🔗 Direct Traffic' : ref.referrer.replace(/https?:\/\/(www\.)?/, '')}
                 </span>
-                <span className="font-medium text-gray-800 ml-4">{ref.count.toLocaleString()}</span>
+                <span style={{ fontWeight: 500, color: '#1f2937', marginLeft: 16 }}>{ref.count.toLocaleString()}</span>
               </div>
             ))}
             {data.topReferrers.length === 0 && (
-              <p className="text-gray-400 text-center py-4">No referrer data yet</p>
+              <p style={{ textAlign: 'center', color: '#9ca3af', padding: 16 }}>No referrer data yet</p>
             )}
           </div>
         </div>
       </div>
 
       {/* Events */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">User Actions</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+      <div style={{
+        background: '#ffffff',
+        borderRadius: 12,
+        padding: 20,
+        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+        border: '1px solid #e5e7eb',
+      }}>
+        <h3 style={{ margin: '0 0 16px', fontSize: 18, fontWeight: 600, color: '#1f2937' }}>User Actions</h3>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+          gap: 16,
+        }}>
           {[
             { name: 'get_deal_click', label: 'Deal Clicks', icon: '🛒' },
             { name: 'save_deal', label: 'Saves', icon: '❤️' },
@@ -303,12 +446,17 @@ export default function AnalyticsDashboard({ credentials }: AnalyticsDashboardPr
             { name: 'upvote_deal', label: 'Upvotes', icon: '👍' },
             { name: 'search', label: 'Searches', icon: '🔍' },
           ].map(event => (
-            <div key={event.name} className="text-center p-3 bg-gray-50 rounded-lg">
-              <span className="text-2xl">{event.icon}</span>
-              <p className="text-xl font-bold text-gray-800 mt-1">
+            <div key={event.name} style={{
+              textAlign: 'center',
+              padding: 16,
+              background: '#f9fafb',
+              borderRadius: 12,
+            }}>
+              <span style={{ fontSize: 28 }}>{event.icon}</span>
+              <p style={{ margin: '8px 0 0', fontSize: 24, fontWeight: 700, color: '#1f2937' }}>
                 {(data.eventCounts[event.name] || 0).toLocaleString()}
               </p>
-              <p className="text-xs text-gray-500">{event.label}</p>
+              <p style={{ margin: '4px 0 0', fontSize: 12, color: '#6b7280' }}>{event.label}</p>
             </div>
           ))}
         </div>
