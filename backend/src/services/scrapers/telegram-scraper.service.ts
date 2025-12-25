@@ -83,6 +83,45 @@ export class TelegramScraperService {
   private static botUserId: string | null = null;
 
   /**
+   * Check if a channel is active (has posts within the inactivity threshold)
+   * Returns activity status and days since last post
+   */
+  static async checkChannelActivity(channelUrl: string): Promise<{ isActive: boolean; lastPostDate: Date | null; daysSinceLastPost: number | null }> {
+    try {
+      const response = await axios.get(channelUrl, {
+        headers: {
+          'User-Agent': this.USER_AGENT,
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        },
+        timeout: 10000,
+      });
+
+      const $ = cheerio.load(response.data);
+
+      // Get the first (most recent) message's timestamp
+      const firstMessage = $('.tgme_widget_message').first();
+      const timestampStr = firstMessage.find('.tgme_widget_message_date time').attr('datetime');
+
+      if (!timestampStr) {
+        logger.warn(`[Telegram] Could not find timestamp for channel ${channelUrl}`);
+        return { isActive: true, lastPostDate: null, daysSinceLastPost: null }; // Assume active if we can't determine
+      }
+
+      const lastPostDate = new Date(timestampStr);
+      const now = new Date();
+      const daysSinceLastPost = Math.floor((now.getTime() - lastPostDate.getTime()) / (1000 * 60 * 60 * 24));
+
+      const thresholdDays = TELEGRAM_SCRAPER_CONFIG.inactivityThresholdDays ?? 3;
+      const isActive = thresholdDays === 0 || daysSinceLastPost <= thresholdDays;
+
+      return { isActive, lastPostDate, daysSinceLastPost };
+    } catch (error: any) {
+      logger.error(`[Telegram] Error checking channel activity: ${error.message}`);
+      return { isActive: true, lastPostDate: null, daysSinceLastPost: null }; // Assume active on error to not skip
+    }
+  }
+
+  /**
    * Initialize or get the bot user
    */
   private static async getBotUser(): Promise<string> {
@@ -981,6 +1020,20 @@ export class TelegramScraperService {
     for (const channel of channels) {
       try {
         logger.info(`\n[Telegram] ========== Scraping ${channel.username} ==========`);
+
+        // Check if channel is active before scraping
+        const inactivityThreshold = TELEGRAM_SCRAPER_CONFIG.inactivityThresholdDays ?? 3;
+        if (inactivityThreshold > 0) {
+          const activityCheck = await this.checkChannelActivity(channel.url);
+
+          if (!activityCheck.isActive) {
+            logger.info(`[Telegram] ⏸️ SKIPPING ${channel.username} - inactive for ${activityCheck.daysSinceLastPost} days (threshold: ${inactivityThreshold} days)`);
+            logger.info(`[Telegram]    Last post: ${activityCheck.lastPostDate?.toISOString() || 'unknown'}`);
+            continue; // Skip to next channel
+          } else if (activityCheck.daysSinceLastPost !== null) {
+            logger.info(`[Telegram] ✅ Channel active - last post ${activityCheck.daysSinceLastPost} day(s) ago`);
+          }
+        }
 
         let channelImported = 0;
         let pagesFetched = 0;

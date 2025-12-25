@@ -39,6 +39,10 @@ export const TELEGRAM_SCRAPER_CONFIG = {
 
   // Max pages to fetch per phase (50 messages per page, 10 pages = 500 messages)
   maxPagesPerPhase: 10,
+
+  // Skip channels that haven't posted in this many days (saves resources)
+  // Set to 0 to disable this check
+  inactivityThresholdDays: 3,
 };
 
 export interface TelegramChannel {
