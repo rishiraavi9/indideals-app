@@ -327,6 +327,11 @@ export class PricePredictionService {
 
   /**
    * Generate buy recommendation
+   *
+   * IMPORTANT: This must be consistent with the price history banner logic
+   * - percentileRank > 50 means price is ABOVE average → WAIT
+   * - percentileRank <= 30 means price is LOW → BUY NOW
+   * - percentileRank 30-50 means price is around/below average → BUY NOW (good deal)
    */
   private static generateRecommendation(
     currentPrice: number,
@@ -337,43 +342,38 @@ export class PricePredictionService {
     hasFlashSalePattern: boolean,
     percentileRank: number
   ): 'buy_now' | 'wait' | 'skip' {
-    // Buy now if:
-    // - At or near lowest price ever
-    // - Price is in the lowest 30% of historical prices
-    if (lowestPrice && currentPrice <= lowestPrice * 1.05) {
-      return 'buy_now';
-    }
-
-    if (percentileRank <= 30) {
-      return 'buy_now';
-    }
-
-    // Wait if:
-    // - Price is above average (percentile > 50)
-    // - Price is dropping with reasonable confidence
-    // - Flash sale pattern detected
+    // FIRST CHECK: Price above average (percentile > 50) → WAIT
+    // This MUST match the price history banner which says "Wait" when price is above average
     if (percentileRank > 50) {
       return 'wait';
     }
 
+    // Buy now if at or very near lowest price ever (within 5%)
+    if (lowestPrice && currentPrice <= lowestPrice * 1.05) {
+      return 'buy_now';
+    }
+
+    // Buy now if price is in the lowest 30% of historical prices
+    if (percentileRank <= 30) {
+      return 'buy_now';
+    }
+
+    // Wait if price is dropping with decent confidence
     if (trend === 'down' && confidence >= 40) {
       return 'wait';
     }
 
+    // Wait if flash sale pattern detected (better deal coming)
     if (hasFlashSalePattern) {
       return 'wait';
     }
 
+    // Wait if predicted price is significantly lower (10%+)
     if (predictedPrice && currentPrice > predictedPrice * 1.1) {
       return 'wait';
     }
 
-    // Price is between 30-50 percentile - reasonable to buy
-    if (trend === 'up' && confidence >= 60) {
-      return 'buy_now';
-    }
-
-    // Default: price is around average, okay to buy if needed
+    // Price is between 30-50 percentile (below average) - good time to buy
     return 'buy_now';
   }
 
@@ -498,9 +498,10 @@ export class PricePredictionService {
 
     if (!existing) return null;
 
-    // Check if prediction is stale (older than 24 hours)
+    // Check if prediction is stale (older than 6 hours)
+    // Reduced from 24h to ensure recommendation stays fresh and consistent
     const ageHours = (Date.now() - new Date(existing.updatedAt).getTime()) / (1000 * 60 * 60);
-    if (ageHours > 24) {
+    if (ageHours > 6) {
       // Refresh prediction
       return this.predictAndSave(dealId);
     }
