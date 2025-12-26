@@ -10,16 +10,21 @@ export interface AppConfig {
   adsEnabled: boolean;
   imageFallbackEnabled: boolean;
   imageProxyEnabled: boolean;
+  priceHistoryEnabled: boolean;
+  aiInsightsEnabled: boolean;
 
   // Config values
   imageStrategy: ImageStrategy;
 }
 
 // Default config (used before API response)
+// Price history and AI insights disabled by default until feature is ready
 const defaultConfig: AppConfig = {
   adsEnabled: true,
   imageFallbackEnabled: true,
   imageProxyEnabled: true,
+  priceHistoryEnabled: import.meta.env.VITE_FEATURE_PRICE_HISTORY !== 'false',
+  aiInsightsEnabled: import.meta.env.VITE_FEATURE_AI_INSIGHTS !== 'false',
   imageStrategy: 'placeholder',
 };
 
@@ -43,6 +48,8 @@ export async function loadConfig(): Promise<AppConfig> {
         adsEnabled: data.features?.adsEnabled ?? defaultConfig.adsEnabled,
         imageFallbackEnabled: data.features?.imageFallbackEnabled ?? defaultConfig.imageFallbackEnabled,
         imageProxyEnabled: data.features?.imageProxyEnabled ?? defaultConfig.imageProxyEnabled,
+        priceHistoryEnabled: data.features?.priceHistoryEnabled ?? defaultConfig.priceHistoryEnabled,
+        aiInsightsEnabled: data.features?.aiInsightsEnabled ?? defaultConfig.aiInsightsEnabled,
         imageStrategy: data.features?.imageStrategy ?? defaultConfig.imageStrategy,
       };
       configLoaded = true;
