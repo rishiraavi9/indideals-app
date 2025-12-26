@@ -57,14 +57,37 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"], // Needed for inline scripts in some cases
+      imgSrc: ["'self'", "data:", "https:", "blob:"],
+      connectSrc: ["'self'", "https://desidealsai.com", "https://api.desidealsai.com", "https://*.railway.app"],
+      fontSrc: ["'self'", "https:", "data:"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+      upgradeInsecureRequests: [],
     },
   },
+  // Strict Transport Security (HSTS) - Forces HTTPS
   hsts: {
-    maxAge: 31536000,
+    maxAge: 31536000, // 1 year
     includeSubDomains: true,
+    preload: true,
+  },
+  // Prevent clickjacking - Don't allow embedding in iframes
+  frameguard: {
+    action: 'deny',
+  },
+  // Prevent MIME type sniffing
+  noSniff: true,
+  // XSS Protection (legacy browsers)
+  xssFilter: true,
+  // Don't expose powered-by header
+  hidePoweredBy: true,
+  // Referrer Policy
+  referrerPolicy: {
+    policy: 'strict-origin-when-cross-origin',
   },
 }));
 
