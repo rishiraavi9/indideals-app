@@ -198,9 +198,10 @@ export const getAdminStats = async (req: Request, res: Response, next: NextFunct
         GROUP BY DATE(created_at)
         ORDER BY date ASC
       `);
+      // postgres-js returns results directly as array, not in .rows
       growthStats = {
-        users: (userGrowthResult.rows || []) as any,
-        deals: (dealGrowthResult.rows || []) as any,
+        users: (Array.isArray(userGrowthResult) ? userGrowthResult : (userGrowthResult as any).rows || []) as any,
+        deals: (Array.isArray(dealGrowthResult) ? dealGrowthResult : (dealGrowthResult as any).rows || []) as any,
       };
     } catch (e) {
       console.error('Error fetching growth stats:', e);
