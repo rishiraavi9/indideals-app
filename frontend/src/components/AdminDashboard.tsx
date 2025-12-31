@@ -439,11 +439,12 @@ export default function AdminDashboard() {
             </div>
 
             {/* Bar Chart */}
-            <div style={{ height: 200, display: 'flex', alignItems: 'flex-end', gap: 8, paddingBottom: 30, position: 'relative' }}>
+            <div style={{ height: 180, display: 'flex', alignItems: 'flex-end', gap: 12, paddingBottom: 40, position: 'relative' }}>
               {(() => {
                 const maxCount = Math.max(...stats.growth.deals.map(d => d.count), 1);
+                const maxBarHeight = 140; // Fixed max height in pixels
                 return stats.growth.deals.map((day, index) => {
-                  const height = (day.count / maxCount) * 100;
+                  const barHeight = Math.max((day.count / maxCount) * maxBarHeight, 8); // Min 8px
                   const dateObj = new Date(day.date);
                   const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
                   const dateStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -457,7 +458,8 @@ export default function AdminDashboard() {
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
-                        position: 'relative',
+                        justifyContent: 'flex-end',
+                        height: '100%',
                       }}
                     >
                       {/* Count label on top */}
@@ -473,8 +475,8 @@ export default function AdminDashboard() {
                       <div
                         style={{
                           width: '100%',
-                          maxWidth: 60,
-                          height: `${Math.max(height, 4)}%`,
+                          maxWidth: 50,
+                          height: barHeight,
                           background: isToday
                             ? 'linear-gradient(180deg, #10b981 0%, #059669 100%)'
                             : 'linear-gradient(180deg, #3b82f6 0%, #2563eb 100%)',
@@ -486,8 +488,7 @@ export default function AdminDashboard() {
                       />
                       {/* Date label below */}
                       <div style={{
-                        position: 'absolute',
-                        bottom: -28,
+                        marginTop: 8,
                         fontSize: 11,
                         color: isToday ? '#10b981' : '#6b7280',
                         fontWeight: isToday ? 600 : 400,
