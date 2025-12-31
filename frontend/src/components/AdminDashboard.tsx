@@ -419,6 +419,113 @@ export default function AdminDashboard() {
           />
         </div>
 
+        {/* Deals Created Graph - Last 7 Days */}
+        {stats.growth?.deals && stats.growth.deals.length > 0 && (
+          <div style={{
+            background: '#ffffff',
+            borderRadius: 16,
+            padding: 24,
+            marginBottom: 32,
+            border: '1px solid #e5e7eb',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#1f2937', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span>📈</span> Deals Created (Last 7 Days)
+              </h2>
+              <div style={{ fontSize: 14, color: '#6b7280' }}>
+                Total: <strong style={{ color: '#10b981' }}>{stats.growth.deals.reduce((sum, d) => sum + d.count, 0)}</strong> deals
+              </div>
+            </div>
+
+            {/* Bar Chart */}
+            <div style={{ height: 200, display: 'flex', alignItems: 'flex-end', gap: 8, paddingBottom: 30, position: 'relative' }}>
+              {(() => {
+                const maxCount = Math.max(...stats.growth.deals.map(d => d.count), 1);
+                return stats.growth.deals.map((day, index) => {
+                  const height = (day.count / maxCount) * 100;
+                  const dateObj = new Date(day.date);
+                  const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+                  const dateStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                  const isToday = new Date().toDateString() === dateObj.toDateString();
+
+                  return (
+                    <div
+                      key={index}
+                      style={{
+                        flex: 1,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        position: 'relative',
+                      }}
+                    >
+                      {/* Count label on top */}
+                      <div style={{
+                        fontSize: 12,
+                        fontWeight: 600,
+                        color: isToday ? '#10b981' : '#374151',
+                        marginBottom: 4,
+                      }}>
+                        {day.count}
+                      </div>
+                      {/* Bar */}
+                      <div
+                        style={{
+                          width: '100%',
+                          maxWidth: 60,
+                          height: `${Math.max(height, 4)}%`,
+                          background: isToday
+                            ? 'linear-gradient(180deg, #10b981 0%, #059669 100%)'
+                            : 'linear-gradient(180deg, #3b82f6 0%, #2563eb 100%)',
+                          borderRadius: '6px 6px 0 0',
+                          transition: 'all 0.3s ease',
+                          cursor: 'pointer',
+                        }}
+                        title={`${dateStr}: ${day.count} deals`}
+                      />
+                      {/* Date label below */}
+                      <div style={{
+                        position: 'absolute',
+                        bottom: -28,
+                        fontSize: 11,
+                        color: isToday ? '#10b981' : '#6b7280',
+                        fontWeight: isToday ? 600 : 400,
+                        textAlign: 'center',
+                        whiteSpace: 'nowrap',
+                      }}>
+                        {dayName}
+                        <br />
+                        <span style={{ fontSize: 10 }}>{dateStr}</span>
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+
+            {/* Average line indicator */}
+            <div style={{
+              marginTop: 16,
+              paddingTop: 16,
+              borderTop: '1px solid #e5e7eb',
+              display: 'flex',
+              justifyContent: 'space-between',
+              fontSize: 13,
+              color: '#6b7280',
+            }}>
+              <span>
+                Daily Average: <strong style={{ color: '#3b82f6' }}>
+                  {Math.round(stats.growth.deals.reduce((sum, d) => sum + d.count, 0) / stats.growth.deals.length)}
+                </strong> deals/day
+              </span>
+              <span>
+                Last updated: {new Date(stats.generatedAt).toLocaleTimeString()}
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Affiliate Stats */}
         <div style={{
           background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
