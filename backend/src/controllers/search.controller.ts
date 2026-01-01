@@ -6,20 +6,24 @@ import { eq, desc, asc, sql, and, or, ilike, gte, lte, inArray } from 'drizzle-o
 import type { AuthRequest } from '../middleware/auth.js';
 import { cacheAside, CachePrefix, CacheTTL } from '../services/cache.service.js';
 
+// Security: Limit query lengths to prevent DoS attacks
+const MAX_QUERY_LENGTH = 200;
+const MAX_FILTER_LENGTH = 500;
+
 const searchDealsSchema = z.object({
-  q: z.string().optional(),
-  categoryIds: z.string().optional(), // Comma-separated
-  merchants: z.string().optional(), // Comma-separated
-  minPrice: z.string().optional(),
-  maxPrice: z.string().optional(),
-  minScore: z.string().optional(),
-  minDiscount: z.string().optional(),
-  festiveTags: z.string().optional(), // Comma-separated
-  seasonalTag: z.string().optional(),
-  from: z.string().optional(),
-  size: z.string().optional(),
+  q: z.string().max(MAX_QUERY_LENGTH, 'Search query too long').optional(),
+  categoryIds: z.string().max(MAX_FILTER_LENGTH).optional(), // Comma-separated
+  merchants: z.string().max(MAX_FILTER_LENGTH).optional(), // Comma-separated
+  minPrice: z.string().max(20).optional(),
+  maxPrice: z.string().max(20).optional(),
+  minScore: z.string().max(10).optional(),
+  minDiscount: z.string().max(10).optional(),
+  festiveTags: z.string().max(MAX_FILTER_LENGTH).optional(), // Comma-separated
+  seasonalTag: z.string().max(100).optional(),
+  from: z.string().max(10).optional(),
+  size: z.string().max(10).optional(),
   sortBy: z.enum(['relevance', 'price_asc', 'price_desc', 'score', 'date']).optional(),
-  showExpired: z.string().optional(),
+  showExpired: z.string().max(10).optional(),
 });
 
 /**
@@ -187,6 +191,12 @@ export const autocomplete = async (req: Request, res: Response) => {
       return;
     }
 
+    // Security: Limit query length
+    if (q.length > MAX_QUERY_LENGTH) {
+      res.json({ suggestions: [] });
+      return;
+    }
+
     const sizeNum = size ? Math.min(parseInt(size as string), 20) : 10;
     const query = q.trim();
 
@@ -239,6 +249,13 @@ export const autocomplete = async (req: Request, res: Response) => {
 export const aggregations = async (req: Request, res: Response) => {
   try {
     const { q } = req.query;
+
+    // Security: Limit query length
+    if (q && String(q).length > MAX_QUERY_LENGTH) {
+      res.status(400).json({ error: 'Query too long' });
+      return;
+    }
+
     const query = q ? String(q).trim() : undefined;
 
     // Base condition: non-expired deals

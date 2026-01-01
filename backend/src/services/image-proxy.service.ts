@@ -17,6 +17,97 @@ import axios from 'axios';
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
+import { URL } from 'url';
+
+/**
+ * SSRF Protection: Validate URL to prevent internal network access
+ */
+function isAllowedUrl(urlString: string): { allowed: boolean; reason?: string } {
+  try {
+    const url = new URL(urlString);
+
+    // Only allow http/https protocols
+    if (!['http:', 'https:'].includes(url.protocol)) {
+      return { allowed: false, reason: 'Invalid protocol' };
+    }
+
+    const hostname = url.hostname.toLowerCase();
+
+    // Block localhost and loopback addresses
+    if (
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname === '::1' ||
+      hostname === '0.0.0.0' ||
+      hostname.endsWith('.local') ||
+      hostname.endsWith('.localhost')
+    ) {
+      return { allowed: false, reason: 'Localhost access not allowed' };
+    }
+
+    // Block private IP ranges (RFC 1918)
+    const ipv4Match = hostname.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+    if (ipv4Match) {
+      const [, a, b, c, d] = ipv4Match.map(Number);
+
+      // 10.0.0.0/8
+      if (a === 10) {
+        return { allowed: false, reason: 'Private IP not allowed' };
+      }
+      // 172.16.0.0/12
+      if (a === 172 && b >= 16 && b <= 31) {
+        return { allowed: false, reason: 'Private IP not allowed' };
+      }
+      // 192.168.0.0/16
+      if (a === 192 && b === 168) {
+        return { allowed: false, reason: 'Private IP not allowed' };
+      }
+      // 169.254.0.0/16 (link-local)
+      if (a === 169 && b === 254) {
+        return { allowed: false, reason: 'Link-local IP not allowed' };
+      }
+      // 127.0.0.0/8 (loopback)
+      if (a === 127) {
+        return { allowed: false, reason: 'Loopback IP not allowed' };
+      }
+      // 0.0.0.0/8
+      if (a === 0) {
+        return { allowed: false, reason: 'Invalid IP' };
+      }
+    }
+
+    // Block cloud metadata endpoints
+    const blockedHostnames = [
+      '169.254.169.254', // AWS/GCP/Azure metadata
+      'metadata.google.internal',
+      'metadata.google.com',
+      'metadata',
+      'instance-data',
+    ];
+    if (blockedHostnames.includes(hostname)) {
+      return { allowed: false, reason: 'Cloud metadata access not allowed' };
+    }
+
+    // Block internal service names
+    const blockedPatterns = [
+      /^redis/i,
+      /^postgres/i,
+      /^mysql/i,
+      /^mongo/i,
+      /^elasticsearch/i,
+      /^rabbitmq/i,
+      /^internal\./i,
+      /^private\./i,
+    ];
+    if (blockedPatterns.some(pattern => pattern.test(hostname))) {
+      return { allowed: false, reason: 'Internal service access not allowed' };
+    }
+
+    return { allowed: true };
+  } catch {
+    return { allowed: false, reason: 'Invalid URL' };
+  }
+}
 
 // Simple file-based cache for demo (use Redis/S3 in production)
 const CACHE_DIR = path.join(process.cwd(), '.image-cache');
@@ -131,7 +222,14 @@ async function cacheImage(url: string, buffer: Buffer, contentType: string): Pro
  */
 export async function proxyImage(
   url: string
-): Promise<{ buffer: Buffer; contentType: string } | null> {
+): Promise<{ buffer: Buffer; contentType: string; error?: string } | null> {
+  // SSRF Protection: Validate URL before fetching
+  const urlCheck = isAllowedUrl(url);
+  if (!urlCheck.allowed) {
+    console.warn(`[ImageProxy] Blocked SSRF attempt: ${url} - ${urlCheck.reason}`);
+    return null;
+  }
+
   // Try cache first
   const cached = await getCachedImage(url);
   if (cached) {
